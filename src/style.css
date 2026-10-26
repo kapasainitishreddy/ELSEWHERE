@@ -159,3 +159,38 @@
 .society-feed-item span{display:block;font:700 9px system-ui;color:#a0b9c4;letter-spacing:.13em;margin-bottom:5px}
 .society-feed-item b{color:#e6f4f1;font:500 14px Georgia,serif}
 .society-feed-item p,.society-feed>p{font:12px/1.65 system-ui;color:#b8cdd2;margin:6px 0 0}
+
+/* CHRONAL POLISH v0.4 — art direction, accessible targeting, locally bundled Lucide ISC icons. */
+.ui-glyph{width:19px;height:19px;display:inline-block;vertical-align:middle;object-fit:contain;filter:invert(94%) sepia(28%) saturate(450%) hue-rotate(127deg);opacity:.86;flex-shrink:0}
+.brand-glyph{display:grid;place-items:center;width:42px;height:42px;border:1px solid rgba(151,236,230,.29);border-radius:50%;background:radial-gradient(circle,rgba(94,212,222,.13),transparent 70%)}
+.brand-glyph .ui-glyph{width:28px;height:28px;filter:invert(93%) sepia(32%) saturate(795%) hue-rotate(118deg);opacity:1}
+.world-symbol{display:grid;place-items:center;height:29px;width:30px;border:1px solid rgba(169,220,231,.1);border-radius:8px;background:rgba(133,214,230,.045)}
+.world-symbol .ui-glyph{width:17px;height:17px}
+.world-link.is-active .world-symbol{background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:color-mix(in srgb,var(--accent) 36%,transparent)}
+.journal-button .ui-glyph,.icon-btn .ui-glyph{width:17px;height:17px}
+.world-pill{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:8px 13px;background:rgba(7,18,25,.6);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);font:700 9px system-ui,sans-serif;letter-spacing:.13em;color:#dbf3fa;backdrop-filter:blur(12px)}
+.world-pill .ui-glyph{width:14px;height:14px}.world-pill span{opacity:.45}
+.privacy-sigil{position:absolute;bottom:12px;left:calc(294px + 4vw);display:flex;align-items:center;gap:7px;padding:6px 9px;background:rgba(8,20,25,.7);border:1px solid rgba(110,216,185,.22);font:700 8px system-ui,sans-serif;letter-spacing:.14em;color:#b0e8db;z-index:3;pointer-events:none}
+.privacy-sigil .ui-glyph{width:13px;height:13px;filter:invert(85%) sepia(32%) saturate(653%) hue-rotate(98deg)}
+.combat-reticle{opacity:0;position:absolute;left:calc(294px + (100% - 294px - 414px) / 2);top:50%;width:96px;height:96px;transform:translate(-50%,-50%);z-index:2;pointer-events:none;transition:opacity .15s}
+[data-combat=active] .combat-reticle{opacity:.8}
+.reticle-corner{position:absolute;border-color:color-mix(in srgb,var(--accent) 75%,white);border-style:solid;width:21px;height:21px;filter:drop-shadow(0 0 6px var(--accent))}
+.reticle-corner.n{top:0;left:0;border-width:1px 0 0 1px}.reticle-corner.e{top:0;right:0;border-width:1px 1px 0 0}
+.reticle-corner.s{bottom:0;left:0;border-width:0 0 1px 1px}.reticle-corner.w{bottom:0;right:0;border-width:0 1px 1px 0}
+.reticle-center{position:absolute;top:calc(50% - 3px);left:calc(50% - 3px);width:6px;height:6px;border:1px solid var(--accent);border-radius:50%;background:rgba(255,255,255,.15);box-shadow:0 0 9px var(--accent)}
+.combat-reticle small{position:absolute;top:calc(100% + 12px);left:50%;transform:translateX(-50%);text-align:center;width:220px;color:#daf6f6;font:700 9px/1.45 system-ui;letter-spacing:.09em;text-shadow:0 2px 8px #000}
+.topbar{background:linear-gradient(180deg,rgba(4,12,20,.94),rgba(4,12,20,.74));box-shadow:0 2px 32px rgba(0,0,0,.23)}
+.story-panel{background:linear-gradient(153deg,rgba(11,23,32,.94),rgba(6,14,22,.89)),radial-gradient(circle at 100% 0,var(--haze),transparent 40%);box-shadow:0 26px 90px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.04)}
+.choice:not(:disabled){border-radius:5px;position:relative;overflow:hidden}
+.choice:not(:disabled):before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 5%,rgba(201,243,243,.04) 55%,transparent 90%);transform:translateX(-100%);transition:transform .4s ease}
+.choice:not(:disabled):hover:before,.choice:focus-visible:before{transform:translateX(100%)}
+.choice:focus-visible,.world-link:focus-visible,.icon-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.world-heading h1{font-weight:600;text-shadow:0 8px 22px #03080d,0 0 38px color-mix(in srgb,var(--accent) 11%,transparent)}
+.world-quote{max-width:340px;line-height:1.5}
+#interaction-hint{border-radius:5px;box-shadow:0 8px 24px rgba(0,0,0,.36)}
+.time-ledger strong{font-variant-numeric:tabular-nums}
+@media(max-width:1350px){.privacy-sigil{left:calc(235px + 2vw)}.combat-reticle{left:calc(235px + (100% - 235px - 370px) / 2)}}
+@media(max-width:1050px){.privacy-sigil{left:110px}.combat-reticle{left:calc(86px + (100% - 86px - 370px) / 2)}}
+@media(max-width:760px){.brand-glyph{width:30px;height:30px}.brand-glyph .ui-glyph{width:21px;height:21px}.world-symbol{width:25px;height:25px}.world-symbol .ui-glyph{width:14px;height:14px}.world-pill{font-size:8px;margin-top:12px;padding:6px 9px}.privacy-sigil{left:auto;right:11px;bottom:calc(50% + 8px);font-size:7px;padding:5px 7px}.combat-reticle{left:50%;top:32%;width:72px;height:72px}.combat-reticle small{width:180px;font-size:7px}.world-heading{pointer-events:none}}
+@media(max-width:400px){.world-pill{display:none}.privacy-sigil span{display:none}.journal-button .ui-glyph{display:none}}
+@media(prefers-reduced-motion:reduce){.choice:not(:disabled):before{display:none}.combat-reticle{transition:none}}

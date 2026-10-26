@@ -380,13 +380,14 @@ export function addConversation(state, question, answer) {
   return s;
 }
 
-export function askCharacter(state,id,question){
+export function askCharacter(state,id,question,replyOverride=null){
   const s=copy(state);
   if(!CAST[id]||CAST[id].world!==s.world)return {ok:false,state,error:'That person is not present in this reality.'};
   const safe=String(question??'').trim().slice(0,240);
   if(!safe)return {ok:false,state,error:'Ask a question to begin a conversation.'};
-  const reply=roleplayReply(s,id,safe);
-  if(!reply)return {ok:false,state,error:'This character cannot answer now.'};
+  const scripted=roleplayReply(s,id,safe);
+  if(!scripted)return {ok:false,state,error:'This character cannot answer now.'};
+  const reply=typeof replyOverride==='string'&&replyOverride.trim()?replyOverride.trim().slice(0,600):scripted;
   const person=s.cast[id];person.interactions=Math.min(9999,person.interactions+1);
   person.dialogue.push({question:safe,reply});person.dialogue=person.dialogue.slice(-8);
   s.revision+=1;

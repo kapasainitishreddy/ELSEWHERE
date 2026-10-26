@@ -15,6 +15,13 @@ Passphrase AES-256-GCM vault (src/vault.js) → localStorage ciphertext
     ↔ manual encrypted backup import/export
     ↔ lock/rekey functions
 
+OPTIONAL, separately started private on-device model:
+Player enables local AI each session → bounded, selected NPC memory + fictional state
+    → same-origin /api/local-dialogue → loopback server (local-server.mjs)
+    → fixed 127.0.0.1:11434 Ollama API → local generated fiction
+    → reply displayed + saved inside encrypted browser vault
+    ✗ no vault keys, future letter, other branches, internet inference or persistence
+
 OPTIONAL, explicitly non-private hackathon demonstration (not started by default):
 Player consents → only immediate typed question + allowlisted FICTIONAL summary
     → same-origin /api/character → 127.0.0.1-only bridge (server.mjs)
@@ -29,7 +36,7 @@ Player consents → only immediate typed question + allowlisted FICTIONAL summar
 4. The Web Crypto passphrase is never persisted; salt and IV are unsecret, ciphertext authenticated. Secure context is required. Old plaintext saves are deleted **only after** the new encrypted record is written.
 5. Local UI text is escaped before insertion into HTML. Public service-worker caches exclude `/api/` and `/private/` requests. In production a SW may cache application code, not vault payloads.
 6. Optional Meta bridge requires explicit `cloudConsent:true` and sends no stored letters, previous chat turns, full timeline, NPC memories, alternate branch snapshots or passphrases. A real question/summary still crosses the network if enabled.
-7. Local authored dialogue is deterministic and reactive, **not** a locally installed general-purpose model or autonomous character AI.
+7. Default authored dialogue is deterministic and reactive. The separately enabled Ollama adapter uses a local general-purpose language model for fictional speech only. It does not make NPCs continuously autonomous.
 
 ## XR and interaction
 
@@ -39,7 +46,7 @@ WebXR uses Three.js' VRButton and controller `select`/`squeeze`: point and selec
 
 Node tests cover simulation, randomized playthroughs, branch separation, vault cryptography, malformed backups, action boundaries, output escaping, a fallback-only dialogue mode and a consented Meta request's allowlist. A passing simulation suite is **not** proof of production WebXR quality.
 
-Unfinished: real frame rate/device QA, robust navmesh/rigid-body physics, real ragdoll/hand interactions, full mission pacing, locally hosted eligible Meta open-weights inference, cryptographic review, manual offline-shell testing, automated screenshot comparison and accessibility audits. No GitHub Actions workflows are used.
+Unfinished: real frame rate/device QA, robust navmesh/rigid-body physics, real ragdoll/hand interactions, full mission pacing, headset-tested locally hosted Meta open-weights inference, cryptographic review, manual offline-shell testing, automated screenshot comparison and accessibility audits. No GitHub Actions workflows are used.
 
 ## SocietyPulse and controls
 

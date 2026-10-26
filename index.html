@@ -6,7 +6,8 @@
     <meta name="theme-color" content="#080c11" />
     <meta name="description" content="ELSEWHERE by Syrava. One life is never enough. Travel worlds, meet a possible future self and rewrite your timeline." />
     <title>ELSEWHERE — Live the lives you never lived</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws://localhost:5173 ws://127.0.0.1:5173; frame-src 'none'; base-uri 'none'; form-action 'self'" />
+    <!-- Strong first-party asset policy. No CDN fonts, scripts, analytics, or remote AI in private mode. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:5173 ws://localhost:5173; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
   </head>
   <body>
     <main id="app" aria-label="ELSEWHERE experience">
@@ -17,18 +18,6 @@
       <div id="transition-curtain" aria-hidden="true"><i>◌</i><span>ANOTHER WORLD</span></div>
       <div id="loading-screen"><span class="loading-mark">◌</span><div>CONNECTING TO ELSEWHERE</div><small>One life is never enough.</small></div>
     </main>
-    <section id="vault-gate" class="vault-gate" role="dialog" aria-modal="true" aria-labelledby="vault-title">
-      <div class="vault-orbit" aria-hidden="true"><span></span><span></span><span></span>✦</div>
-      <div class="vault-card">
-        <span class="vault-kicker">SYRAVA / ELSEWHERE / PRIVATE LAYER</span>
-        <h1 id="vault-title">Create your private universe</h1>
-        <p id="vault-lead">Your life belongs to you. Your stories stay on your device.</p>
-        <div class="vault-promises"><span>◎ AES-256-GCM</span><span>◎ LOCAL MEMORY</span><span>◎ NO ACCOUNT</span></div>
-        <p id="vault-legacy" hidden>Your existing unencrypted save will be moved into the encrypted vault and the old plaintext copy removed after the first successful save.</p>
-        <form id="vault-form"><label for="vault-passphrase">YOUR PRIVATE PASSPHRASE</label><input id="vault-passphrase" type="password" autocomplete="off" minlength="10" maxlength="256" placeholder="At least 10 characters" required><button id="vault-submit" type="submit">CREATE ENCRYPTED VAULT</button></form>
-        <p id="vault-notice" role="status">No one receives your private passphrase.</p>
-      </div>
-    </section>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

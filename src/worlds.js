@@ -4,6 +4,8 @@ import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { WORLDS, INVENTIONS, cityRipple, worldOptions } from './game.js';
 import { addScenery, collisionRects } from './scenery.js';
 import { stickMovement, buttonEdges, gamepadCommand } from './controls.js';
+import { addAtmosphere, addPortalCorona, atmosphereBudget } from './atmosphere.js';
+import { dressWithKenney } from './open-assets.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
 const palettes = {
@@ -36,7 +38,8 @@ function ground(g,p){mesh(g,new THREE.PlaneGeometry(170,170),mat(p.ground,.1,.9)
 function stars(group,color=0xc2edff,count=300){const vertices=[];for(let i=0;i<count;i++){const a=seeded(i*2)*Math.PI*2;const r=20+seeded(i*3+17)*65;vertices.push(Math.sin(a)*r,3+seeded(i*11+9)*30,Math.cos(a)*r);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));const p=new THREE.Points(g,new THREE.PointsMaterial({color,size:.14,transparent:true,opacity:.5,sizeAttenuation:true,depthWrite:false}));group.add(p);}
 function buildPortal(group,world,x,z,interactables,animated){
  const base=new THREE.Group();base.position.set(x,0,z);group.add(base);
- const frame=emissive(COLORS[world],1.4);ring(base,1.5,.105,frame,0,2.1,0);
+ addPortalCorona(base,world,animated,x);
+ const frame=emissive(COLORS[world],1.4);const frameRing=ring(base,1.5,.105,frame,0,2.1,0);
  ring(base,1.68,.025,emissive(0xffffff,.55),0,2.1,0);
  const membraneMaterial=new THREE.ShaderMaterial({
   uniforms:{uTime:{value:0},uColor:{value:new THREE.Color(COLORS[world])}},transparent:true,depthWrite:false,side:THREE.DoubleSide,
@@ -56,7 +59,7 @@ function buildPortal(group,world,x,z,interactables,animated){
  cylinder(base,1.48,1.63,.18,mat(0x111e29,.8,.2),0,.03,0);
  sign(base,WORLDS[world].name.toUpperCase(),'ENTER WORLD',0,4.4,.08,3.2);
  light(base,COLORS[world],1.8,0,2.2,0,10);
- animated.push((time)=>{frame.emissiveIntensity=1.3+Math.sin(time*1.25+x)*.35;base.children[0].rotation.z=Math.sin(time*.21+x)*.1;membraneMaterial.uniforms.uTime.value=time;});
+ animated.push((time)=>{frame.emissiveIntensity=1.3+Math.sin(time*1.25+x)*.35;frameRing.rotation.z=Math.sin(time*.21+x)*.1;membraneMaterial.uniforms.uTime.value=time;});
  return base;
 }
 function buildChronalOrrey(group,state,animated){
@@ -475,12 +478,15 @@ export function createExperience(container, onWorld, onAction){
    const p=palettes[state.world];world.add(new THREE.HemisphereLight(p.light,0x080d17,state.world==='self'?1.4:1.75));
    const sun=new THREE.DirectionalLight(p.light,2.8);sun.position.set(5,17,5);world.add(sun);
    ground(world,p);stars(world,state.world==='dungeon'?0xd5bcff:0xb1dce8,state.world==='self'?180:280);
+   addAtmosphere(world,state.world,animated,atmosphereBudget({headset:renderer.xr.isPresenting,reducedMotion,smallScreen:window.innerWidth<900}));
    if(state.world==='future')buildFuture(world,state,animated);
    else if(state.world==='self')buildSelf(world,state,animated);
    else if(state.world==='past')buildPast(world,state,animated);
    else if(state.world==='dungeon')buildDungeon(world,state,animated);
    else if(state.world==='mech')titan=buildMech(world,state,animated);
    addScenery(world,state,animated);
+   // Async, same-origin only: optional verified CC0 meshes enrich the existing procedural scene.
+   void dressWithKenney(world,state.world?state:{world:'future'},animated).catch(()=>{});
    buildCombatTargets(world,state,animated,targets);
    buildChronalOrrey(world,state,animated);
    buildLivingCharacters(world,state,targets,animated);

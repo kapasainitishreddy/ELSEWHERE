@@ -1,4 +1,4 @@
-# ELSEWHERE · The Chronal Veil
+# ELSEWHERE · Chronal Polish 0.4
 
 > One life is never enough.
 
@@ -6,9 +6,24 @@
 
 This is an original experimental game and potential **Meta Global AI Developer Hackathon 2026 Startup-track** submission. It is **not** yet a polished shipped VR game, an MMO, or a verified Meta AI submission. In-world hour balances, fame, wealth and life paths are fictional, never real predictions or financial assets.
 
+## What's new in Chronal Polish 0.4
+
+- **World atmosphere:** GPU-friendly original sky gradients, drifting bioluminescent particles, floating debris and portal coronae are now active in all five environments. Particle budgets automatically reduce on small screens and in VR. Reduced-motion players get static alternatives.
+- **Interface assets:** 12 selected **Lucide open-source ISC** icon SVGs are stored in the repository and used by the world selector, encrypted-vault indicator, controls and journal. No CDN is contacted.
+- **Clear combat targeting:** an in-world reticle appears only during an active dungeon or mech encounter. Keyboard/gamepad/VR controls and the existing rules remain unchanged.
+- **CC0 game art integration:** a curated set of **24 Kenney 3D assets** is supported with placements in each world. The model **download is optional** and must be run on a network-connected development computer (the models themselves are *not* bundled in GitHub main). The importer verifies exact model hashes, after which the game loads only local copies. Without installed 3D packs the procedural worlds continue working.
+- **Documented provenance:** each asset has its license, author, source, and installation behavior described in [Assets & licenses](docs/ASSETS.md).
+
+```bash
+npm run assets:fetch                # Download and locally bundle all 24 Kenney CC0 models
+npm run assets:fetch -- --world mech # Or install one world's models
+```
+
+These are developer-side commands. Player conversations, saved timelines and vault contents are never included in the asset download.
+
 ## Run it
 
-Requires Node.js 22+, npm and an installed copy of the dependencies. Default mode runs entirely on your own computer with authored local dialogue and **no Meta API key**.
+Requires Node.js 22+, npm and an installed copy of the dependencies. Default mode runs entirely on your own computer with authored local dialogue and **no Meta API key**. There is also an optional on-device generative model adapter, enabled only when you run a separate local service.
 
 ```bash
 npm install
@@ -24,6 +39,27 @@ npm run check            # tests then production build
 
 `npm run dev` starts the local Vite server only. Personal gameplay never needs a cloud API. On the first visit, create a passphrase-protected local vault. There is **no passphrase recovery**. Do not lose it. Back up using the encrypted export in My Timeline.
 
+## Private on-device generative NPC conversations (optional)
+
+ELSEWHERE has two **distinct** local dialogue modes:
+
+1. **Default, zero-setup:** original authored dialogue driven by each character's bounded memories and choices. No prompts leave the unlocked browser. This works without installing a model, network access, an account, or an API key.
+2. **Optional on-device Ollama:** expressive, generated conversations with Ada, Iris, Sol, the Witness, Warden and your fictional future self. There is no Meta API key or remote inference. You install the model yourself, then deliberately enable it in **My Timeline → Privacy → On-device AI** (or the future-self conversation panel). The toggle resets whenever the vault locks or the page reloads. The characters still have the same game-engine memory and the language model **cannot modify game currency, unlocks, trust or plot flags**.
+
+First install [Ollama](https://ollama.com/) on your **own** computer. Download a lightweight local model while online, then you can play without internet (subject to local browser asset caching):
+
+```bash
+ollama pull qwen2.5:1.5b
+ollama serve              # may already be running as an OS service
+# In another terminal, from the ELSEWHERE folder:
+npm run dev:local-ai
+# Open http://127.0.0.1:5173 and enable on-device AI in Privacy
+```
+
+Use `LOCAL_AI_MODEL=<a previously downloaded local model>` to choose another model. **No model is downloaded by the game.** Device RAM/VRAM and performance vary. If Ollama is absent, inference times out, or the player switches worlds, the game gracefully falls back to authored dialogue or discards stale responses. Ollama's inference API is fixed at `127.0.0.1:11434` and the game's private bridge binds only to `127.0.0.1:8788`; it does not accept browser requests from unapproved web origins. Text prompts, selected character memories and a bounded **fictional** state summary travel from your unlocked browser to these loopback processes; neither process in this game's bridge writes them to disk or sends them to Meta. Other software or a separately reconfigured Ollama installation could have different behavior, so inspect your setup if absolute network isolation is essential. Stored dialogue stays AES-encrypted inside your browser vault.
+
+Our production game bundle also avoids remote font CDNs and uses a strict first-party browser connection policy. This is privacy-first by default, **not a claim of independently audited perfect secrecy**. A compromised browser, operating system, model plugin, or hosted game update can still access the decrypted content during a session.
+
 ## What you can actually play
 
 | World | Era | Encounters |
@@ -38,7 +74,7 @@ npm run check            # tests then production build
 
 **Prime / Echo parallel realities:** collect memory stars, spend three hours and two stars to fork. Each branch then keeps its own economy, inventions, actors, NPC agenda progress, debts and story history. You can switch back without mixing balances or sharing private memories between those versions.
 
-**Independent NPC agendas:** five story characters advance through original authored developments after distinct meaningful decisions. Ada opens a night school, Iris documents missing hours, Sol opens rescue corridors, the Witness discovers another way to resolve the crown and The Other You writes an unsent letter. They remember choices, offer missions and react when you return. This is **deterministic offline storytelling**, not real-time autonomous AI agents.
+**Independent NPC agendas:** five story characters advance through original authored developments after distinct meaningful decisions. Ada opens a night school, Iris documents missing hours, Sol opens rescue corridors, the Witness discovers another way to resolve the crown and The Other You writes an unsent letter. They remember choices, offer missions and react when you return. By default this is **deterministic offline storytelling**, not continuously thinking autonomous agents. Optional Ollama adds private generated dialogue, not continuously running agent behavior.
 
 **A full story layer:** the Echo Atlas journal includes authored prose chapters unlocked by your choices, cause-and-effect history, collectibles, actor memory dossiers and the living-world event feed. There are multiple moral outcomes and three player-selected endings. See [Story Bible](docs/STORY_BIBLE.md).
 
@@ -60,7 +96,7 @@ There are glowing portals in the physical 3D scenes as well as accessible text w
 ## The Private Layer
 
 - **Encrypted at rest:** all saves, NPC memories, private letters, story transactions and *both* timelines are inside a versioned **AES-256-GCM** envelope, with a passphrase-derived PBKDF2-SHA256 key (310,000 iterations), unique salt and fresh IVs.
-- **Private by default:** no account, tracking, cloud saves, browser speech recognition or remote AI requests in normal gameplay. Character replies run via authored local logic. No remote model receives game memories by default.
+- **Private by default:** no account, tracking, cloud saves, browser speech recognition or remote AI requests in normal gameplay. Character replies run via authored local logic by default. Optional on-device Ollama processes a selected character’s bounded memories without a remote model.
 - **Manual migration and backup:** old unencrypted browser saves are migrated into the vault when it is first created. Backup exports and imports contain ciphertext only and require the passphrase.
 - **Offline behavior:** the production service worker caches only same-origin public assets. The HTML or scripts must first be served/downloaded. True offline use requires a local installed build or a verified cached copy.
 - **Security caveats:** a device compromise, browser extension, malicious website update or screen recording can access data while it is unlocked. Network hosts can see site requests when the game is remotely served. This is **not independently audited or guaranteed zero-knowledge in all threat models**.
@@ -74,9 +110,13 @@ The game includes a **separately started**, opt-in Meta Model API bridge for hac
 ## Open source and rights
 
 - **Three.js** (`three` ^0.181.0, MIT): geometry, materials, shaders, camera, OrbitControls, and WebXR VRButton.
+- **Lucide icons** (ISC): 12 selected bundled local SVG assets for HUD and navigation.
+- **Kenney models** (CC0-1.0): 24 optional same-origin GLBs from a pinned verified mirror, installed via `npm run assets:fetch` only; not automatically fetched at runtime.
+- **Original art systems:** per-biome skydomes, GPU effects, animated portal coronas and XR-budgeted particles.
 - **Vite** (^7.1.0, MIT): local development and production web bundling.
+- **Ollama**: OPTIONAL separate local inference runtime, **not** included or automatically installed; API used only when the local service is explicitly started. Models have their own licenses and should be checked before commercial use.
 - **Our original code:** state machine, branching hour economy, fictional characters and agendas, puzzles, combat rules, ambience synthesis, procedural worlds, private vault, journal, UI, and tests. See [LICENSE](LICENSE).
-- Rapier, AI Town, browser-whisper, Godot XR Tools, Meta IWSDK and existing film/anime/manhwa assets are **not bundled into this prototype**. They are research references or future integration candidates, not work we claim to have reused. All current 3D props and titan designs are procedural originals. No third-party game assets are bundled.
+- Rapier, AI Town, browser-whisper, Godot XR Tools, Meta IWSDK and existing film/anime/manhwa assets are **not bundled into this prototype**. They are research references or future integration candidates, not work we claim to have reused. All current 3D props and titan designs are procedural originals. Twelve Lucide ISC icons are bundled. Twenty-four Kenney CC0 model placements are implemented, with a verified optional developer downloader; GLBs are not checked into main by default.
 
 ## Release and hackathon status
 

@@ -8,6 +8,7 @@ import {createExperience} from './worlds.js';
 import {createInterface} from './ui.js';
 import {createSoundscape} from './audio.js';
 import {createLocalVault} from './vault.js';
+import {isLoopbackHostname,localCharacterRequest,sanitizeLocalReply,LOCAL_AI_PATH} from './local-ai.js';
 
 const storage=window.localStorage;
 const vault=createLocalVault(storage);
@@ -20,7 +21,9 @@ const gateButton=gate.querySelector('#vault-submit');
 const curtain=document.querySelector('#transition-curtain');
 const toastRoot=document.querySelector('#toast-region');
 const soundscape=createSoundscape();
-let state=initialState(), experience=null, started=false, previousWorld=state.world, cloudEnabled=false;
+let state=initialState(), experience=null, started=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
+const pendingLocalRequests=new Set();
+const onLocalMachine=isLoopbackHostname(window.location.hostname);
 
 function toast(message,positive=true){
  const node=document.createElement('div');node.className=`toast ${positive?'positive':'negative'}`;node.textContent=String(message).slice(0,240);
@@ -56,10 +59,51 @@ function publish(next,event){
 function chooseWorld(world){const outcome=travel(state,world);if(outcome.ok&&outcome.event)publish(outcome.state,outcome.event);else if(!outcome.ok)toast(outcome.error,false);}
 function chooseAction(id){const outcome=applyAction(state,id);if(outcome.ok)publish(outcome.state,outcome.event);else toast(outcome.error,false);}
 function reset(){if(!window.confirm('Begin a new story in this vault? The current story will be replaced unless you export an encrypted backup.'))return;publish(initialState(),{title:'A new life begins'});}
+/** Explicitly enabled on-device inference. This never routes to Meta or an internet URL.
+ * The only backend it contacts is the separately launched local loopback proxy.
+ */
+async function localNpcReply(snapshot,id,question){
+ if(!localAiEnabled || !onLocalMachine)return null;
+ const payload=localCharacterRequest(snapshot,id,question);
+ if(!payload)return null;
+ const controller=new AbortController();pendingLocalRequests.add(controller);
+ const timer=setTimeout(()=>controller.abort(),27000);
+ try{
+  const response=await fetch(LOCAL_AI_PATH,{
+   method:'POST',credentials:'same-origin',cache:'no-store',
+   headers:{'content-type':'application/json','x-elsewhere-local':'1'},
+   body:JSON.stringify(payload),signal:controller.signal
+  });
+  if(!response.ok)throw new Error('On-device inference not ready');
+  const reply=sanitizeLocalReply(await response.json());
+  if(!reply)throw new Error('Local response was empty');
+  return reply;
+ }catch{
+  toast('On-device model unavailable. Using the private authored character instead.',false);
+  return null;
+ }finally{clearTimeout(timer);pendingLocalRequests.delete(controller);}
+}
+async function toggleLocalAi(){
+ if(localAiEnabled){localAiEnabled=false;ui.render(state);ui.updateStatus('LOCAL · AUTHORED');toast('On-device language model disabled.');return;}
+ if(!onLocalMachine){toast('On-device AI can only be enabled from a local computer-hosted game.',false);return;}
+ // Read a non-private health endpoint first. No player content is sent here.
+ try{
+  const response=await fetch(`${LOCAL_AI_PATH}/health`,{cache:'no-store',signal:AbortSignal.timeout(1800)});
+  const data=await response.json();
+  if(!response.ok||data.mode!=='device-only')throw new Error('Not running');
+ }catch{toast('Start Ollama and run npm run dev:local-ai to unlock private generative dialogue.',false);return;}
+ localAiEnabled=true;cloudEnabled=false;ui.render(state);ui.updateStatus('ON-DEVICE AI · NO CLOUD');
+ toast('Local model selected. Conversations stay on this computer.');
+}
 async function ask(question){
  // Local authored dialogue by default. Consent never survives a reload or vault lock.
  let reply=dialogueFallback(state,question), mode='LOCAL · ENCRYPTED';
- if(cloudEnabled){
+ const before=state, epoch=sessionEpoch;
+ if(localAiEnabled){
+  const local=await localNpcReply(before,'elder',question);
+  if(!started||sessionEpoch!==epoch||state!==before){toast('World changed. Old dialogue was discarded.',false);return;}
+  if(local){reply=local;mode='ON-DEVICE AI · ENCRYPTED SAVE';}else mode='LOCAL · AUTHORED FALLBACK';
+ }else if(cloudEnabled){
   mode='META REQUEST ATTEMPTED';
   try{
    const controller=new AbortController();
@@ -81,15 +125,24 @@ async function ask(question){
    toast('Meta unavailable. Continuing with local dialogue. A remote request may have been attempted.',false);
   }
  }
+ if(!started||sessionEpoch!==epoch||state!==before)return;
  state=addConversation(state,question,reply);
  void persist();ui.render(state);ui.updateStatus(mode);
 }
 function toggleCloud(){
  if(cloudEnabled){cloudEnabled=false;ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');toast('Remote conversations disabled.');return;}
  if(!window.confirm('Optional CLOUD MODE: Each submitted question and a small fictional game summary will be sent to Meta Model API. This is NOT completely local. Your passphrase, future letter, encrypted save, other timeline, and NPC memories will NOT be sent. Enable until you lock or reload?'))return;
- cloudEnabled=true;ui.render(state);ui.updateStatus('META OPT-IN · CLOUD');toast('Cloud conversation is now enabled. Type only what you want to send.');
+ cloudEnabled=true;localAiEnabled=false;ui.render(state);ui.updateStatus('META OPT-IN · CLOUD');toast('Cloud conversation is now enabled. Type only what you want to send.');
 }
-function npcAsk(person,question){const answer=askCharacter(state,person,question);if(!answer.ok){toast(answer.error,false);return;}publish(answer.state);ui.updateStatus('LOCAL · ENCRYPTED');}
+async function npcAsk(person,question){
+ const before=state,epoch=sessionEpoch;
+ const reply=await localNpcReply(before,person,question);
+ if(!started||sessionEpoch!==epoch||state!==before){toast('Reality changed before the conversation ended.',false);return;}
+ const answer=askCharacter(state,person,question,reply);
+ if(!answer.ok){toast(answer.error,false);return;}
+ publish(answer.state);
+ ui.updateStatus(reply?'ON-DEVICE NPC · ENCRYPTED SAVE':'LOCAL · AUTHORED NPC');
+}
 function listen(){toast('Voice transcription is disabled in Private Mode because browser services may transmit your speech. Type instead.',false);}
 function writeFutureLetter(text){state=writeLetter(state,text);void persist();ui.render(state);toast(state.letter?'Private letter encrypted on this device.':'Letter cleared.');}
 function toggleSound(enabled){soundscape.toggle(enabled);soundscape.setScene(state.world);}
@@ -125,7 +178,7 @@ async function rekey(){
 async function lock(){
  if(!started)return;
  await vault.save(state);
- await vault.lock();cloudEnabled=false;soundscape.toggle(false);
+ await vault.lock();sessionEpoch++;for(const c of pendingLocalRequests)c.abort();cloudEnabled=false;localAiEnabled=false;soundscape.toggle(false);
  experience?.dispose?.();experience=null;started=false;
  document.querySelector('#app-ui').replaceChildren();
  document.querySelector('#loading-screen')?.classList.remove('hidden');
@@ -134,10 +187,10 @@ async function lock(){
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,
  sound:toggleSound,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
- privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,npcAsk
+ privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk
 });
 function begin(next){
- state=next;previousWorld=state.world;cloudEnabled=false;gate.hidden=true;started=true;
+ state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;
  try{
   experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction);
   experience.mount(state);ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');

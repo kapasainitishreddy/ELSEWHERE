@@ -36,3 +36,14 @@
 10. **Optional cloud-only demo:** intentionally start backend, opt in, inspect browser network panel; verify only immediate question + allowlisted fictional summary leaves the browser, no private letter, full save or NPC memory. Confirm opt-in resets after reload.
 
 Do not call a build or headset experience verified until these manual checks have actually been executed.
+
+
+## On-device NPC QA checklist (v0.3.2)
+
+- Run `npm test` and confirm 61+ tests pass (including origin, loopback, prompt allowlist and narrative-only outcomes).
+- Check `npm run dev` sends no browser API requests by default and accepts no remote fonts.
+- Check My Timeline → Privacy → Local AI is disabled after every vault lock or reload.
+- Install a local Ollama model and start `npm run dev:local-ai` to verify reply latency and tone for all six actor identities. **Not yet verified in an actual model session.**
+- Turn off Ollama mid-conversation: the game must keep authored dialogues working, leave the vault valid, and not change achievements from model text.
+- Switch worlds while an NPC response is pending: the stale result must not appear in the new world.
+- Validate `index.html` CSP and service worker behavior in real Chromium / Quest; source tests alone do not prove network isolation.

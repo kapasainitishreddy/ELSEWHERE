@@ -1,5 +1,5 @@
 /* Offline shell. Only first-party static GET responses are cached; never API, secrets or saves. */
-const CACHE='elsewhere-static-v3';
+const CACHE='elsewhere-static-v4';
 const SHELL=['/','/index.html'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
@@ -16,10 +16,10 @@ self.addEventListener('fetch',event=>{
   if(stored)return stored;
   try{
    const response=await fetch(request);
-   if(response.ok&&response.type==='basic'&&/^(text\/|application\/javascript|image\/|font\/|application\/wasm)/.test(response.headers.get('content-type')||'')){
+   if(response.ok&&response.type==='basic'&&(/^(text\/|application\/javascript|image\/|font\/|application\/wasm)/.test(response.headers.get('content-type')||'')||url.pathname.startsWith('/assets/kenney/'))){
     await cache.put(request,response.clone());
    }
    return response;
-  }catch{return caches.match('/index.html')||Response.error();}
+  }catch{return url.pathname==='/'||url.pathname==='/index.html'?(await caches.match('/index.html')||Response.error()):Response.error();}
  })());
 });
