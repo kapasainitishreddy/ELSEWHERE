@@ -69,3 +69,9 @@ test('history remains bounded and all worlds have actions',()=>{
  assert.ok(s.history.length<=32);
  for(const w of ['future','self','past','dungeon','mech'])assert.ok(worldOptions(go(s,w)).length>0);
 });
+
+test('the first active action leads into the past and returns to the transformed future',()=>{
+ const initial=initialState(); const start=worldOptions(initial)[0];assert.equal(start.id,'go-past');
+ let s=act(initial,'go-past');assert.equal(s.world,'past');s=act(s,'invent-cell');s=act(s,'gift');
+ s=act(s,'go-future');assert.equal(s.world,'future');assert.equal(cityRipple(s).cell,true);
+});

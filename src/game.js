@@ -37,12 +37,15 @@ const copy = (s) => structuredClone(s);
 export function worldOptions(s) {
   switch (s.world) {
     case 'future': return [
+      { id: 'go-past', title: 'Cross into the year 1889', detail: 'Change history, invent technology and return richer or wiser.' },
+      { id: 'go-self', title: 'Meet your future self', detail: 'Speak to the person you might become.' },
       { id: 'buy-penthouse', title: 'Buy the sky residence', detail: 'Own a home above the clouds.', price: 4800, disabled: has(s,'penthouse') || s.credits < 4800, reason: has(s,'penthouse') ? 'Already owned' : '4,800 credits' },
       { id: 'invest-robotics', title: 'Invest in robotics', detail: 'Back the future of human-machine collaboration.', price: 3200, disabled: once(s,'invest-robotics') || s.credits < 3200, reason: once(s,'invest-robotics') ? 'Investment made' : '3,200 credits' },
       { id: 'collect-dividend', title: 'Collect your return', detail: 'An investment matures across the timeline.', disabled: !once(s,'invest-robotics') || once(s,'collect-dividend'), reason: once(s,'collect-dividend') ? 'Collected' : 'Requires investment' },
       { id: 'fund-city', title: 'Fund a public library', detail: 'Turn your fortune into a lasting public good.', price: 2200, disabled: once(s,'fund-city') || s.credits < 2200, reason: once(s,'fund-city') ? 'Already founded' : '2,200 credits' }
     ];
     case 'past': return s.invention ? [
+      { id: 'go-future', title: 'See the future you created', detail: 'Return to Neo Elysium and witness the ripple effects.' },
       { id: 'patent', title: 'Patent it. Build an empire.', detail: 'Sell licenses, earn wealth and become famous.', disabled: Boolean(s.fate), reason: s.fate ? 'Fate already chosen' : 'Own the invention' },
       { id: 'gift', title: 'Give it to the world', detail: 'A better future for everyone, not just you.', disabled: Boolean(s.fate), reason: s.fate ? 'Fate already chosen' : 'Public trust' },
       { id: 'auction', title: 'Sell it to the highest bidder', detail: 'Quick fortune. Uncertain consequences.', disabled: Boolean(s.fate), reason: s.fate ? 'Fate already chosen' : 'Short-term wealth' }
@@ -141,6 +144,7 @@ export function applyAction(state, id) {
   const option = worldOptions(state).find((item) => item.id === id);
   if (!option) return { ok:false, state, error: 'This action is not available in this world.' };
   if (option.disabled) return { ok:false, state, error: option.reason || 'That choice is locked.' };
+  if (id.startsWith('go-')) return travel(state, id.slice(3));
   const s = copy(state);
   let event = { title: option.title, detail: option.detail };
   if (id.startsWith('invent-')) {
