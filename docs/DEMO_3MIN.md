@@ -1,20 +1,15 @@
-# ELSEWHERE three-minute proof-of-work demo (planned, not yet recorded)
+# ELSEWHERE: three-minute live proof (version 0.7 proposal)
 
-**00:00–00:25** Open the encrypted vault after entering a passphrase. Show a playable original procedural skyline. "This world saves only encrypted memories on my device."
+**Recording status:** not recorded. All moments must show real working game footage and features built during the event, not visual concept art. Use a fictional demo player; do not disclose private journals or real health information.
 
-**00:25–00:55** Step through the glowing portal to 1889. Create an invention and choose patent versus gift. Return to 2087 to reveal a visibly changed skyline and Iris's remembered reaction.
+- **00:00–00:20 — The question.** “What if you could speak to a possible version of yourself, then walk into a different future?” Show a new encrypted vault and the 2046 apartment. Label the future self as imagined, not a prediction.
+- **00:20–00:55 — The past has consequences.** Portal to 1889. Invent something fictional and choose to share it rather than patent it. Return to 2087 and show a verifiable scene change and Iris's memory of what happened.
+- **00:55–01:30 — A character who remembers.** The future self refers to the actual synthetic game decision. Ask a follow-up question and show a context-aware answer. Distinguish authored local dialogue from optional on-device Ollama and Meta API. Don't cut edited footage to imply a model result that wasn't generated.
+- **01:30–01:55 — The One-Hour Compass.** Privately choose “Write one paragraph.” Ask “What should I do today?” and show the future self refer to that exact choice. Mark “I gave it a try”; reveal that nothing is scored. Lock the vault and show the encrypted save rather than plaintext.
+- **01:55–02:25 — Distinct worlds, shared causality.** Show the two timelines, or one authentic dungeon/mech encounter if Quest input is verified. Spend/borrow fictional hours once and demonstrate no duplication on portal return.
+- **02:25–02:50 — Meta AI proof.** Present one **live, verified Meta-model call** on an entirely fictional profile, and clearly disclose it as optional cloud inference separate from strict local privacy. Do not claim the Meta integration succeeded unless it truly did.
+- **02:50–03:00 — Close.** Show reproducible test status, public repo, license notices, and a simple target audience: interactive storytellers and curious explorers. Invite testers; don't claim clinical outcomes, dopamine/serotonin changes or placement guarantees.
 
-**00:55–01:20** Enter 2046, ask a speculative future self about the choice and show a private letter. Explain this is an authored future possibility, not a prediction.
+## Blockers before submission
 
-**01:20–01:45** Earn memory stars, open the Prime/Echo gate, choose a different invention outcome in the second branch and show distinct story ledgers.
-
-**01:45–02:10** Trade/steal fictional hours at the exchange and show the price, paradox counter, future debt and NPC response. Demonstrate why switching portals cannot farm hours.
-
-**02:10–02:35** Fight the adaptive Warden with strike, magic, guard or words. Switch briefly to the ATLAS-09 mech and block a hostile drone.
-
-**02:35–03:00** Show test results and source; describe real audiences and what is next. **Critical Meta eligibility proof:** only include a live Meta-model clip when verified, and explicitly disclose that optional cloud mode is separate and not fully private. Otherwise do not present this as a qualifying final submission.
-
-Only record the real game, with developer-captured screens, input and measured results. Never use visual concept art as proof of implemented features. The final public repo must state what was built during the event and identify all third-party licensed code.
-
-
-Research-informed optional addition: briefly demonstrate a private Stillwater scene, but do not frame this as clinical care. The organizer explicitly disallows generic AI Mental Health Advisors. Pitch immersive causal storytelling, reliable local memory and original characters. Meta model integration must actually be live and verified; optional cloud transmissions must be disclosed. Real Quest and Meta Ray-Ban Display device tests remain outstanding.
+Real browser build, controller comfort tests on Quest, a successful Meta API call, three-minute screen recording, adult opt-in usability feedback, and public repo/license verification. Run `npm run readiness` for the local checklist. The official organizer guide treats AI mental-health advisors as an anti-project example: pitch interactive storytelling and causally consistent worlds, not medical advice or depression therapy.

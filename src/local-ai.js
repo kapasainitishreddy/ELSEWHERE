@@ -4,7 +4,7 @@
  * is included. The receiving service is loopback-only and does not persist prompts.
  */
 import { CAST } from './characters.js';
-import { isUrgentSafetyMessage } from './future-dialogue.js';
+import { isUrgentSafetyMessage, sanitizeGeneratedDialogue } from './future-dialogue.js';
 
 export const LOCAL_AI_PATH = '/api/local-dialogue';
 export function isLoopbackHostname(hostname) {
@@ -31,8 +31,8 @@ export function localCharacterRequest(state, id, question) {
       dialogue: Array.isArray(memory.dialogue) ? memory.dialogue.slice(-3).map(x=>({
         question: boundedText(x?.question, 180), reply: boundedText(x?.reply, 380)
       })) : [],
-      // Only an explicitly enabled same-device model sees these selected turns.
-      ...(id==='elder'?{recentFutureConversation:(state.conversation||[]).slice(-4).map(x=>({role:x.role==='user'?'user':'assistant',text:boundedText(x.text,240)}))}:{}),
+      // Present only to an explicitly enabled, same-device model. Never shared with Meta.
+      ...(id==='elder'?{recentFutureConversation:(state.conversation||[]).slice(-6).map(x=>({role:x.role==='user'?'user':'assistant',text:boundedText(x.text,240)})),compass:{focus:boundedText(state.compass?.focus,20),step:boundedText(state.compass?.step,160),status:boundedText(state.compass?.status,16)}}:{}),
       fiction: {
         invention: boundedText(state.invention, 20), fate: boundedText(state.fate, 20),
         power: boundedText(state.power, 20), ending: boundedText(state.ending, 20),
@@ -45,6 +45,5 @@ export function localCharacterRequest(state, id, question) {
   };
 }
 export function sanitizeLocalReply(data) {
-  if (!data || typeof data.reply !== 'string' || !data.reply.trim()) return null;
-  return data.reply.trim().slice(0, 600);
+  return sanitizeGeneratedDialogue(data,600);
 }

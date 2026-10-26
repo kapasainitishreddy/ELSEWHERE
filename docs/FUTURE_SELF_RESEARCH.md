@@ -30,3 +30,10 @@ These are **targets** only. No human outcome data has been collected for ELSEWHE
 ## Product and hackathon boundaries
 
 The official Meta Global AI Developer Hackathon guide's sample anti-project list explicitly warns against projects using AI to provide **medical advice**, including AI mental-health advisors. Pitch ELSEWHERE as an interactive storytelling and world-continuity platform with reflective optional experiences. Do not claim treatment, prevention or cure for depression; do not manufacture neurotransmitter measurements. Never seek clinical users as product proof without suitable protections.
+
+
+## Version 0.7 design update: the One-Hour Compass
+
+The Compass is **not** a clinical treatment, depression-monitoring tool, dopamine/serotonin intervention or validated behavior-change protocol. It is a user-controlled piece of fiction-to-life reflection: create, connect, rest or explore, with one tiny chosen action. It supports `planned`, `tried` and deletion, not streaks or performance scores. The action is locally encrypted and kept separate across parallel branches. Optional **on-device** AI can reference a bounded version of it after user opt-in. The **Meta cloud demo does not receive it**.
+
+Research motivates features, but no scientific result has established the effectiveness of ELSEWHERE itself. To claim meaningful benefit would require an appropriately designed study, informed consent, safety monitoring and reliable outcome measurement. No participant wellbeing data has been collected in the project.

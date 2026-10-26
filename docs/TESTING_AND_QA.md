@@ -58,3 +58,19 @@ Seek permission, avoid collecting names or medical details, and offer an immedia
 ## F. Release blocker rules
 
 A failing build, broken Quest input, unavailable Meta API, or visible cloud privacy ambiguity means **not submission-ready**. The official hackathon needs a publicly accessible repo, a verifiable three-minute video, live code/product and demonstrable Meta AI model use. Submit work done during this event separately labeled from earlier code and licensed third-party assets.
+
+
+## G. One-Hour Compass acceptance test (v0.7)
+
+This is an **optional story-to-real-life bridge**, not a wellbeing intervention or health outcome measure.
+
+1. Unlock a test vault, travel to **The Other You**, and find **THE ONE-HOUR COMPASS** below the private conversation.
+2. Choose **Create something**, enter `Write a paragraph` and save. Check that the character answers `What should I do today?` with a reference to that exact step, not a generic reminder or a mandatory routine.
+3. Say `Tell me more`, `Yes`, and `I tried`. Verify follow-up turns are context-aware and no rewards, clocks, scores, or streaks appear.
+4. Choose **I GAVE IT A TRY**. Check the wording invites optional reflection and doesn't grade the outcome. Clear the intention. Verify the note is no longer visible.
+5. Save the note again. Switch to **Echo** (after earning the branch unlock), create a *different* intention, return to Prime, and verify both are independent.
+6. Export a **test** encrypted backup and inspect the ciphertext. The step text must not appear in readable form. Lock/unlock and confirm the note returns. Changing a passphrase should not erase it.
+7. With Meta mode enabled using only a fictional test identity, inspect the single allowlisted request in DevTools: the private Compass note must not be present. The visible mode label must say cloud text leaves the device. Disconnect the network and verify the default authored mode remains functional.
+8. With a deliberately mocked Ollama response promising a depression cure, the endpoint should reject its output and authored dialogue should remain usable. Run `node --test tests/dialogue-guard.test.mjs` for a reproducible mock test.
+
+Run `npm run readiness` for an honest preflight status. It never turns an untested Quest, model endpoint, demo, or human usability session into a fake green check. Record a **real** Quest test and inspect frame rate/comfort before claiming the VR experience is ready.

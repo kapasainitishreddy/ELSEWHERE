@@ -1,7 +1,7 @@
 {
   "name": "syrava-elsewhere",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "description": "ELSEWHERE locally encrypted parallel worlds with optional CC0 scene assets and immersive WebXR",
   "scripts": {
@@ -15,7 +15,8 @@
     "dev:meta": "node scripts/dev.mjs",
     "dev:local-ai": "node scripts/dev-local.mjs",
     "assets:fetch": "node scripts/vendor-kenney.mjs",
-    "assets:check": "node --test tests/assets.test.mjs"
+    "assets:check": "node --test tests/assets.test.mjs",
+    "readiness": "node scripts/readiness.mjs"
   },
   "dependencies": {
     "three": "^0.181.0"

@@ -3,7 +3,7 @@
  * Meta remote conversation is separately opt-in, visibly labeled and off every session.
  */
 import './style.css';
-import {initialState, travel, applyAction, addConversation, dialogueFallback, writeLetter, askCharacter} from './game.js';
+import {initialState, travel, applyAction, addConversation, dialogueFallback, writeLetter, askCharacter, updateCompass} from './game.js';
 import {createExperience} from './worlds.js';
 import {createInterface} from './ui.js';
 import {createSoundscape} from './audio.js';
@@ -152,6 +152,14 @@ function forgetConversation(){
  state={...state,conversation:[],revision:state.revision+1};
  void persist();ui.render(state);toast('Conversation erased from the active encrypted timeline.');
 }
+function compassAction(type,data={}){
+ const result=updateCompass(state,type,data);
+ if(!result.ok){toast(result.error,false);return;}
+ publish(result.state,result.event);
+}
+function compassSave(focus,step){compassAction('plan',{focus,step});}
+function compassTried(){compassAction('tried');}
+function compassClear(){compassAction('clear');}
 function writeFutureLetter(text){state=writeLetter(state,text);void persist();ui.render(state);toast(state.letter?'Private letter encrypted on this device.':'Letter cleared.');}
 function toggleSound(enabled){soundscape.toggle(enabled);soundscape.setScene(state.world);}
 function mobileMove(code,on){experience?.setMove?.(code,on);}
@@ -194,7 +202,7 @@ async function lock(){
 }
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,
- sound:toggleSound,forgetConversation,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
+ sound:toggleSound,forgetConversation,compassSave,compassTried,compassClear,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
  privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk
 });
 function begin(next){

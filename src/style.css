@@ -195,15 +195,28 @@
 @media(max-width:400px){.world-pill{display:none}.privacy-sigil span{display:none}.journal-button .ui-glyph{display:none}}
 @media(prefers-reduced-motion:reduce){.choice:not(:disabled):before{display:none}.combat-reticle{transition:none}}
 
-/* Optional Stillwater narrative. No animations are required to complete a session. */
-.stillwater-launch{border:1px solid #76a99c;background:#153737;color:#d6f8e9;padding:9px 12px;border-radius:5px;font-size:10px;letter-spacing:.04em}.stillwater-shade{z-index:50;background:rgba(2,13,18,.87);backdrop-filter:blur(12px)}.stillwater-dialog{position:relative;max-width:650px;width:min(92vw,650px);max-height:90dvh;overflow:auto;padding:0 23px 22px;border:1px solid #49796e;background:linear-gradient(145deg,#081d21,#152c33);box-shadow:0 30px 110px #0009}.stillwater-hero{height:118px;background:radial-gradient(ellipse at 50% 0%,rgba(120,211,187,.2),transparent 65%);position:relative}.stillwater-moon{position:absolute;top:16px;left:calc(50% - 35px);height:70px;width:70px;border-radius:50%;background:radial-gradient(circle at 35% 32%,#fff9db,#a2d9c5);box-shadow:0 0 44px #79baa088}.stillwater-ripple{position:absolute;top:95px;left:15%;width:70%;border-top:1px solid #75bda8}.stillwater-content{padding:10px 4px}.stillwater-content h2{font:400 37px Georgia,serif;color:#e6f8eb;margin:12px 0}.stillwater-subtitle{color:#abd5c8}.stillwater-body{font:400 18px/1.7 Georgia,serif;color:#e5eee7;max-width:55ch}.stillwater-question{font-size:14px;color:#d8e9df}.stillwater-choices{display:grid;gap:10px;margin:15px 0}.stillwater-choice{display:flex;flex-direction:column;text-align:left;gap:6px;padding:15px;border-radius:8px;border:1px solid #456e64;background:#ffffff0c;color:#f1f5eb}.stillwater-choice:hover,.stillwater-choice:focus-visible{background:#c4f8dd19;border-color:#bcf2d5;outline:2px solid transparent}.stillwater-choice strong{font-size:14px}.stillwater-choice small{color:#a9c8bc;font-size:12px}.stillwater-notice{color:#aac7bb;font:400 11px/1.7 system-ui}.stillwater-footer{border-top:1px solid #325c50;padding-top:14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.stillwater-exit{padding:11px;background:transparent;border:1px solid #719a89;color:#e6f8eb;font-weight:600}.stillwater-footer span{font-size:9px;color:#90b9ad;letter-spacing:.1em}
-@media(max-width:700px){.stillwater-launch{font-size:0;padding:8px}.stillwater-launch::before{content:'✦';font-size:18px}.stillwater-content h2{font-size:29px}}
+/* STILLWATER: immersive quiet choices, with explicit focus and no urgency. */
+.stillwater-launch{border:1px solid rgba(183,233,218,.39);background:rgba(25,56,56,.35);color:#d3f2e8;padding:11px 13px;border-radius:4px;font:700 9px 'Space Grotesk',sans-serif;letter-spacing:.08em;transition:background .2s,border-color .2s;white-space:nowrap}
+.stillwater-launch:hover{background:rgba(49,99,93,.62);border-color:#b4e9dc}
+.stillwater-shade{z-index:50;background:rgba(2,13,18,.88);backdrop-filter:blur(16px)}
+.stillwater-dialog{position:relative;max-width:670px;width:min(92vw,670px);max-height:90dvh;overflow:auto;padding:0 26px 24px;border:1px solid rgba(192,235,214,.38);background:linear-gradient(145deg,#071a21 0%,#0b2027 55%,#182635 100%);box-shadow:0 30px 130px rgba(0,0,0,.55)}
+.stillwater-hero{height:145px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 60% 0%,rgba(148,223,201,.25),transparent 48%),linear-gradient(180deg,rgba(36,86,82,.24),transparent)}
+.stillwater-moon{position:absolute;width:80px;height:80px;border-radius:50%;left:50%;top:20px;margin-left:-40px;background:radial-gradient(circle at 36% 30%,#fff5d7,#a4d9ca 73%);box-shadow:0 0 64px rgba(151,230,205,.45)}
+.stillwater-ripple{position:absolute;border-radius:50%;border:1px solid rgba(148,214,197,.26);width:370px;height:95px;top:103px;left:50%;transform:translateX(-50%) rotateX(57deg)}.ripple-two{width:230px;height:55px;top:122px;opacity:.56}
+.stillwater-stars{position:absolute;top:35px;left:14%;color:#e1f1ca;letter-spacing:25px;opacity:.76}
+.stillwater-dialog .modal-top{margin-top:4px}.stillwater-content{padding:12px 7px 16px}.stillwater-content h2{margin:12px 0 6px;font:400 clamp(30px,5vw,44px)/1.12 'Fraunces',Georgia,serif;color:#e7f7eb;letter-spacing:-.03em}
+.stillwater-subtitle{color:#b1d1cb;font:500 13px/1.5 'DM Sans',sans-serif;margin:0 0 20px}.stillwater-body{font:400 19px/1.75 'Fraunces',Georgia,serif;color:#e5e9e7;max-width:54ch;margin:13px 0 21px}.stillwater-question{font:600 14px/1.4 'Space Grotesk',sans-serif;color:#d6eadf}
+.stillwater-choices{display:grid;gap:10px;margin:14px 0 20px}.stillwater-choice{display:flex;text-align:left;flex-direction:column;gap:6px;padding:17px 18px;background:rgba(157,227,210,.05);border:1px solid rgba(169,230,204,.21);color:#e8f2e9;border-radius:8px;transition:background .15s,border-color .15s,transform .15s}.stillwater-choice:hover{background:rgba(157,227,210,.13);border-color:rgba(169,230,204,.65);transform:translateY(-1px)}.stillwater-choice strong{font:600 15px 'Space Grotesk',sans-serif}.stillwater-choice small{font:400 12px/1.5 'DM Sans',sans-serif;color:#a0c2ba}
+.stillwater-notice{font:400 11px/1.7 'DM Sans',sans-serif;color:#92b1ac;max-width:65ch}.stillwater-footer{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-top:1px solid rgba(173,234,208,.15);padding:17px 0 0}.stillwater-exit{padding:10px 14px;background:transparent;border:1px solid rgba(173,234,208,.32);color:#cfeee2;letter-spacing:.06em;font-weight:700;font-size:10px}.stillwater-footer span{font:600 9px 'Space Grotesk',sans-serif;color:#84b8ad;letter-spacing:.13em}
+.stillwater-dialog button:focus-visible{outline:3px solid #c8ffe9;outline-offset:4px}
+@media(max-width:1080px){.stillwater-launch{font-size:8px;max-width:145px;white-space:normal;line-height:1.3}}
+@media(max-width:640px){.stillwater-dialog{padding:0 14px 18px}.stillwater-hero{height:100px}.stillwater-moon{height:54px;width:54px;margin-left:-27px}.stillwater-content h2{font-size:29px}.stillwater-body{font-size:17px}.stillwater-launch{font-size:0;padding:9px 10px}.stillwater-launch::before{content:'✦';font-size:16px}}
 @media(prefers-reduced-motion:reduce){.stillwater-dialog *{animation:none!important;transition:none!important}}
 
-/* Future You: calm optional prompts, no attention traps. */
-.future-self-context{margin:10px 0 14px;color:rgba(229,236,241,.72);font-size:12px;line-height:1.6;max-width:46ch}
+/* Future You studio: calm conversational affordances, no attention traps. */
+.future-self-context {margin:10px 0 14px;color:rgba(229,236,241,.72);font-size:12px;line-height:1.6;max-width:46ch}
 .future-starter-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:10px 0 14px}
-.future-starter{appearance:none;background:rgba(14,27,34,.65);color:rgba(236,246,250,.9);border:1px solid rgba(135,195,205,.19);border-radius:10px;padding:11px 10px;text-align:left;line-height:1.4;font-size:11px;cursor:pointer;min-height:44px;transition:border-color .16s,background-color .16s}
+.future-starter {appearance:none;background:rgba(14,27,34,.65);color:rgba(236,246,250,.9);border:1px solid rgba(135,195,205,.19);border-radius:10px;padding:11px 10px;text-align:left;line-height:1.4;font-size:11px;cursor:pointer;min-height:44px;transition:border-color .16s,background-color .16s}
 .future-starter span{display:block;letter-spacing:.13em;font-size:9px;color:#a6dce1;padding-bottom:5px}
 .future-starter:hover,.future-starter:focus-visible{border-color:rgba(143,218,225,.75);background:rgba(44,86,97,.38);outline-offset:2px}
 .future-conversation-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0;color:rgba(226,235,239,.6);font-size:10px}
@@ -211,3 +224,17 @@
 .future-conversation-actions button:focus-visible{outline:2px solid #bcf2f1;outline-offset:3px}
 @media(max-width:440px){.future-starter-list{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.future-starter{transition:none}}
+
+/* ONE-HOUR COMPASS: an optional real-life bridge, no timer, scores or streaks. */
+.compass-panel{margin:20px 0 24px;padding:19px;border:1px solid rgba(165,218,216,.24);border-radius:13px;background:linear-gradient(135deg,rgba(29,66,72,.38),rgba(12,30,44,.72));box-shadow:inset 0 1px rgba(238,255,247,.06)}
+.compass-intro h3{font:500 22px/1.2 Georgia,serif;letter-spacing:-.02em;color:#e7f5f2;margin:8px 0 10px}
+.compass-intro p,.compass-footnote{font:400 11px/1.65 system-ui,sans-serif;color:rgba(217,237,232,.75);margin:6px 0 14px}
+.compass-form{display:grid;gap:8px;margin:15px 0}.compass-form label{font:600 10px/1.5 system-ui,sans-serif;letter-spacing:.06em;color:#bee9dc}
+.compass-form select,.compass-form input{width:100%;min-width:0;background:rgba(2,14,19,.65);color:#f1f8f7;border:1px solid rgba(148,210,205,.28);border-radius:8px;font:400 13px/1.4 system-ui,sans-serif;padding:12px}
+.compass-form button,.compass-choices button{cursor:pointer;min-height:44px;padding:10px 12px;border:1px solid rgba(148,210,205,.48);background:rgba(88,148,143,.18);color:#dff4ef;border-radius:8px;font:700 10px/1.5 system-ui,sans-serif;letter-spacing:.05em}
+.compass-form button:hover,.compass-choices button:hover{background:rgba(88,148,143,.35)}
+.compass-current{margin:15px 0 10px;padding:15px;background:rgba(155,205,177,.07);border-left:2px solid #b1dfcf;border-radius:0 8px 8px 0}
+.compass-current span{font:700 9px system-ui,sans-serif;letter-spacing:.11em;color:#bee5d7}.compass-current p{font:500 17px/1.5 Georgia,serif;color:#f0f8f4;overflow-wrap:anywhere;margin:8px 0}
+.compass-current small{font-size:11px;line-height:1.5;color:rgba(214,232,229,.65)}.compass-choices{display:flex;gap:9px;flex-wrap:wrap;margin:9px 0 12px}
+.compass-footnote{margin-bottom:0}.compass-panel :is(button,input,select):focus-visible{outline:2px solid #a9f5e0;outline-offset:3px}
+@media(max-width:600px){.compass-panel{padding:13px}.compass-intro h3{font-size:20px}}

@@ -36,21 +36,37 @@ test('private letters are escaped and cloud and microphone controls are absent',
  assert.ok(!root.innerHTML.includes('id="cloud-consent"'));
  assert.ok(!root.innerHTML.includes('data-cmd="mic"'));
 });
-
-test('optional Stillwater dialogue leaves game state untouched',()=>{
- const {root,ui}=makeUI();const s=go(initialState(),'self');
+test('Stillwater offers four private stories without changing or scoring game state',()=>{
+ const {root,ui}=makeUI();const s=go(initialState(),'self');const snapshot=structuredClone(s);
  ui.render(s);assert.match(root.innerHTML,/data-cmd="stillwater-open"/);
- const old=structuredClone(s);ui.openStillwater();
+ ui.openStillwater();
  assert.match(root.innerHTML,/The Quiet Between Worlds/);
  assert.match(root.innerHTML,/data-stillwater="garden"/);
- assert.deepEqual(ui.getState(),old);
- ui.resetEphemeral();ui.render(s);
- assert.ok(!root.innerHTML.includes('stillwater-shade'));
+ assert.match(root.innerHTML,/data-stillwater="mirror"/);
+ assert.match(root.innerHTML,/data-stillwater="kindness"/);
+ assert.match(root.innerHTML,/data-stillwater="agency"/);
+ assert.match(root.innerHTML,/No mood scores, biometric measurements or personal answers/);
+ assert.deepEqual(ui.getState(),snapshot);
 });
-test('glasses companion forbids network APIs and sensor use',async()=>{
- const {readFile}=await import('node:fs/promises');
- const html=await readFile(new URL('../public/glasses/index.html',import.meta.url),'utf8');
- const js=await readFile(new URL('../public/glasses/glasses.js',import.meta.url),'utf8');
+test('Pocket companion forbids remote connections, sensors and persistent personal data',async()=>{
+ const {readFile}=await import('node:fs/promises');const base=new URL('../public/glasses/',import.meta.url);
+ const html=await readFile(new URL('index.html',base),'utf8');const js=await readFile(new URL('glasses.js',base),'utf8');
  assert.match(html,/connect-src 'none'/);
- assert.doesNotMatch(js,/\b(fetch|localStorage|sessionStorage|getUserMedia|XMLHttpRequest)\s*\(/);
+ assert.doesNotMatch(js,/\b(fetch|localStorage|sessionStorage|XMLHttpRequest|getUserMedia|indexedDB)\s*\(/);
+ assert.doesNotMatch(js,/https?:\/\//);
+});
+
+test('One-Hour Compass escapes private intentions and exposes optional reversible controls',()=>{
+ const {root,ui}=makeUI();const s=go(initialState(),'self');
+ s.compass={focus:'create',step:'<img src=x onerror=alert(1)>',status:'planned'};
+ ui.render(s);
+ assert.ok(!root.innerHTML.includes('<img src=x onerror=alert(1)>'));
+ assert.match(root.innerHTML,/&lt;img src=x onerror=alert\(1\)&gt;/);
+ assert.match(root.innerHTML,/id="compass-form"/);
+ assert.match(root.innerHTML,/data-cmd="compass-tried"/);
+ assert.match(root.innerHTML,/data-cmd="compass-clear"/);
+ assert.match(root.innerHTML,/No streaks, no scores/);
+ const cloudRoot={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(){},querySelector(){return null}};
+ const cloudUI=createInterface(cloudRoot,{cloudEnabled:()=>true});cloudUI.render(s);
+ assert.match(cloudRoot.innerHTML,/META CLOUD · TEXT LEAVES DEVICE/);
 });

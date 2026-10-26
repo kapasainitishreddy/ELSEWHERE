@@ -2,6 +2,7 @@
  * Optional same-origin Meta Model API bridge for future-self conversations.
  * Never expose MODEL_API_KEY to frontend code. No request body is logged/stored.
  */
+import { sanitizeGeneratedDialogue } from './src/future-dialogue.js';
 import { createServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -54,8 +55,9 @@ export const server=createServer(async (req,res)=>{
     }finally{clearTimeout(timeout);}
     if(!upstream.ok)return send(res,502,{error:'Model temporarily unavailable'});
     const response=await upstream.json();const reply=response?.choices?.[0]?.message?.content;
-    if(typeof reply!=='string'||!reply.trim())return send(res,502,{error:'No model output'});
-    return send(res,200,{reply:reply.trim().slice(0,1200),model:MODEL});
+    const safeReply=sanitizeGeneratedDialogue(reply,600);
+    if(!safeReply)return send(res,502,{error:'Model output failed safety checks'});
+    return send(res,200,{reply:safeReply,model:MODEL});
   }catch{return send(res,502,{error:'Dialogue request failed. Offline fallback available.'});}
 });
 const launchedDirectly=process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url);

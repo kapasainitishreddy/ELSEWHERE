@@ -1,4 +1,4 @@
-# ELSEWHERE · Chronal Polish 0.4
+# ELSEWHERE · Future Compass 0.7
 
 > One life is never enough.
 
@@ -6,7 +6,18 @@
 
 This is an original experimental game and potential **Meta Global AI Developer Hackathon 2026 Startup-track** submission. It is **not** yet a polished shipped VR game, an MMO, or a verified Meta AI submission. In-world hour balances, fame, wealth and life paths are fictional, never real predictions or financial assets.
 
-## What's new in Chronal Polish 0.4
+## Future Compass 0.7: a life beyond the headset
+
+The imagined older self now has a **One-Hour Compass**: in the Future Self room, you may privately choose one small real-world act of creation, connection, rest or curiosity. There are no streaks, daily alerts, scores, mandatory answers or rewards for marking a step tried. The character can refer to the selected step and earlier conversation in subsequent turns. Clearing it deletes the active vault's note (not old exported backups). Prime and Echo hold separate intentions.
+
+- By default, dialogue is **authored, local, and offline**. Optional Ollama on-device conversations receive short, bounded current-character context only after you enable them. Generated replies containing certain medical promises, isolation language or guaranteed predictions are rejected in favor of the authored fallback. A simple filter cannot guarantee safety across all model outputs.
+- Optional Meta API use remains a separate, **explicitly non-private** hackathon demonstration. It does **not** receive Compass notes, private letters, NPC histories or other branch data. The privacy indicator now changes during a cloud session.
+- No claim of dopamine/serotonin manipulation, depression treatment, medical benefit, or real future prediction is made. This is a fictional, reflective experience, **not therapy**.
+- New local check command: `npm run readiness` reports source/test results and identifies headset, Meta API, and browser validations that still require manual evidence. **87 source-level tests passed in the development environment for this release**, but a complete browser build and physical headset testing remain unverified.
+
+See [Future Self research](docs/FUTURE_SELF_RESEARCH.md), [testing runbook](docs/TESTING_AND_QA.md), and [hackathon scorecard](docs/HACKATHON_SCORECARD.md).
+
+## Earlier Chronal Polish 0.4 work
 
 - **World atmosphere:** GPU-friendly original sky gradients, drifting bioluminescent particles, floating debris and portal coronae are now active in all five environments. Particle budgets automatically reduce on small screens and in VR. Reduced-motion players get static alternatives.
 - **Interface assets:** 12 selected **Lucide open-source ISC** icon SVGs are stored in the repository and used by the world selector, encrypted-vault indicator, controls and journal. No CDN is contacted.
@@ -35,6 +46,7 @@ npm run dev
 npm run test             # simulation + vault + privacy + controls
 npm run build            # production Vite build
 npm run check            # tests then production build
+npm run readiness        # automated checks + explicit submission blockers
 ```
 
 `npm run dev` starts the local Vite server only. Personal gameplay never needs a cloud API. On the first visit, create a passphrase-protected local vault. There is **no passphrase recovery**. Do not lose it. Back up using the encrypted export in My Timeline.
@@ -124,10 +136,18 @@ The Node test suite covers time trade invariants, alternate branch isolation, NP
 
 See [Architecture](docs/ARCHITECTURE.md), [Demo script](docs/DEMO_3MIN.md), [QA](docs/QA.md) and [Hackathon submission notes](docs/HACKATHON.md). **No GitHub Actions workflows are used.**
 
+## Research-informed immersive storytelling (Stillwater)
 
-## The Quiet Between Worlds · research-informed optional story
-A new voluntary, nonclinical experience includes a virtual garden, imagined future-self dialogue, kind roleplay and meaningful small choices. Open it from the header or approach the Stillwater terrace in the future-self world. The calm story choices are ephemeral, never saved, scored or sent to AI. No dopamine/serotonin claims or health advice. The independent /glasses/ Pocket page offers a glanceable concept for Meta Ray-Ban Display; it has not been tested on actual glasses and it does not sync private game data. See docs/RESEARCH_AND_SAFETY.md.
+**The Quiet Between Worlds** is an optional, nonclinical reflection experience inspired by peer-reviewed research on virtual nature, future-self continuity, and self-compassion. It contains four short original stories accessible with the **✦ QUIET BETWEEN WORLDS** button; a luminous garden terrace appears near the future-self apartment. The narrative choices are deliberately **ephemeral**: never saved, scored, shared with a model, or counted as time-currency. There are no streaks, dopamine meters, serotonin claims, mood classification, diagnoses or health advice. It is not therapy and does not predict your future.
 
-## Future Self testing and research (v0.6)
+**Meta AI glasses companion concept**: open `/glasses/` on a supported browser for a standalone, camera-free, microphone-free, tracking-free collection of short fictional reflections. It does not sync with the encrypted VR vault or run immersive VR. A Meta Ray-Ban Display device test is still required; displayless AI glasses cannot run a visual VR world. Full research and limitations: [`docs/RESEARCH_AND_SAFETY.md`](docs/RESEARCH_AND_SAFETY.md).
 
-This version adds the missing loopback-only Ollama bridge, a memory-aware offline future-self conversation, optional private dialogue starters, and a clear-conversation action. It is fictional, not a clinical intervention or prediction. See [testing and Quest checklist](docs/TESTING_AND_QA.md), [hackathon scorecard](docs/HACKATHON_SCORECARD.md), and [research and safeguards](docs/FUTURE_SELF_RESEARCH.md). For optional local generative conversations install Ollama, run `ollama pull qwen2.5:1.5b`, then run `npm run dev:local-ai`. Cloud Meta remains independently opt-in and nonprivate.
+For the **Meta Startup hackathon**, the primary submission remains privacy-first, causally connected interactive worlds. Do not claim that an optional research-inspired scene is a medical intervention; AI mental-health advisors appear on the organizer's anti-project list. Cloud Meta-model use is strictly separate and opt-in and the actual model integration must be demonstrated before submitting.
+
+## Test and verify the Future Self update
+
+The on-device roleplay bridge now includes the previously missing `local-server.mjs` and a memory-aware authored Future Self that responds to fictional world choices without requiring any network connection. There are optional text conversation starters, a **CLEAR PRIVATE CONVERSATION** action, and a private **One-Hour Compass** that records a small voluntary act without a score or streak. This is fiction and reflection, never a medical intervention, digital therapist, or prediction.
+
+See [TESTING_AND_QA.md](docs/TESTING_AND_QA.md) for step-by-step desktop and Meta Quest testing; [HACKATHON_SCORECARD.md](docs/HACKATHON_SCORECARD.md) for the official judging rubric and target evidence; and [FUTURE_SELF_RESEARCH.md](docs/FUTURE_SELF_RESEARCH.md) for the relevant research and limitations.
+
+To opt into local language-model roleplay on your computer, install [Ollama](https://ollama.com/) and download a compatible small model, e.g. `ollama pull qwen2.5:1.5b`; start Ollama and run `npm run dev:local-ai`. The model and its logs/process remain under your control, subject to the local computer's security. This is *not* the Meta API. If you enable the separate Meta cloud demo, selected typed questions and fictional context leave your device and no longer qualify as completely local.

@@ -41,3 +41,10 @@ Meta's [2025 LlamaCon hackathon winner announcement](https://ai.meta.com/blog/ll
 - [ ] Claims: no therapy, no depression cure, no dopamine/serotonin measurements, no real future prediction.
 
 No prize or placement can be promised. The strongest path is one polished, reproducible experience with a compelling causal-world demonstration.
+
+
+## Version 0.7 demo hypothesis
+
+The **best three-minute proof** is no longer a tour of five incomplete worlds. Show a specific authored/AI character remembering a fictional choice, a visible 1889-to-2087 causal change, and a genuine continuity question to the future self. Show the optional One-Hour Compass once: it demonstrates a **user-controlled reason to return to real life**, not a retention loop. The Meta AI integration must be demonstrated separately on a fully synthetic profile with the cloud/session disclosure visible. The 87 automated tests cannot substitute for a built Vite app, Quest QA, natural-language response assessment by users, or a successful verified Meta request.
+
+Run `npm run readiness` and document each remaining physical/live evaluation before submitting. Do not fabricate a success metric or call an unverified tool working.
