@@ -69,7 +69,7 @@ export function speakAs(state,id){
 }
 export function worldDossier(state){
  const ids=Object.keys(CAST).filter(id=>CAST[id].world===state.world);
- return ids.map(id=>({id,name:CAST[id].name,role:CAST[id].role,goal:CAST[id].goal,mood:state.cast?.[id]?.mood??'watchful',affinity:state.cast?.[id]?.affinity??0,memory:state.cast?.[id]?.memories?.slice(-1)[0]||'',interactions:state.cast?.[id]?.interactions||0}));
+ return ids.map(id=>({id,name:CAST[id].name,role:CAST[id].role,goal:CAST[id].goal,mood:state.cast?.[id]?.mood??'watchful',affinity:state.cast?.[id]?.affinity??0,memory:state.cast?.[id]?.memories?.slice(-1)[0]||'',interactions:state.cast?.[id]?.interactions||0,agendaStage:state.society?.stages?.[id]||0}));
 }
 
 /** Local, authored free-text roleplay with per-character conversation memory.

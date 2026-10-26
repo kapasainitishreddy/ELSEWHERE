@@ -2,6 +2,7 @@ import { initialChronal, sanitizeChronal, timeOptions, performTimeTrade } from '
 import { initialCast, sanitizeCast, rememberWorldEvent, speakAs, CAST, roleplayReply } from './characters.js';
 import { initialParallel, branchOptions, forkIntoEcho, switchBranch, branchSnapshot } from './branches.js';
 import { initialWardenBattle, sanitizeWardenBattle, wardenOptions, resolveWardenTurn } from './warden.js';
+import { initialSociety, sanitizeSociety, societyOptions, performSocietyQuest, advanceSociety } from './society.js';
 
 /**
  * ELSEWHERE's deterministic causal-world state machine.
@@ -49,7 +50,7 @@ export function initialState() {
     mechBattle: DEFAULT_BATTLE(), encounters: {future:0,past:0,dungeon:0,mech:0}, lastEncounter: null,
     letter: '', ending: null, worldVisits: { future:1, self:0, past:0, dungeon:0, mech:0 },
     chronal: initialChronal(), stars: 1, cast: initialCast(), parallel: initialParallel(),
-    wardenBattle: initialWardenBattle()
+    wardenBattle: initialWardenBattle(), society: initialSociety()
   };
 }
 
@@ -136,7 +137,7 @@ export function worldOptions(s) {
   } })();
   const time=timeOptions(s), branch=(s.world==='future'||s.world==='self')?branchOptions(s):[];
   const combat=s.world==='dungeon'?wardenOptions(s).filter(o=>o.id!=='face-warden'):[];
-  return [...options,...combat,...time,...branch];
+  return [...options,...combat,...time,...branch,...societyOptions(s)];
 }
 
 export function futureProfile(s) {
@@ -235,6 +236,9 @@ function write(s, actionId, title, detail) {
   s.stars = clamp(Number.isFinite(s.stars)?s.stars:0,0,9999);
   s.chronal.hours = clamp(s.chronal.hours,0,9999);
   if(actionId)rememberWorldEvent(s,actionId,title);
+  // NPC lives progress only from distinct meaningful story choices, never from
+  // teleport farming, browser timers, or repeatedly asking the same question.
+  if(actionId)advanceSociety(s,actionId);
   if (actionId && !actionId.startsWith('time-repay-')) s.flags[actionId] = true;
   return s;
 }
@@ -254,7 +258,10 @@ export function applyAction(state, id) {
   if (id.startsWith('go-')) return travel(state, id.slice(3));
   const s = copy(state);
   let event = { title: option.title, detail: option.detail };
-  if(id.startsWith('time-')){
+  if(id.startsWith('society-')){
+    const changed=performSocietyQuest(s,id);if(!changed)return {ok:false,state,error:'This NPC mission is no longer available.'};
+    event=changed;
+  }else if(id.startsWith('time-')){
     const changed=performTimeTrade(s,id);if(!changed)return {ok:false,state,error:'The time exchange has rejected this transaction.'};
     event=changed;
   } else if(id==='fork-parallel'){
@@ -416,6 +423,7 @@ export function loadState(storage) {
     s.chronal=sanitizeChronal(value.chronal);
     s.stars=clamp(Number.isInteger(value.stars)?value.stars:1,0,9999);
     s.cast=sanitizeCast(value.cast);
+    s.society=sanitizeSociety(value.society);
     s.wardenBattle=sanitizeWardenBattle(value.wardenBattle);
     if(s.dungeonOutcome)s.wardenBattle.active=false;
     s.history = Array.isArray(value.history) ? value.history.slice(0,32).filter(x => x && WORLDS[x.world] && typeof x.title === 'string').map(x=>({at:Number.isFinite(x.at)?x.at:1, world:x.world, title:x.title.slice(0,120),detail:String(x.detail||'').slice(0,300)})) : s.history;

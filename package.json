@@ -1,7 +1,7 @@
 {
   "name": "syrava-elsewhere",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "description": "ELSEWHERE private worlds, local encrypted save, parallel portals and time-currency roleplay",
   "scripts": {

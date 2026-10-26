@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { WORLDS, INVENTIONS, cityRipple, worldOptions } from './game.js';
 import { addScenery, collisionRects } from './scenery.js';
+import { stickMovement, buttonEdges, gamepadCommand } from './controls.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
 const palettes = {
@@ -305,6 +306,34 @@ function buildMech(g,state,animated){
  }
  return titan;
 }
+/** Aimable enemy geometry: controller-ray and mouse users can fight in the world.
+ * Hit validation, damage, heat and adaptive Warden rules stay in applyAction().
+ */
+function buildCombatTargets(g,state,animated,targets){
+ if(state.world==='mech' && state.mechBattle?.active && state.mechBattle.enemies>0){
+  for(let i=0;i<state.mechBattle.enemies;i++){
+   const group=new THREE.Group();g.add(group);group.position.set((i-(state.mechBattle.enemies-1)/2)*4.4,5.1,-17.6);
+   const body=orb(group,.58,emissive(0xff6578,1.8),0,0,0);
+   box(group,1.75,.2,.42,mat(0x60717a,.8,.27),0,0,0);
+   for(let d of [-1,1]){
+    const blade=ring(group,.55,.035,emissive(0xffbd75,1.2),d*.84,0,0);blade.rotation.y=Math.PI/2;
+    animated.push(t=>{blade.rotation.z=t*(d<0?2:-2);});
+   }
+   const zone=mesh(group,new THREE.SphereGeometry(.87,14,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),0,0,.15);
+   zone.userData.action={type:'choice',id:'fire-pulse'};targets.push(zone);
+   const sight=ring(group,1.03,.035,emissive(0xff7b8e,1.5),0,0,.12);
+   animated.push(t=>{group.position.y=5.1+Math.sin(t*1.2+i)*.35;group.position.x+=(Math.sin(t*.7+i)*.001);sight.rotation.z=t*.3;body.material.emissiveIntensity=1.5+Math.sin(t*3+i)*.4;});
+  }
+  sign(g,'TARGET THE DRONES','AIM / CLICK / VR TRIGGER',0,10,-17,5);
+ }
+ if(state.world==='dungeon'&&state.wardenBattle?.active){
+  const hit=mesh(g,new THREE.SphereGeometry(1.35,20,12),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),0,4,-10);
+  hit.userData.action={type:'choice',id:'warden-strike'};targets.push(hit);
+  const ring1=ring(g,1.6,.045,emissive(0xf2a1c7,1.7),0,4,-9.9);
+  animated.push(t=>{ring1.rotation.z=Math.sin(t)*.22;ring1.scale.setScalar(1+Math.sin(t*2)*.07);});
+  sign(g,'THE WARDEN LEARNS',`VITALITY ${state.wardenBattle.wardenHp}/100`,0,9,-13,4.8);
+ }
+}
 function makePlayer(root){
  const group=new THREE.Group();root.add(group);
  const coat=mat(0x8b9ba8,.65,.28);const highlight=emissive(0xe5fbff,.5);
@@ -325,15 +354,32 @@ export function createExperience(container, onWorld, onAction){
  container.append(renderer.domElement);
  const rig=new THREE.Group();scene.add(rig);const camera=new THREE.PerspectiveCamera(63,1,.08,200);rig.add(camera);camera.position.set(0,5,17);
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.055;controls.enablePan=false;controls.maxPolarAngle=Math.PI*.47;controls.minDistance=5;controls.maxDistance=28;controls.target.set(0,2,0);
- const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],player=null,titan=null,moving=false;
+ const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],player=null,titan=null,moving=false;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  const hover=document.querySelector('#interaction-hint');let pointerDown=null;
  const clock=new THREE.Clock();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();
+ let previousGamepadButtons=new Set(),gamepadAxes={x:0,z:0};
+ function desktopGamepad(){
+   if(renderer.xr.isPresenting || !state || !document.querySelector('#vault-gate')?.hidden || document.querySelector('.modal-shade')){
+     previousGamepadButtons.clear();gamepadAxes={x:0,z:0};return;
+   }
+   const pad=Array.from(navigator.getGamepads?.()||[]).find(p=>p?.connected);
+   if(!pad){previousGamepadButtons.clear();gamepadAxes={x:0,z:0};return;}
+   gamepadAxes=stickMovement(pad);
+   const {current,edges}=buttonEdges(pad,previousGamepadButtons);
+   previousGamepadButtons=current;
+   for(const button of edges){
+     const combat=state.world==='mech'?state.mechBattle:state.world==='dungeon'?state.wardenBattle:null;
+     const command=gamepadCommand(state.world,combat,button);
+     if(command==='interact')interact();else if(command)onAction(command);
+   }
+ }
  const vrButton=VRButton.createButton(renderer);
  vrButton.id='enter-vr-button';vrButton.setAttribute('aria-label','Enter VR headset mode');container.append(vrButton);
  const vrControllers=[renderer.xr.getController(0),renderer.xr.getController(1)];
  for(const vrController of vrControllers){
    scene.add(vrController);
+   vrController.addEventListener('connected',event=>{vrController.userData.handedness=event.data?.handedness;});
    const gripLight=new THREE.Group();vrController.add(gripLight);
    orb(gripLight,.065,emissive(0xb1faff,.9),0,0,0);
    ring(gripLight,.11,.009,emissive(0x90dbf0,.9),0,0,-.03);
@@ -342,10 +388,10 @@ export function createExperience(container, onWorld, onAction){
    vrController.addEventListener('select',()=>{
      const origin=new THREE.Vector3(),quat=new THREE.Quaternion();vrController.getWorldPosition(origin);vrController.getWorldQuaternion(quat);
      const dir=new THREE.Vector3(0,0,-1).applyQuaternion(quat);const action=intersect(targets,origin,dir);
-     if(action){trigger(action);return;}
+     if(action){trigger(action);pulseXR(vrController);return;}
      // In encounters the primary trigger means attack, never accidental teleport.
-     if(state?.world==='mech'&&state.mechBattle.active&&state.mechBattle.enemies>0){onAction('fire-pulse');return;}
-     if(state?.world==='dungeon'&&state.wardenBattle?.active){onAction('warden-strike');return;}
+     if(state?.world==='mech'&&state.mechBattle.active&&state.mechBattle.enemies>0){onAction('fire-pulse');pulseXR(vrController);return;}
+     if(state?.world==='dungeon'&&state.wardenBattle?.active){onAction('warden-strike');pulseXR(vrController);return;}
      // Comfortable controller teleportation to a walkable floor (rather than forced smooth movement).
      const point=new THREE.Vector3();const floor=new THREE.Plane(new THREE.Vector3(0,1,0),0);
      const rayToFloor=new THREE.Ray(origin,dir);
@@ -354,7 +400,7 @@ export function createExperience(container, onWorld, onAction){
        // XR locomotion shares the desktop collision proxies. Do not drop a player inside a wall.
        const blocked=collisionRects(state.world).some(([x0,x1,z0,z1])=>x>=x0-.5&&x<=x1+.5&&z>=z0-.5&&z<=z1+.5);
        if(!blocked && Number.isFinite(x) && Number.isFinite(z)){
-         rig.position.x=x;rig.position.z=z;
+         rig.position.x=x;rig.position.z=z;pulseXR(vrController,35);
        }
      }
    });
@@ -362,6 +408,12 @@ export function createExperience(container, onWorld, onAction){
      if(state?.world==='mech'&&state.mechBattle.active)onAction('raise-shield');
      else if(state?.world==='dungeon'&&state.wardenBattle?.active)onAction('warden-guard');
    });
+ }
+ function pulseXR(controller,duration=65){
+   // Supported controller actuators only. No phone vibration and no sound required.
+   const pad=[...(renderer.xr.getSession()?.inputSources||[])].find(s=>s.handedness===controller.userData.handedness)?.gamepad;
+   const actuator=pad?.vibrationActuator || pad?.hapticActuators?.[0];
+   try{const effect=actuator?.playEffect?.('dual-rumble',{duration,strongMagnitude:.15,weakMagnitude:.23}) ?? actuator?.pulse?.(.23,duration);effect?.catch?.(()=>{});}catch{}
  }
  const watchCanvas=document.createElement('canvas');watchCanvas.width=512;watchCanvas.height=160;
  const watchTexture=new THREE.CanvasTexture(watchCanvas);watchTexture.colorSpace=THREE.SRGBColorSpace;
@@ -419,7 +471,7 @@ export function createExperience(container, onWorld, onAction){
    });
    world=new THREE.Group();scene.add(world);scene.background=new THREE.Color(palettes[state.world].bg);
    scene.fog=new THREE.FogExp2(palettes[state.world].fog,state.world==='self'?.012:.008);
-   targets=[];beacons=[];animated=[];titan=null;
+   targets=[];beacons=[];portalLocations=[];animated=[];titan=null;
    const p=palettes[state.world];world.add(new THREE.HemisphereLight(p.light,0x080d17,state.world==='self'?1.4:1.75));
    const sun=new THREE.DirectionalLight(p.light,2.8);sun.position.set(5,17,5);world.add(sun);
    ground(world,p);stars(world,state.world==='dungeon'?0xd5bcff:0xb1dce8,state.world==='self'?180:280);
@@ -429,12 +481,14 @@ export function createExperience(container, onWorld, onAction){
    else if(state.world==='dungeon')buildDungeon(world,state,animated);
    else if(state.world==='mech')titan=buildMech(world,state,animated);
    addScenery(world,state,animated);
+   buildCombatTargets(world,state,animated,targets);
    buildChronalOrrey(world,state,animated);
    buildLivingCharacters(world,state,targets,animated);
    // Three interactive wormholes, placed at each world's far edge.
    const all=Object.keys(WORLDS).filter(w=>w!==state.world);
    for(let i=0;i<all.length;i++){
      const x=(i-1.5)*5.7;buildPortal(world,all[i],x,-20.5,targets,animated);
+     portalLocations.push({x,z:-20.5,world:all[i]});
    }
    buildParallelGate(world,state,targets,animated);
    const active=worldOptions(state).filter(o=>!o.disabled && !o.id.startsWith('go-'));
@@ -458,11 +512,11 @@ export function createExperience(container, onWorld, onAction){
  function move(dt){
    if(!state || renderer.xr.isPresenting)return;
    const speed=(pressed.has('ShiftLeft')?10:5.5)*dt;
-   const mx=(pressed.has('KeyD')||pressed.has('ArrowRight')?1:0)-(pressed.has('KeyA')||pressed.has('ArrowLeft')?1:0);
-   const mz=(pressed.has('KeyS')||pressed.has('ArrowDown')?1:0)-(pressed.has('KeyW')||pressed.has('ArrowUp')?1:0);
+   const mx=(pressed.has('KeyD')||pressed.has('ArrowRight')?1:0)-(pressed.has('KeyA')||pressed.has('ArrowLeft')?1:0)+gamepadAxes.x;
+   const mz=(pressed.has('KeyS')||pressed.has('ArrowDown')?1:0)-(pressed.has('KeyW')||pressed.has('ArrowUp')?1:0)+gamepadAxes.z;
    moving=Boolean(mx||mz);
    if(!moving)return;
-   const norm=Math.hypot(mx,mz)||1;const dx=mx/norm*speed,dz=mz/norm*speed;
+   const norm=Math.max(1,Math.hypot(mx,mz));const dx=mx/norm*speed,dz=mz/norm*speed;
    const collisions=collisionRects(state.world);
    const tryX=THREE.MathUtils.clamp(playerPos.x+dx,-22,22),tryZ=THREE.MathUtils.clamp(playerPos.z+dz,-22,18);
    const blocked=(x,z)=>!(state.world==='mech'&&state.mechDeployed)&&collisions.some(([a,b,c,d])=>x>a-.45&&x<b+.45&&z>c-.45&&z<d+.45);
@@ -474,7 +528,7 @@ export function createExperience(container, onWorld, onAction){
    const d=target.clone().sub(controls.target);controls.target.add(d);camera.position.add(d);
  }
  let snapReady=true;
- function tick(){const dt=Math.min(clock.getDelta(),.05);const t=reduceMotion?0:clock.elapsedTime;move(dt);
+ function tick(){const dt=Math.min(clock.getDelta(),.05);const t=reduceMotion?0:clock.elapsedTime;desktopGamepad();move(dt);
    if(renderer.xr.isPresenting){
      // Optional snap turn with right thumbstick. No forced smooth locomotion.
      const source=[...(renderer.xr.getSession()?.inputSources||[])].find(s=>s.handedness==='right'&&s.gamepad);
@@ -492,9 +546,12 @@ export function createExperience(container, onWorld, onAction){
  window.addEventListener('resize',resize);
  resize();
  function interact(){
-   if(!state||!beacons.length)return;
-   const closest=beacons.map(b=>({b,d:b.position.distanceTo(playerPos)})).sort((a,b)=>a.d-b.d)[0];
-   if(closest && closest.d<6)onAction(closest.b.action);
+   if(!state)return;
+   const choices=[...beacons.map(b=>({d:b.position.distanceTo(playerPos),type:'action',id:b.action})),
+      ...portalLocations.map(p=>({d:Math.hypot(p.x-playerPos.x,p.z-playerPos.z),type:'world',id:p.world}))];
+   const closest=choices.sort((a,b)=>a.d-b.d)[0];
+   if(!closest||closest.d>4.4)return;
+   if(closest.type==='world')onWorld(closest.id);else onAction(closest.id);
  }
  function effect(current,event){
    if(!event||!world)return;

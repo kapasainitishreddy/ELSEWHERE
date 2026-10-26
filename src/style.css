@@ -152,3 +152,10 @@
 .npc-talk small{color:#8ca6ae;display:block;font-size:10px;line-height:1.5}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:540px){.npc-talk .chat-form>*{flex:1}.npc-talk .chat-form input{flex-basis:100%}}
+/* Parallel societies carry on in small authored chapters while you travel. */
+.society-feed{margin:24px 0 14px;padding:15px;border:1px solid rgba(151,215,223,.26);background:rgba(21,41,47,.4)}
+.society-feed>strong{display:block;color:#a7f3e8;font:700 10px system-ui;letter-spacing:.17em;margin-bottom:11px}
+.society-feed-item{border-top:1px solid rgba(146,201,212,.17);padding:11px 1px}
+.society-feed-item span{display:block;font:700 9px system-ui;color:#a0b9c4;letter-spacing:.13em;margin-bottom:5px}
+.society-feed-item b{color:#e6f4f1;font:500 14px Georgia,serif}
+.society-feed-item p,.society-feed>p{font:12px/1.65 system-ui;color:#b8cdd2;margin:6px 0 0}

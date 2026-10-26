@@ -276,6 +276,91 @@ Later, in the apartment, your older self showed you the damaged photograph. The 
 Through the window you saw two parallel doors, Prime and Echo. Both led somewhere possible. Neither could make the past innocent.
 
 You carried the receipt in your pocket. Its ink said PAID. Your hands knew a better word: BEGUN.`},
+ {id:'night-school',title:'The School That Stayed Open',era:'1889 · The First Spark',world:'past',open:s=>!!s.flags['society-apprentices'],body:`The clocktower had never had a classroom. It had a room where the gears were kept and a room where the owners counted wages. Ada took the second room, unscrewed the bronze plaque from the door, and nailed a blackboard over the empty space.
+
+The first lesson was not about machines. It was about consent. A young apprentice named Nell had spent her childhood helping the factory's timekeeper. She could tell the difference between a hurried clock and a dishonest one just by listening. She could not read the contract that had been used to take her mother's Sundays.
+
+“You can teach her the numbers,” you told Ada.
+
+“I can teach her to ask who wrote them.”
+
+You opened your ledger. Four stored hours waited there. You could spend them on a return train, on a small purchase in the future, or on a classroom that would exist only if someone stayed to teach. The Exchange would happily buy them. The apprentices could only ask.
+
+You placed the hours on Ada's desk. They became four small shadows moving backward across the wood. No one cheered. Nell fetched a piece of chalk. Another child opened a window because the room was too hot.
+
+At noon, Elias Vey's clerk arrived to lock the building. He had a document proving that its next hundred years had already been sold. Ada read the name at the bottom and laid the page on the table.
+
+“The paper says you own the room,” she told him. “It doesn't say you own what they learn in it.”
+
+Nell wrote the first equation on the blackboard, slowly enough that the clerk had to watch. A wrench lay beside her. It would be years before she designed her first machine, and longer before the future recognized the name on it. For now, all she had was a room, a teacher, and an afternoon that belonged to her.`},
+ {id:'archive',title:'The Archive of People Who Never Arrived',era:'2087 · Neo Elysium',world:'future',open:s=>!!s.flags['society-archive'],body:`Iris Vale brought you to a narrow building beneath the elevated trains. It had no holograms, no advertisements, and no entrance fee. Someone had painted OPEN DURING EVERY CENTURY above its door. The words were crooked.
+
+Inside, the shelves held photographs of people who had disappeared from official history when someone changed an earlier year. Iris had learned to collect the negative spaces. A street in which a house had never been built. A wedding invitation addressed to a person who had never been born. A note from a conductor explaining that a passenger missed a train seven hours after the timetable said it departed.
+
+“You said the market was only selling time,” you told her.
+
+“That is what a market says when it doesn't want to sell responsibility.”
+
+You could have sold those two hours to pay for a view above the city. Instead, you helped carry the boxes up from the basement. Some contained invoices and contracts; others contained small domestic things: a shopping list, a chipped cup, a child's drawing of a train with too many windows.
+
+Iris handed you a receipt for the work. It showed no amount of money, only the words TWO HOURS RETURNED TO THE PUBLIC RECORD.
+
+You asked if the archive would reveal your private letter to your older self. Iris shook her head. “I archive what happened to the world,” she said. “Not what someone whispered in a room they thought was theirs.”
+
+When you left, the train crossed overhead and a dozen strangers walked into the reading room. A girl carrying an old photograph asked Iris whether the person beside her mother had really existed. Iris pulled up a chair. For once, she did not begin with an answer. She began by listening.`},
+ {id:'witness-oath',title:'A Crown of Ordinary Names',era:'The Hollow Crown',world:'dungeon',open:s=>!!s.flags['society-oath'],body:`The Witness met you beneath the throne, where the stones were engraved with numbers. You had mistaken them for the tally of defeated enemies. They were not victories. They were hours taken from people who could not bargain.
+
+A baker's hour. A sailor's. A child on the afternoon of a birthday. A mother waiting at a station. When you pressed a hand against the wall, the numbers became names. Some were worn away by centuries of rain that had never reached the underground chamber.
+
+The Witness asked you to remain until the last name had been read aloud. It would take three hours. You had come to find a power, and three hours seemed an absurd price for a silence nobody would notice.
+
+“Why not take them back by force?” you asked.
+
+“Because the sword is how they were taken in the first place.”
+
+You sat on the steps. The Witness began. Each name made the chamber a little less cold. Once you thought you heard the Warden move beyond the sealed gate, but no blade appeared. There was only the slow rustle of paper and the creak of a chair carrying its weight.
+
+You offered the hours without a contract. The first mark on the wall faded. The second became a thin golden line. The third did not change at all. Some damage, the Witness explained, survives restitution. Repair is an action, not an eraser.
+
+When the reading ended, the Witness placed a blank page in your hand. The crown could now accept another name, but it could no longer assume every traveler had come to steal. The next thing you did would matter more than the spell you knew.`},
+ {id:'rescue-corridor',title:'The Pilot Who Opened a Door',era:'2199 · Titan Foundry',world:'mech',open:s=>!!s.flags['society-evacuation'],body:`ATLAS-09 stood upright with its weapons cooling. Commander Sol did not ask you to climb into it. She took you to the workshop behind the hangar, where a civilian transport was missing one wheel and the mechanic had run out of time.
+
+Outside, the defense drones counted every moving vehicle as a threat. The evacuation order they followed had been obsolete for half a century, but obsolete instructions do not feel obsolete to the people they hurt.
+
+“We could blow a path through them,” you said.
+
+“We could,” Sol replied. “And then someone would have to drive the survivors through the wreckage.”
+
+You spent three stored hours carrying batteries, loosening seized bolts, and listening to the mechanic describe the doors that still opened when the power failed. None of this would improve the damage statistics displayed by the mech's cockpit. It would only make it possible for a transport to leave.
+
+A child waiting beside the corridor asked Sol whether the giant machine was frightened. Sol looked up at the helmet hanging above the control seat.
+
+“I hope the pilot is,” she said. “It means they remember what can happen if they are careless.”
+
+At the last minute the old service gate jammed. You could have returned to the control room and fired a cannon at it. Instead, the mechanic showed you a manual release behind a panel. You pulled. The door opened three inches, then five feet, then enough for a vehicle full of people who had stopped expecting anything good.
+
+No one applauded. The transport rolled out under the artificial dawn. When Sol logged the mission, she left the column for enemy kills blank and filled the evacuation column by hand.`},
+ {id:'second-cup',title:'The Hour Without a Price',era:'2046 · The Other You',world:'self',open:s=>!!s.flags['society-letter'],body:`Your future self knew the price of everything you had asked about: property, inventions, machine parts, the hours required to open another life. The ledger was spread on the table between two cups of tea. You had imagined this meeting for so long that it felt strange not to arrive with another question about success.
+
+You offered them an hour. Not to borrow information. Not to learn the names of strangers you might love. Just to sit until the rain stopped.
+
+“That costs more than you think,” the older stranger said.
+
+“It costs one hour.”
+
+“No. It costs the certainty that you could have spent it becoming somebody impressive.”
+
+They were not mocking you. They moved the ledger aside and pointed through the window. Far below, someone was holding an umbrella for a person whose hands were full of groceries. A train was late. A child was trying to make a paper boat stay upright in the gutter.
+
+You told your older self about a mistake you had never written down. They listened without granting forgiveness on anyone else's behalf. Then they told you about a small joy. It had no plaque, no prize, no connection to your money, and no reason to survive in a history book.
+
+The clock on the wall reached the next hour. Your future self did not hurry you to the door.
+
+“Do I become you?” you asked.
+
+“Only if you make my choices. I hope you make some better ones.”
+
+You stepped through the portal carrying no secret about tomorrow. For the first time, that felt like getting something valuable back.`},
  {id:'epilogue',title:'What the Last Hour Bought',era:'The Unwritten End',world:'future',open:s=>!!s.ending,body:`The last gate stood where the first museum had stood, but its sign had changed. Now it read: YOU ARE NOT THE SUM OF YOUR PURCHASES.
 
 Iris met you beneath the turnstile. She asked whether you had done everything you wanted to do. You thought of Ada watching a machine come alive, the Witness keeping a kingdom's difficult memories, Commander Sol waiting for the evacuation lights, and a stranger in an apartment who might someday resemble you.

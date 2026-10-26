@@ -40,3 +40,9 @@ WebXR uses Three.js' VRButton and controller `select`/`squeeze`: point and selec
 Node tests cover simulation, randomized playthroughs, branch separation, vault cryptography, malformed backups, action boundaries, output escaping, a fallback-only dialogue mode and a consented Meta request's allowlist. A passing simulation suite is **not** proof of production WebXR quality.
 
 Unfinished: real frame rate/device QA, robust navmesh/rigid-body physics, real ragdoll/hand interactions, full mission pacing, locally hosted eligible Meta open-weights inference, cryptographic review, manual offline-shell testing, automated screenshot comparison and accessibility audits. No GitHub Actions workflows are used.
+
+## SocietyPulse and controls
+
+`src/society.js` advances the world's five authored NPC agendas only from *distinct* simulation actions, with a capped trigger ledger. Portal travel, idle browser time and repeated conversation cannot farm progress. Its snapshot (`society`) is included in the branch fields and validated on save loading, so independent Prime/Echo worlds preserve different NPC agendas. Missions deduct fictional hour balances transactionally through the authoritative `applyAction` gate.
+
+`src/controls.js` normalizes browser Gamepad sticks and returns button press edges; `src/worlds.js` uses these for movement, interaction, guarded attacks and power/vent abilities. The VR controller path uses select-ray portals, attackable physical targets, safe floor teleportation, 30-degree snap turning and best-effort supported haptics. Controller and headset behavior still needs physical testing.
