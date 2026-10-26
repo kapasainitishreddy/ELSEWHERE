@@ -219,6 +219,31 @@ function buildSelf(g,state,animated){
  sign(g,'THE OTHER YOU','A POSSIBLE FUTURE, NOT A PREDICTION',0,5,-7.9,5.3);
  window.userData.noRay=true;sofa.userData.noRay=true;lamp.userData.noRay=true;hair.userData.noRay=true;body.userData.noRay=true;table.userData.noRay=true;
 }
+/** Low-motion original restorative setting. No personal telemetry or forced breathing. */
+function buildStillwaterTerrace(g,animated,targets){
+ const root=new THREE.Group();root.position.set(12,0,6.5);g.add(root);
+ const stone=mat(0x3d6260,.08,.89),wood=mat(0x574d42,.13,.93),leaf=mat(0x7dc2a0,.08,.8),petal=mat(0xc7dca9,.06,.9);
+ const platform=cylinder(root,6.1,6.3,.23,stone,0,.03,0);platform.scale.z=.85;
+ for(let i=0;i<9;i++){
+  const a=i/9*Math.PI*2,x=Math.cos(a)*5.25,z=Math.sin(a)*4.15;
+  cylinder(root,.18,.28,.8,stone,x,.45,z);
+  const bulb=orb(root,.21,emissive(i%2?0xa6eacc:0xf3e0b7,.7),x,.99,z);
+  animated.push(t=>bulb.scale.setScalar(1+Math.sin(t*.32+i)*.025));
+ }
+ cylinder(root,.38,.62,3.2,wood,0,1.55,-1.6);
+ for(let i=0;i<14;i++){
+  const a=i*2.39996,r=.5+Math.sqrt(i/14)*2.5;
+  orb(root,.68+(i%3)*.17,i%4===0?petal:leaf,Math.cos(a)*r,3.1+(i%5)*.25,-1.6+Math.sin(a)*r*.7);
+ }
+ mesh(root,new THREE.CircleGeometry(2.15,40),glass(0x83b9b3,.42),0,.21,2.1,-Math.PI/2);
+ for(let i=0;i<3;i++){const ripple=ring(root,.7+i*.57,.016,emissive(0xbce9d7,.26),0,.231,2.1);ripple.rotation.x=Math.PI/2;animated.push(t=>ripple.scale.setScalar(1+Math.sin(t*.17+i)*.013));}
+ box(root,2.8,.2,.75,wood,-3,.71,-1.3);for(const x of [-4,-2])box(root,.14,.72,.14,stone,x,.33,-1.3);
+ light(root,0x8ed9c1,.45,0,4,0,10);
+ const board=sign(root,'THE QUIET BETWEEN WORLDS','NO CLOCKS · NO SCORES',0,4.95,3.9,4.7);
+ board.userData.action={type:'stillwater',id:'welcome'};targets.push(board);
+ const note=sign(root,'YOU ARE ALLOWED TO REST','A CHOICE, NOT A TEST',0,3.55,4,3.8);note.visible=false;
+ return {show(){note.visible=true;},hide(){note.visible=false;}};
+}
 function buildPast(g,state,animated){
  const brick=mat(0x67514c,.04,.9);const timber=mat(0x392c2d,.14,.6);const copper=mat(0xad7b50,.76,.28);
  for(let i=0;i<24;i++){const side=i%2?-1:1;const z=6-Math.floor(i/2)*6;const x=side*(12+seeded(i)*6);const h=7+seeded(i*4)*7;
@@ -348,7 +373,7 @@ function makePlayer(root){
 }
 
 /** Create a self-contained Three.js renderer with WebXR controller support. */
-export function createExperience(container, onWorld, onAction){
+export function createExperience(container, onWorld, onAction, onOpenStillwater=()=>{}){
  const scene=new THREE.Scene();const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,window.innerWidth<800?1.1:1.5));renderer.setSize(container.clientWidth||window.innerWidth,container.clientHeight||window.innerHeight);
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;
@@ -357,7 +382,7 @@ export function createExperience(container, onWorld, onAction){
  container.append(renderer.domElement);
  const rig=new THREE.Group();scene.add(rig);const camera=new THREE.PerspectiveCamera(63,1,.08,200);rig.add(camera);camera.position.set(0,5,17);
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.055;controls.enablePan=false;controls.maxPolarAngle=Math.PI*.47;controls.minDistance=5;controls.maxDistance=28;controls.target.set(0,2,0);
- const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],player=null,titan=null,moving=false;
+ const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],player=null,titan=null,moving=false,stillwaterTerrace=null;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  const hover=document.querySelector('#interaction-hint');let pointerDown=null;
  const clock=new THREE.Clock();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();
@@ -424,7 +449,7 @@ export function createExperience(container, onWorld, onAction){
  xrWatch.position.set(-.34,-.33,-1.0);camera.add(xrWatch);xrWatch.visible=false;
  function updateXRWatch(){const c=watchCanvas.getContext('2d');c.clearRect(0,0,512,160);c.fillStyle='rgba(4,17,25,.88)';c.fillRect(0,0,512,160);c.strokeStyle='#91ece9';c.strokeRect(6,6,500,148);c.fillStyle='#c8f8f3';c.font='bold 32px Arial';c.fillText((state?.world||'WORLD').toUpperCase()+' / '+(state?.parallel?.active||'prime').toUpperCase(),24,58);c.font='26px Arial';c.fillText(`HOURS ${state?.chronal.hours||0} · STARS ${state?.stars||0} · ${state?.world==='mech'?'TRIGGER FIRE / GRIP SHIELD':state?.world==='dungeon'?'TRIGGER STRIKE / GRIP GUARD':'TRIGGER SELECT / TELEPORT'}`,24,115,465);watchTexture.needsUpdate=true;}
  function intersect(objects,origin,dir){raycaster.set(origin,dir);const hits=raycaster.intersectObjects(objects,false);return hits[0]?.object.userData.action || null;}
- function trigger(action){if(action.type==='world')onWorld(action.world);else if(action.type==='choice')onAction(action.id);}
+ function trigger(action){if(action.type==='world')onWorld(action.world);else if(action.type==='choice')onAction(action.id);else if(action.type==='stillwater'){if(renderer.xr.isPresenting)stillwaterTerrace?.show();else onOpenStillwater();}}
  function click(event){if(renderer.xr.isPresenting)return;
    if(pointerDown && Math.hypot(event.clientX-pointerDown.x,event.clientY-pointerDown.y)>7)return;
    const rect=renderer.domElement.getBoundingClientRect();mouse.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
@@ -474,13 +499,13 @@ export function createExperience(container, onWorld, onAction){
    });
    world=new THREE.Group();scene.add(world);scene.background=new THREE.Color(palettes[state.world].bg);
    scene.fog=new THREE.FogExp2(palettes[state.world].fog,state.world==='self'?.012:.008);
-   targets=[];beacons=[];portalLocations=[];animated=[];titan=null;
+   targets=[];beacons=[];portalLocations=[];animated=[];titan=null;stillwaterTerrace=null;
    const p=palettes[state.world];world.add(new THREE.HemisphereLight(p.light,0x080d17,state.world==='self'?1.4:1.75));
    const sun=new THREE.DirectionalLight(p.light,2.8);sun.position.set(5,17,5);world.add(sun);
    ground(world,p);stars(world,state.world==='dungeon'?0xd5bcff:0xb1dce8,state.world==='self'?180:280);
    addAtmosphere(world,state.world,animated,atmosphereBudget({headset:renderer.xr.isPresenting,reducedMotion,smallScreen:window.innerWidth<900}));
    if(state.world==='future')buildFuture(world,state,animated);
-   else if(state.world==='self')buildSelf(world,state,animated);
+   else if(state.world==='self'){buildSelf(world,state,animated);stillwaterTerrace=buildStillwaterTerrace(world,animated,targets);}
    else if(state.world==='past')buildPast(world,state,animated);
    else if(state.world==='dungeon')buildDungeon(world,state,animated);
    else if(state.world==='mech')titan=buildMech(world,state,animated);

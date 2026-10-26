@@ -123,3 +123,7 @@ The game includes a **separately started**, opt-in Meta Model API bridge for hac
 The Node test suite covers time trade invariants, alternate branch isolation, NPC agendas, replay safety, combat adaptation, save integrity, browser encryption, opt-in API boundaries and gamepad mapping. These tests **do not prove the Vite production bundle renders or headset performance is acceptable**. Record actual browser/headset sessions and run a security audit before production launch.
 
 See [Architecture](docs/ARCHITECTURE.md), [Demo script](docs/DEMO_3MIN.md), [QA](docs/QA.md) and [Hackathon submission notes](docs/HACKATHON.md). **No GitHub Actions workflows are used.**
+
+
+## The Quiet Between Worlds · research-informed optional story
+A new voluntary, nonclinical experience includes a virtual garden, imagined future-self dialogue, kind roleplay and meaningful small choices. Open it from the header or approach the Stillwater terrace in the future-self world. The calm story choices are ephemeral, never saved, scored or sent to AI. No dopamine/serotonin claims or health advice. The independent /glasses/ Pocket page offers a glanceable concept for Meta Ray-Ban Display; it has not been tested on actual glasses and it does not sync private game data. See docs/RESEARCH_AND_SAFETY.md.

@@ -1,6 +1,8 @@
 import { WORLDS, INVENTIONS, futureProfile, worldOptions, cityRipple, sealClue, echoMap, SHARD_NAMES, RUNES } from './game.js';
 import { availableChapters, chapterById, activeChapter } from './story.js';
 import { worldDossier } from './characters.js';
+import {createStillwaterSession,progressStillwater} from './stillwater.js';
+import {renderStillwaterDialog} from './stillwater-ui.js';
 
 // Open-source Lucide SVG assets, bundled locally under ISC licence (no CDNs).
 const glyph = name => `<img class="ui-glyph" src="/assets/icons/${name}.svg" alt="" aria-hidden="true" loading="lazy">`;
@@ -15,7 +17,7 @@ const worldPreview = {
   mech:{note:'A steel giant waits for someone brave enough to move.',tag:'THE TITAN PROGRAM'}
 };
 export function createInterface(root, handlers){
-  let state=null, journal=false, instructions=false, busy=false, apiStatus='OFFLINE READY', isSpeaking=false, journalTab='echoes', selectedChapter='prologue', choiceFilter='world', sound=false, focus=false;
+  let state=null, journal=false, instructions=false, busy=false, apiStatus='OFFLINE READY', isSpeaking=false, journalTab='echoes', selectedChapter='prologue', choiceFilter='world', sound=false, focus=false, stillwater=null;
   function render(next){
     state=next;
     const w=WORLDS[state.world], p=worldPreview[state.world], future=futureProfile(state), ripple=cityRipple(state), activeStory=activeChapter(state);
@@ -30,7 +32,7 @@ export function createInterface(root, handlers){
       <header class="topbar">
         <div class="brand"><div class="brand-glyph">${glyph('orbit')}</div><div class="brand-type">ELSEWHERE<span class="brand-caption">ANOTHER LIFE AWAITS</span></div></div>
         <div class="top-center"><span class="live-pulse"></span><span class="world-current">YOU ARE IN ${esc(w.name.toUpperCase())}</span><span class="top-divider">/</span><span class="server-status">${esc(apiStatus)}</span><span class="branch-tag">${esc(state.parallel.active.toUpperCase())}</span></div>
-        <div class="header-actions"><button class="icon-btn sound-toggle ${sound?'is-on':''}" data-cmd="sound" title="Toggle procedural sound" aria-label="${sound?'Mute':'Enable'} sound" aria-pressed="${sound}">${glyph('volume-2')}</button><button class="icon-btn focus-toggle ${focus?'is-on':''}" data-cmd="focus" title="Toggle cinematic view" aria-label="Toggle cinematic view" aria-pressed="${focus}">${focus?'▣':'▢'}</button><button class="icon-btn" data-cmd="lock" title="Lock encrypted vault" aria-label="Lock private vault">${glyph('lock-keyhole')}</button><button class="icon-btn" data-cmd="help" title="Controls & accessibility" aria-label="Open controls">?</button><button class="journal-button" data-cmd="journal">${glyph('book-open')}<span> MY TIMELINE</span></button></div>
+        <div class="header-actions"><button class="stillwater-launch" data-cmd="stillwater-open" aria-label="Open The Quiet Between Worlds">✦ QUIET BETWEEN WORLDS</button><button class="icon-btn sound-toggle ${sound?'is-on':''}" data-cmd="sound" title="Toggle procedural sound" aria-label="${sound?'Mute':'Enable'} sound" aria-pressed="${sound}">${glyph('volume-2')}</button><button class="icon-btn focus-toggle ${focus?'is-on':''}" data-cmd="focus" title="Toggle cinematic view" aria-label="Toggle cinematic view" aria-pressed="${focus}">${focus?'▣':'▢'}</button><button class="icon-btn" data-cmd="lock" title="Lock encrypted vault" aria-label="Lock private vault">${glyph('lock-keyhole')}</button><button class="icon-btn" data-cmd="help" title="Controls & accessibility" aria-label="Open controls">?</button><button class="journal-button" data-cmd="journal">${glyph('book-open')}<span> MY TIMELINE</span></button></div>
       </header>
       <aside class="left-rail" aria-label="World selector">
         <div class="rail-title"><span class="eyebrow">THE MULTIVERSE</span><span class="rail-count">05 WORLDS</span></div>
@@ -76,6 +78,7 @@ export function createInterface(root, handlers){
       <div class="mobile-dpad" aria-label="Movement controls"><button data-move="KeyW" aria-label="Move forward">↑</button><div><button data-move="KeyA" aria-label="Move left">←</button><button data-cmd="interact" aria-label="Interact with nearby object">◎</button><button data-move="KeyD" aria-label="Move right">→</button></div><button data-move="KeyS" aria-label="Move backward">↓</button></div>
       <div class="bottom-hud"><span class="bottom-line"></span><span class="hud-dot">◈</span><span>W A S D TO EXPLORE</span><span class="hud-separator">•</span><span>DRAG TO LOOK</span><span class="hud-separator">•</span><span>CLICK PORTALS TO TRAVEL</span><span class="hud-separator">•</span><span>E TO INTERACT · SPACE ATTACK · Q GUARD</span><span class="bottom-line"></span></div>
       <div class="bottom-credit">ELSEWHERE / CHRONAL VEIL <span>v0.3.1</span></div>
+      ${stillwater?renderStillwaterDialog(stillwater):''}
       ${journal?`<div class="modal-shade" data-cmd="close"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="journal-title"><div class="modal-top"><span class="eyebrow">ECHOES ACROSS LIVES</span><button class="icon-btn" data-cmd="close" aria-label="Close timeline">✕</button></div><h2 id="journal-title">Your Timeline</h2><p class="modal-lead">Every significant choice echoes into future worlds. Your timeline is encrypted on this device. Prime and Echo remain separate until you cross the gate.</p><div class="atlas-tabs" role="tablist" aria-label="Timeline tabs"><button class="${journalTab==='echoes'?'selected':''}" data-tab="echoes" role="tab" aria-selected="${journalTab==='echoes'}">CAUSE & EFFECT</button><button class="${journalTab==='history'?'selected':''}" data-tab="history" role="tab" aria-selected="${journalTab==='history'}">EVENTS</button><button class="${journalTab==='fragments'?'selected':''}" data-tab="fragments" role="tab" aria-selected="${journalTab==='fragments'}">FRAGMENTS</button><button class="${journalTab==='story'?'selected':''}" data-tab="story" role="tab" aria-selected="${journalTab==='story'}">STORY</button><button class="${journalTab==='people'?'selected':''}" data-tab="people" role="tab" aria-selected="${journalTab==='people'}">PEOPLE</button><button class="${journalTab==='privacy'?'selected':''}" data-tab="privacy" role="tab" aria-selected="${journalTab==='privacy'}">PRIVACY</button></div>
           ${journalTab==='story'?`<div class="story-chapter-list">${chapters.map(c=>`<button class="${chosenChapter.id===c.id?'selected':''}" data-chapter="${esc(c.id)}" ${c.open?'':'disabled'} title="${c.open?'Read this chapter':'Play further to unlock'}">${String(c.number).padStart(2,'0')} ${esc(c.title)}</button>`).join('')}</div><div class="story-manuscript"><h3>${esc(chosenChapter.title)}</h3><p>${esc(chosenChapter.era)}</p>${esc(chosenChapter.body)}</div><p class="atlas-disclaimer">An original fictional story. Chapters unlock through your own choices, and are not statements about your actual future.</p>`:
           journalTab==='people'?`<div class="roleplay-list">${worldDossier(state).map(c=>`<div class="roleplay-person"><strong>${esc(c.name)}</strong><small>${esc(c.role)} · GOAL: ${esc(c.goal)} · MOOD ${esc(c.mood)} · AGENDA ${c.agendaStage}/3</small><p>${esc(c.memory)}</p><small>CONVERSATIONS: ${c.interactions}</small></div>`).join('')}</div><div class="society-feed"><strong>WHILE YOU WERE AWAY</strong>${(state.society?.events||[]).filter(e=>e.actor in state.cast).slice(-8).reverse().map(e=>`<div class="society-feed-item"><span>${esc(e.actor.toUpperCase())} · CHAPTER ${e.stage}</span><b>${esc(e.title)}</b><p>${esc(e.detail)}</p></div>`).join('')||'<p>Characters are making plans. The first changes appear after meaningful choices.</p>'}</div><p class="atlas-disclaimer">NPCs follow authored agendas as distinct story decisions accumulate, including while you visit other worlds. Their progress is stored separately in each branch. This is deterministic local simulation, not real-time autonomous AI.</p>`:
@@ -91,6 +94,8 @@ export function createInterface(root, handlers){
     const world=e.target.closest('[data-world]');if(world){handlers.travel(world.dataset.world);return;}
     const action=e.target.closest('[data-action]');if(action){handlers.action(action.dataset.action);return;}
     const cmd=e.target.closest('[data-cmd]');if(!cmd)return;
+    if(cmd.dataset.cmd==='stillwater-open'){stillwater=createStillwaterSession();journal=false;instructions=false;render(state);root.querySelector('.stillwater-choice')?.focus?.();return;}
+    if(cmd.dataset.cmd==='stillwater-close'){if(cmd.classList.contains('modal-shade')&&e.target!==cmd)return;stillwater=null;render(state);return;}
     if(cmd.dataset.cmd==='journal'){journal=true;render(state);}
     if(cmd.dataset.cmd==='story-open'){journal=true;journalTab='story';selectedChapter=activeChapter(state).id;render(state);}
     if(cmd.dataset.cmd==='sound'){sound=!sound;handlers.sound(sound);render(state);}
@@ -107,6 +112,7 @@ export function createInterface(root, handlers){
     if(cmd.dataset.cmd==='local-ai-toggle'){handlers.toggleLocalAi?.();}
     
   });
+  root.addEventListener('click',e=>{const choice=e.target.closest('[data-stillwater]');if(!choice||!stillwater)return;stillwater=progressStillwater(stillwater,choice.dataset.stillwater);render(state);root.querySelector('.stillwater-choice')?.focus?.();});
   root.addEventListener('click',e=>{const tab=e.target.closest('[data-tab]');if(tab){journalTab=tab.dataset.tab;render(state);return;}const choice=e.target.closest('[data-chooser]');if(choice){choiceFilter=choice.dataset.chooser;render(state);return;}const chapter=e.target.closest('[data-chapter]');if(chapter){selectedChapter=chapter.dataset.chapter;render(state);}});
   root.addEventListener('change',e=>{if(e.target.id==='import-timeline-input')handlers.importTimeline(e.target.files?.[0]);});
   root.addEventListener('pointerdown',e=>{const m=e.target.closest('[data-move]');if(!m)return;e.preventDefault();m.setPointerCapture(e.pointerId);handlers.move(m.dataset.move,true);});
@@ -128,5 +134,5 @@ export function createInterface(root, handlers){
     busy=true;render(state);
     try{await handlers.ask(question);}finally{busy=false;render(state);}
   });
-  return {render,updateStatus(v){apiStatus=v;render(state);},getState:()=>state};
+  return {render,resetEphemeral(){stillwater=null;journal=false;instructions=false;},openStillwater(){stillwater=createStillwaterSession();journal=false;instructions=false;render(state);},updateStatus(v){apiStatus=v;render(state);},getState:()=>state};
 }

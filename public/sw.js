@@ -1,5 +1,5 @@
 /* Offline shell. Only first-party static GET responses are cached; never API, secrets or saves. */
-const CACHE='elsewhere-static-v4';
+const CACHE='elsewhere-static-v5';
 const SHELL=['/','/index.html'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));

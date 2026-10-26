@@ -39,3 +39,7 @@ Meta model use in a demo is not the same as privacy-preserving local inference. 
 ## Pre-release audit still needed
 
 Static source review and automated tests do **not** constitute an independent security audit. Required before collecting real user content: dependency/advisory scan, browser networking inspection, service-worker update testing, CSP verification, export/import size/fuzz checks, DOM injection audit, key/secret leakage check, and physical device/OS threat-model review. Never enter actual account passwords or financial details into fictional prompts.
+
+
+## Stillwater and Meta glasses Pocket demo
+Stillwater holds only the selected fictional story and choice in volatile memory, clears that session on close and vault lock, never changes fictional wealth/hours, and does not generate health scores or send its choices to AI. The standalone /glasses/ page stores nothing, requests no camera, microphone or sensors, and blocks all network APIs via Content Security Policy. It does not access the encrypted VR vault and is untested on real glasses.

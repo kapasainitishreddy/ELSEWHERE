@@ -178,7 +178,7 @@ async function rekey(){
 async function lock(){
  if(!started)return;
  await vault.save(state);
- await vault.lock();sessionEpoch++;for(const c of pendingLocalRequests)c.abort();cloudEnabled=false;localAiEnabled=false;soundscape.toggle(false);
+ await vault.lock();ui.resetEphemeral();sessionEpoch++;for(const c of pendingLocalRequests)c.abort();cloudEnabled=false;localAiEnabled=false;soundscape.toggle(false);
  experience?.dispose?.();experience=null;started=false;
  document.querySelector('#app-ui').replaceChildren();
  document.querySelector('#loading-screen')?.classList.remove('hidden');
@@ -190,9 +190,9 @@ const ui=createInterface(document.querySelector('#app-ui'),{
  privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk
 });
 function begin(next){
- state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;
+ state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{
-  experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction);
+  experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater());
   experience.mount(state);ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');
   document.querySelector('#loading-screen')?.classList.add('hidden');
  }catch(error){

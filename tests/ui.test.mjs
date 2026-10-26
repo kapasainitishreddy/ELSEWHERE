@@ -36,3 +36,21 @@ test('private letters are escaped and cloud and microphone controls are absent',
  assert.ok(!root.innerHTML.includes('id="cloud-consent"'));
  assert.ok(!root.innerHTML.includes('data-cmd="mic"'));
 });
+
+test('optional Stillwater dialogue leaves game state untouched',()=>{
+ const {root,ui}=makeUI();const s=go(initialState(),'self');
+ ui.render(s);assert.match(root.innerHTML,/data-cmd="stillwater-open"/);
+ const old=structuredClone(s);ui.openStillwater();
+ assert.match(root.innerHTML,/The Quiet Between Worlds/);
+ assert.match(root.innerHTML,/data-stillwater="garden"/);
+ assert.deepEqual(ui.getState(),old);
+ ui.resetEphemeral();ui.render(s);
+ assert.ok(!root.innerHTML.includes('stillwater-shade'));
+});
+test('glasses companion forbids network APIs and sensor use',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('../public/glasses/index.html',import.meta.url),'utf8');
+ const js=await readFile(new URL('../public/glasses/glasses.js',import.meta.url),'utf8');
+ assert.match(html,/connect-src 'none'/);
+ assert.doesNotMatch(js,/\b(fetch|localStorage|sessionStorage|getUserMedia|XMLHttpRequest)\s*\(/);
+});
