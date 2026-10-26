@@ -1,10 +1,22 @@
-# ELSEWHERE · Kinetic Worlds 0.9
+# ELSEWHERE · Living Presence 1.0
 
 > One life is never enough.
 
 **ELSEWHERE** is a privacy-first, browser-based 3D speculative world prototype by Syrava. Enter portals to another century, meet a fictional older version of yourself, invent technology before its era, trade and steal fictional hours, negotiate with a Warden who remembers your fighting style, and defend a futuristic city from inside a giant original mech.
 
 This is an original experimental game and potential **Meta Global AI Developer Hackathon 2026 Startup-track** submission. It is **not** yet a polished shipped VR game, an MMO, or a verified Meta AI submission. In-world hour balances, fame, wealth and life paths are fictional, never real predictions or financial assets.
+
+## Living Presence 1.0: animated people and meaningful details
+
+**New in this source update:**
+
+- **Original skinned humanoids** replace the abstract future-self mannequin and four supporting cast models. They use real Three.js bone hierarchies and a skinned coat, not just a spinning capsule. Six authored clips (`idle`, `listening`, `speaking`, `walking`, `delighted`, `startled`) are cross-faded using `AnimationMixer`; the future self animates when a conversation begins. Facial expressions and the mouth movement are stylized and **not audio-driven lip sync**.
+- **Three new local 3D keepsakes** in 2046: the blueprint changes with inventions and patents, the borrowed-hours watch describes your branch's **fictional** time balance, and the portrait reflects your imagined city. Select via E, click, or WebXR controller ray. Examining each object triggers brief story text and a related future-self gesture; no additional personal records are collected.
+- **A genuinely animated open-source fox companion** is supported. The optional **Khronos glTF Sample Assets Fox** has imported Survey/Walk/Run skin animations. You must run `npm run assets:animated` on a network-connected developer computer; the game never fetches from third parties during gameplay. Its mixed CC0/CC-BY 4.0 authorship and license are documented in [the attribution file](docs/ANIMATED_ASSET_LICENSE.md). **The GLB is not bundled in this default repository.**
+- **VR/headset comfort:** a bounded desktop pixel ratio, no new forced camera motion, idle animation reductions under the OS reduced-motion setting, local-only haptic attempts and original built-in teleport/snap-turn controls.
+- **Offline cache consistency:** a refreshed same-origin service worker does not indefinitely cache stale optional 3D asset manifests after a developer installs an art pack.
+
+Read [Character and Quest QA](docs/CHARACTER_AND_ANIMATION_QA.md), then run `npm run animation:check` and `npm run check`. **Node tests and source checks are not substitutes for a successful Vite build, live visual review, measured Quest performance, or real-person comfort testing.**
 
 ## Kinetic Worlds 0.9: interact with the world
 
@@ -17,7 +29,7 @@ The new interaction and animation pass makes the existing worlds more responsive
 - **VR performance:** far-off futuristic towers, roofs and lit windows now use Three.js `InstancedMesh` instead of hundreds of individual draw calls. Character, weather and event budgets are smaller on lower-power devices. This is an optimization, **not yet a measured FPS guarantee**.
 - **Local QA:** append `?perf=1` to the game URL to display live frame rate, 95th percentile frame time, draw calls and triangles; metrics are neither stored nor transmitted. Run `npm run motion:check` for animation-budget unit tests.
 
-See [Animation & Quest testing](docs/ANIMATION_AND_XR_QA.md). **111 simulation, dialogue, privacy and motion tests passed in the development environment; production Vite bundling and physical Quest controls are not verified.** This release still needs visual QA and device performance measurements before being used as a competition demo.
+See [Animation & Quest testing](docs/ANIMATION_AND_XR_QA.md). **111 simulation, dialogue, privacy and motion tests passed for the prior 0.9 release; production Vite bundling and physical Quest controls are not verified.** This release still needs visual QA and device performance measurements before being used as a competition demo.
 
 ## Future Compass 0.7: a life beyond the headset
 
@@ -40,6 +52,7 @@ See [Future Self research](docs/FUTURE_SELF_RESEARCH.md), [testing runbook](docs
 
 ```bash
 npm run assets:fetch                # Download and locally bundle all 24 Kenney CC0 models
+npm run assets:animated             # Optional CC BY 4.0 Fox with genuine skeletal clips
 npm run assets:fetch -- --world mech # Or install one world's models
 ```
 
@@ -137,6 +150,7 @@ The game includes a **separately started**, opt-in Meta Model API bridge for hac
 - **Three.js** (`three` ^0.181.0, MIT): geometry, materials, shaders, camera, OrbitControls, and WebXR VRButton.
 - **Lucide icons** (ISC): 12 selected bundled local SVG assets for HUD and navigation.
 - **Kenney models** (CC0-1.0): 24 optional same-origin GLBs from a pinned verified mirror, installed via `npm run assets:fetch` only; not automatically fetched at runtime.
+- **Khronos Fox** (CC0 + CC BY 4.0 components): optional rigged, multi-clip GLB installed via `npm run assets:animated` with full attribution; not bundled by default.
 - **Original art systems:** per-biome skydomes, GPU effects, animated portal coronas and XR-budgeted particles.
 - **Vite** (^7.1.0, MIT): local development and production web bundling.
 - **Ollama**: OPTIONAL separate local inference runtime, **not** included or automatically installed; API used only when the local service is explicitly started. Models have their own licenses and should be checked before commercial use.

@@ -9,6 +9,9 @@ import { dressWithKenney } from './open-assets.js';
 import {characterPose, damp, angleTo, classifyMoment, interactionHint, chooseNearby} from './motion-language.js';
 import {createKineticEffects} from './kinetic-effects.js';
 import {createFrameSampler,describeFrame} from './performance.js';
+import {createActor} from './actor-studio.js';
+import {futureKeepsakes,keepsakeReaction} from './keepsake-scenes.js';
+import {installAnimatedCompanion} from './animated-companion.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
 const palettes = {
@@ -99,8 +102,7 @@ function buildChronalOrrey(group,state,animated){
  sign(clock,'THE HOURS BANK',`${state.chronal.hours} STORED · ${state.chronal.futureDebt+state.chronal.pastDebt} OWED`,0,5.25,0,3.9);
  animated.push(t=>{rings.forEach((r,i)=>{r.rotation.y=t*(i%2?-.28:.22);r.rotation.z=Math.sin(t*.21+i)*.3;});hourglass.rotation.y=t*.13;core.position.y=2.8+Math.sin(t*.9)*.06;});
 }
-function buildLivingCharacters(group,state,targets,animated,getTraveler){
- // Jointed, remembering, inspectable people. Procedural motion avoids animation-file dependencies.
+function buildLivingCharacters(group,state,targets,animated,getTraveler,nearbyProps){
  const actors={
   future:[{id:'iris',action:'talk-city',name:'IRIS VALE',x:7,z:-7,cape:0x345f71,hair:0xc7d8db}],
   past:[{id:'ada',action:'talk-clockmaker',name:'ADA VOSS',x:7.8,z:-5,cape:0x695142,hair:0x4c302b}],
@@ -108,55 +110,28 @@ function buildLivingCharacters(group,state,targets,animated,getTraveler){
   mech:[{id:'sol',action:'talk-commander',name:'COMMANDER SOL',x:7.8,z:-7,cape:0x475b6a,hair:0xb5ab9f}]
  }[state.world]||[];
  for(const actor of actors){
-  const memory=state.cast?.[actor.id],affinity=memory?.affinity||0;
-  const palette=memory?.mood==='grateful'?0x79f5c0:memory?.mood==='angry'?0xf58a90:0xbce3f3;
-  const figure=new THREE.Group();figure.position.set(actor.x,0,actor.z);group.add(figure);
-  const coat=mat(actor.cape,.18,.82),skin=mat(0xbfa38c,.07,.8),pants=mat(0x29313b,.25,.55);
-  const torso=new THREE.Group();figure.add(torso);
-  mesh(torso,new THREE.CapsuleGeometry(.36,.85,5,10),coat,0,1.35,0);
-  box(torso,.5,.16,.1,mat(0xc5b1a0,.2,.7),0,1.85,.36);
-  const head=new THREE.Group();head.position.set(0,2.45,0);torso.add(head);
-  orb(head,.32,skin,0,0,0);
-  mesh(head,new THREE.SphereGeometry(.33,12,9,0,Math.PI*2,0,Math.PI*.45),mat(actor.hair,0,.8),0,.10,-.05);
-  const eyes=[];const arms=[];const legs=[];
-  for(const dir of [-1,1]){
-   const arm=new THREE.Group();arm.position.set(dir*.47,1.74,0);torso.add(arm);
-   box(arm,.18,.73,.20,coat,dir*.025,-.36,0);orb(arm,.12,skin,dir*.02,-.77,.06);arms.push(arm);
-   const leg=new THREE.Group();leg.position.set(dir*.2,.82,0);figure.add(leg);
-   box(leg,.23,.76,.25,pants,0,-.34,0);legs.push(leg);
-   eyes.push(orb(head,.026,emissive(0xf5e9d6,.85),dir*.105,0,.306));
-  }
-  const a=ring(figure,.53,.028,emissive(palette,1.2),0,.08,0);a.rotation.x=Math.PI/2;
-  const memoryOrb=orb(figure,.14,emissive(palette,.8+Math.min(1,Math.max(0,affinity/70))),0,3.35,0);
-  const plaque=sign(figure,actor.name,(memory?.mood||'WATCHFUL').toUpperCase()+' · REMEMBERS YOU',0,4.12,.1,3.3);
-  plaque.userData.action={type:'choice',id:actor.action,label:`TALK TO ${actor.name}`};targets.push(plaque);
-  const halo=mesh(figure,new THREE.PlaneGeometry(1.5,3.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}),0,1.8,.42);
-  halo.userData.action={type:'choice',id:actor.action,label:`TALK TO ${actor.name}`};targets.push(halo);
-  let facing=0,lastX=actor.x,lastZ=actor.z;
+  const memory=state.cast?.[actor.id]||{},affinity=memory.affinity||0;
+  const palette=memory.mood==='grateful'?0x79f5c0:memory.mood==='angry'?0xf58a90:0xbce3f3;
+  const model=createActor({coat:actor.cape,hair:actor.hair,accent:palette,mood:memory.mood});
+  const figure=model.root;figure.position.set(actor.x,0,actor.z);group.add(figure);
+  const aura=ring(figure,.53,.028,emissive(palette,1.1),0,.08,0);aura.rotation.x=Math.PI/2;
+  const marker=sign(figure,actor.name,`${(memory.mood||'WATCHFUL').toUpperCase()} · REMEMBERS YOU`,0,3.92,.1,3.5);
+  const action={type:'choice',id:actor.action,label:`TALK TO ${actor.name}`};marker.userData.action=action;targets.push(marker);
+  const touch=mesh(figure,new THREE.PlaneGeometry(1.6,3.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}),0,1.7,.43);
+  touch.userData.action=action;targets.push(touch);
+  nearbyProps.push({x:actor.x,z:actor.z,action});
   animated.push((t,moving,dt)=>{
-    const pace=characterPose(t,affinity>10?'warm':'idle',actor.x);
-    // People have a little life of their own, but hold eye contact when a traveler approaches.
-    const traveler=getTraveler?.();const close=traveler&&Math.hypot(traveler.x-figure.position.x,traveler.z-figure.position.z)<4.5;
-    const targetX=actor.x+(close?0:Math.sin(t*.38+actor.x)*.62);
-    const targetZ=actor.z+(close?0:Math.sin(t*.27+actor.z)*.32);
-    const rate=dt||.016;
-    figure.position.x=damp(figure.position.x,targetX,2.6,rate);
-    figure.position.z=damp(figure.position.z,targetZ,2.6,rate);
-    const walking=!close&&Math.hypot(figure.position.x-lastX,figure.position.z-lastZ)>.003;
-    lastX=figure.position.x;lastZ=figure.position.z;
-    const gesture=characterPose(t,walking?'walking':affinity>10?'warm':'idle',actor.x);
-    figure.position.y=gesture.bob;
-    if(close){const yaw=Math.atan2(traveler.x-figure.position.x,traveler.z-figure.position.z);facing=angleTo(facing,yaw,3.2,rate);}
-    else facing=angleTo(facing,Math.cos(t*.38+actor.x)>0?Math.PI*.25:-Math.PI*.25,.7,rate);
-    figure.rotation.y=facing;
-    torso.rotation.z=gesture.sway;
-    head.rotation.x=pace.headTilt;
-    head.rotation.y=pace.headYaw;
-    arms[0].rotation.x=walking?gesture.stride*.48:-gesture.gesture;
-    arms[1].rotation.x=walking?-gesture.stride*.48:gesture.gesture*.65;
-    legs[0].rotation.x=gesture.stride;legs[1].rotation.x=-gesture.stride;
-    for(const eye of eyes)eye.scale.y=Math.max(.08,gesture.eye);
-    memoryOrb.position.y=3.3+Math.sin(t*1.1+actor.x)*.12;a.rotation.z=t*.19;
+    const traveler=getTraveler?.();
+    const close=traveler && Math.hypot(traveler.x-figure.position.x,traveler.z-figure.position.z)<4.5;
+    const desiredX=actor.x+(close?0:Math.sin(t*.38+actor.x)*.62);
+    const desiredZ=actor.z+(close?0:Math.sin(t*.27+actor.z)*.32);
+    const step=Math.max(0,dt||0);
+    const priorX=figure.position.x,priorZ=figure.position.z;
+    figure.position.x=damp(priorX,desiredX,2.6,step);figure.position.z=damp(priorZ,desiredZ,2.6,step);
+    const strolling=!close && Math.hypot(figure.position.x-priorX,figure.position.z-priorZ)>.002;
+    model.setMode(strolling?'walking':close?'listening':affinity>20?'delighted':'idle');
+    model.update(t,step,{target:traveler,reducedMotion:step===0});
+    aura.rotation.z=t*.13;
   });
  }
 }
@@ -267,46 +242,25 @@ function buildSelf(g,state,animated){
  const lamp=cylinder(g,.28,.43,.9,emissive(0xffd6a8,.75),-5,2,-5);
  cylinder(g,.06,.06,2.3,mat(0x99968e,.65,.3),-5,1,-5);
  light(g,0xffc390,3,-4,5,-3,14);
- // Deliberately abstract, original character design. No face scan or personal likeness.
- const elder=new THREE.Group();g.add(elder);elder.position.set(0,0,-5.3);
- const body=mesh(elder,new THREE.CapsuleGeometry(.58,1.2,6,12),mat(0x323b48,.1,.78),0,1.7,0);
- const head=new THREE.Group();head.position.set(0,3.03,0);elder.add(head);
- orb(head,.46,mat(0xbba38f,.1,.8),0,0,0);
- const hair=mesh(head,new THREE.SphereGeometry(.47,14,12,0,Math.PI*2,0,Math.PI*.48),mat(0xb0bcc5,.1,.7),0,.12,-.015);
- const eye=emissive(0xe7cfb2,.5);const eyes=[orb(head,.035,eye,-.15,0,.43),orb(head,.035,eye,.15,0,.43)];
- const mouth=box(head,.13,.026,.02,mat(0x654d47,0,.86),0,-.185,.418);
- const arms=[];
- for(let side of [-1,1]){
-   const arm=new THREE.Group();arm.position.set(side*.72,2.12,0);elder.add(arm);
-   box(arm,.23,.83,.25,mat(0x303a48,.1,.7),0,-.38,0);
-   orb(arm,.13,mat(0xbba38f,.1,.8),0,-.83,.04);
-   arms.push(arm);
-   box(elder,.29,.65,.29,mat(0x313b48,.1,.72),side*.48,.48,0);
- }
+ // An original abstract *skinned* figure driven by authored AnimationMixer clips.
+ // No face scan, biometric likeness, remote generation or camera motion.
+ const elder=createActor({age:'older',skin:0xbba38f,coat:0x323b48,hair:0xb0bcc5,accent:0xf3ca99,mood:'grateful'});
+ elder.root.position.set(0,0,-5.3);g.add(elder.root);
  let presence='idle';
  const halo=ring(g,1.3,.025,emissive(0xecc29f,.55),0,3.45,-5.5);
  const speechHalo=ring(g,.7,.014,emissive(0xffdfb8,.53),0,3.7,-5.3);speechHalo.rotation.x=Math.PI/2;
- let gestureWeight=0,orientation=0;
  animated.push((t,walking,dt)=>{
-   const pose=characterPose(t,presence,1.8);
-   const step=dt||.016;
-   gestureWeight=damp(gestureWeight,presence==='speaking'?1:0,5,step);
-   orientation=angleTo(orientation,.06*Math.sin(t*.29),1.3,step);
-   halo.rotation.z=t*.16;elder.position.y=pose.bob;
-   body.scale.x=1+pose.breath;head.rotation.x=pose.headTilt;
-   head.rotation.y=orientation+pose.headYaw;head.rotation.z=Math.sin(t*.39)*.02;
-   arms[0].rotation.x=-pose.gesture*(.5+gestureWeight);
-   arms[1].rotation.x=-pose.gesture*(.6+gestureWeight)+Math.sin(t*1.1)*.025;
-   for(const eyeMesh of eyes)eyeMesh.scale.y=pose.eye;
-   mouth.scale.y=presence==='speaking'?2+pose.mouth*5:1;
-   speechHalo.visible=presence==='speaking';
-   if(speechHalo.visible)speechHalo.scale.setScalar(1+Math.sin(t*3)*.09);
+  elder.setMode(presence);
+  elder.update(t,dt,{reducedMotion:dt===0});
+  halo.rotation.z=t*.16;
+  speechHalo.visible=presence==='speaking';
+  if(speechHalo.visible)speechHalo.scale.setScalar(1+Math.sin(t*2)*.055);
  });
  sign(g,'THE OTHER YOU','A POSSIBLE FUTURE, NOT A PREDICTION',0,5,-7.9,5.3);
  const keepsake=state.fate==='gift'?'A PUBLIC WORKSHOP':state.fate==='patent'?'A TOWER WITH OUR NAME':state.fate==='auction'?'A MUSEUM PLAQUE':state.flags?.['defend-city']?'THE LIGHTS OF THE HARBOR':'AN UNOPENED LETTER';
  sign(g,'A REMEMBERED POSSIBILITY',keepsake,5.4,3.8,-9,3.25);
- window.userData.noRay=true;sofa.userData.noRay=true;lamp.userData.noRay=true;hair.userData.noRay=true;body.userData.noRay=true;table.userData.noRay=true;
- return {setMode(mode){presence=['speaking','listening'].includes(mode)?mode:'idle';}};
+ window.userData.noRay=true;sofa.userData.noRay=true;lamp.userData.noRay=true;table.userData.noRay=true;
+ return {setMode(mode){presence=['speaking','listening','delighted','startled'].includes(mode)?mode:'idle';}};
 }
 /** Voluntary restorative environment: original lightweight geometry, no biological sensing.
  * Visual design takes inspiration from research on virtual nature and perspective-taking.
@@ -516,6 +470,29 @@ function buildTouchableArtifacts(group,state,targets,animated,nearby){
  animated.push(t=>{core.position.y=2.25+Math.sin(t*.85)*.12;inner.position.y=core.position.y;orbit1.position.y=core.position.y;orbit2.position.y=core.position.y;orbit1.rotation.y=t*.45;orbit2.rotation.x=t*-.36;});
 }
 
+/** Three animated mementos that change with the *fictional* timeline.
+ * No private letter, user history, microphone or cloud prompt is accessed.
+ */
+function buildFutureKeepsakes(group,state,targets,animated,nearby){
+ for(const info of futureKeepsakes(state)){
+  const [x,y,z]=info.location;
+  const pedestal=new THREE.Group();pedestal.position.set(x,0,z);group.add(pedestal);
+  cylinder(pedestal,.47,.58,.24,mat(0x4c4b56,.46,.47),0,.26,0);
+  const accent=emissive(info.accent,1.1);
+  const object=info.id==='hourglass'
+   ? mesh(pedestal,new THREE.OctahedronGeometry(.3),accent,0,y,0)
+   : info.id==='portrait'
+   ? box(pedestal,.55,.64,.04,accent,0,y,0)
+   : mesh(pedestal,new THREE.BoxGeometry(.54,.06,.4),accent,0,y,0);
+  const orbit=ring(pedestal,.47,.018,emissive(info.accent,.7),0,y,0);orbit.rotation.x=Math.PI/2;
+  const action={type:'inspect',id:info.id,label:info.title,text:info.text,at:[x,y,z],kind:'keepsake'};
+  const touch=mesh(pedestal,new THREE.SphereGeometry(.55,10,9),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),0,y,.02);
+  for(const o of [touch,object]){o.userData.action=action;targets.push(o);}
+  nearby.push({x,z,action});
+  const heading=sign(pedestal,info.title,info.short.toUpperCase().slice(0,36),0,y+1.35,.07,2.9);heading.userData.action=action;targets.push(heading);
+  animated.push((t,moving,dt)=>{object.rotation.y=dt===0?0:t*.19;orbit.rotation.z=t*.28;object.position.y=y+(dt===0?0:Math.sin(t*.7+x)*.07);});
+ }
+}
 /** Readable new scenery performances with intentionally no artificial camera motion. */
 function buildLivingBackdrop(group,state,animated){
  const world=state.world;
@@ -552,6 +529,7 @@ function buildLivingBackdrop(group,state,animated){
 /** Create a self-contained Three.js renderer with WebXR controller support. */
 export function createExperience(container, onWorld, onAction, onOpenStillwater=()=>{}, onInspect=()=>{}){
  const scene=new THREE.Scene();const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5)); // Bound desktop fill rate; XR chooses its own framebuffer.
  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,window.innerWidth<800?1.1:1.5));renderer.setSize(container.clientWidth||window.innerWidth,container.clientHeight||window.innerHeight);
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;
  renderer.shadowMap.enabled=false;renderer.xr.enabled=true;
@@ -663,7 +641,9 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    else if(action.type==='inspect'){
      onInspect(action.text||'There is more to discover here.');
      showXRNote(action.text||action.label);
-     fx?.emit('memory',new THREE.Vector3(0,2,-3));
+     const at=Array.isArray(action.at)&&action.at.length===3?action.at:[0,2,-3];
+     fx?.emit('memory',new THREE.Vector3(...at));
+     if(action.kind==='keepsake' && state?.world==='self')setDialogueActivity(keepsakeReaction(action.id),2.2);
    }else if(action.type==='stillwater'){
      if(renderer.xr.isPresenting)stillwaterTerrace?.show();else onOpenStillwater();
    }
@@ -735,11 +715,15 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    addScenery(world,state,animated);
    buildLivingBackdrop(world,state,animated);
    buildTouchableArtifacts(world,state,targets,animated,nearbyProps);
+   if(state.world==='self'){
+     buildFutureKeepsakes(world,state,targets,animated,nearbyProps);
+     void installAnimatedCompanion(world,animated,()=>playerPos,reduceMotion).catch(()=>{});
+   }
    // Async, same-origin only: optional verified CC0 meshes enrich the existing procedural scene.
    void dressWithKenney(world,state.world?state:{world:'future'},animated).catch(()=>{});
    buildCombatTargets(world,state,animated,targets);
    buildChronalOrrey(world,state,animated);
-   buildLivingCharacters(world,state,targets,animated,()=>playerPos);
+   buildLivingCharacters(world,state,targets,animated,()=>playerPos,nearbyProps);
    // Three interactive wormholes, placed at each world's far edge.
    const all=Object.keys(WORLDS).filter(w=>w!==state.world);
    for(let i=0;i<all.length;i++){

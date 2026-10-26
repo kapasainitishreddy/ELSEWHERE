@@ -1,5 +1,5 @@
 /* Offline shell. Only first-party static GET responses are cached; never API, secrets or saves. */
-const CACHE='elsewhere-static-v5';
+const CACHE='elsewhere-static-v6';
 const SHELL=['/','/index.html'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
@@ -12,14 +12,17 @@ self.addEventListener('fetch',event=>{
  if(request.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/')||url.pathname.startsWith('/private/'))return;
  event.respondWith((async()=>{
   const cache=await caches.open(CACHE);
+  // Asset manifests must be refreshed after a developer installs optional GLBs.
+  // Network-first is SAME ORIGIN ONLY and falls back to a verified cached copy offline.
+  const isAssetManifest=/^\/assets\/(?:kenney|companions)\/index\.json$/.test(url.pathname);
   const stored=await cache.match(request);
-  if(stored)return stored;
+  if(stored && !isAssetManifest)return stored;
   try{
    const response=await fetch(request);
-   if(response.ok&&response.type==='basic'&&(/^(text\/|application\/javascript|image\/|font\/|application\/wasm)/.test(response.headers.get('content-type')||'')||url.pathname.startsWith('/assets/kenney/'))){
+   if(response.ok&&response.type==='basic'&&(/^(text\/|application\/javascript|image\/|font\/|application\/wasm)/.test(response.headers.get('content-type')||'')||url.pathname.startsWith('/assets/kenney/')||url.pathname.startsWith('/assets/companions/')||isAssetManifest)){
     await cache.put(request,response.clone());
    }
    return response;
-  }catch{return url.pathname==='/'||url.pathname==='/index.html'?(await caches.match('/index.html')||Response.error()):Response.error();}
+  }catch{if(stored)return stored;return url.pathname==='/'||url.pathname==='/index.html'?(await caches.match('/index.html')||Response.error()):Response.error();}
  })());
 });

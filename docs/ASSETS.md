@@ -66,3 +66,13 @@ This project uses **no copyrighted Pacific Rim characters, branded mechs, manhwa
 ## Privacy caveat
 
 The assets are all public game content. Their licensing and hash verification do not independently certify the app's overall security. Gameplay privacy still depends on the vault, hosting environment, loaded extensions, browser and device. There is no CDN, analytics endpoint, or automatic public asset download in the production game. Running `npm run assets:fetch` is an explicit **developer-side network operation**.
+
+
+## Optional animated creature (v1.0)
+
+Run `npm run assets:animated` on a network-connected developer machine to install the Khronos
+glTF Sample Assets Fox (`Survey`, `Walk`, `Run` skeletal animation). It is verified against a pinned
+Git blob SHA and served only from `/assets/companions/fox.glb`. Mixed CC0 and CC BY 4.0
+credits, source links and license details: [ANIMATED_ASSET_LICENSE.md](ANIMATED_ASSET_LICENSE.md).
+The binary is **not included by default**. The original project-authored skinned humanoid
+characters always work even if this optional pack is missing.

@@ -7,7 +7,7 @@ import { readdirSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 const cwd=resolve(import.meta.dirname,'..');
-const sources=['src/future-dialogue.js','src/local-voice.js','src/compass.js','src/local-ai.js','src/game.js','src/branches.js','src/ui.js','src/main.js','server.mjs','local-server.mjs','src/motion-language.js','src/kinetic-effects.js','src/performance.js','src/worlds.js'];
+const sources=['src/future-dialogue.js','src/local-voice.js','src/compass.js','src/local-ai.js','src/game.js','src/branches.js','src/ui.js','src/main.js','server.mjs','local-server.mjs','src/motion-language.js','src/kinetic-effects.js','src/performance.js','src/worlds.js','src/actor-studio.js','src/actor-choreography.js','src/animated-companion.js','src/animated-companion-manifest.js','src/keepsake-scenes.js','scripts/vendor-animated.mjs','public/sw.js'];
 const checks=[];
 for(const file of sources){
  const r=spawnSync(process.execPath,['--check',file],{cwd,encoding:'utf8'});
@@ -25,6 +25,8 @@ if(viteInstalled){
 const models=resolve(cwd,'public','assets','kenney');
 const glbCount=existsSync(models)?readdirSync(models).filter(x=>x.endsWith('.glb')).length:0;
 checks.push({status:glbCount?'INSTALLED':'OPTIONAL',label:`Kenney model assets: ${glbCount} GLB file(s); assets:fetch installs 24`});
+const companionInstalled=existsSync(resolve(cwd,'public','assets','companions','fox.glb'));
+checks.push({status:companionInstalled?'NEEDS VERIFY':'OPTIONAL',label:`Khronos Fox imported animation: ${companionInstalled?'file exists; hash check via assets:animated':'not installed; run assets:animated on connected developer machine'}`});
 for(const label of [
  'Quest headset: rendering, movement, legibility, frame rate, nausea check',
  'Real browser: visual UX, no errors and network privacy inspection',
