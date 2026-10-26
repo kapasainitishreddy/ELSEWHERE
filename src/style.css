@@ -247,3 +247,37 @@
 .future-voice-controls p{flex-basis:100%;font-size:11px;color:rgba(226,239,237,.65);margin:0;line-height:1.55}
 @media(max-width:600px){.future-voice-controls button{flex:1 1 150px}}
 @media(prefers-reduced-motion:reduce){.future-voice-controls button{transition:none}}
+
+
+/* KINETIC WORLDS / v0.9 · Legible, optional physical feedback. No camera shake in VR. */
+.world-proximity-cue{
+ position:absolute;left:50%;bottom:115px;z-index:2;transform:translate(-50%,10px);
+ max-width:min(460px,80vw);padding:12px 19px 12px 15px;
+ border:1px solid rgba(147,238,227,.45);border-radius:10px;
+ background:linear-gradient(120deg,rgba(5,23,31,.93),rgba(17,40,48,.84));
+ box-shadow:0 12px 50px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.07);
+ color:#e2fbf3;font:700 11px/1.4 'Space Grotesk',system-ui,sans-serif;
+ letter-spacing:.15em;white-space:normal;text-align:center;pointer-events:none;
+ opacity:0;transition:opacity .2s ease,transform .2s ease;
+}
+.world-proximity-cue.visible{opacity:1;transform:translate(-50%,0)}
+.world-proximity-cue.visible:before{
+ content:'✦';display:inline-block;margin-right:12px;color:#85eadd;
+ animation:cue-breathe 2.8s ease-in-out infinite;
+}
+#world-canvas canvas{image-rendering:auto}
+#interaction-hint.active{padding:10px 15px;letter-spacing:.12em;border-radius:6px;background:rgba(8,30,38,.95)}
+.combat-reticle .reticle-center{filter:drop-shadow(0 0 7px rgba(112,245,248,.7))}
+#app-ui[data-combat=active] .combat-reticle{animation:combat-enter .4s ease-out both}
+@keyframes cue-breathe{50%{opacity:.55;transform:scale(.75)}}
+@keyframes combat-enter{from{opacity:0;transform:translate(-50%,-48%) scale(1.13)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@media(max-width:1050px){.world-proximity-cue{bottom:95px;font-size:9px}}
+@media(max-width:760px){.world-proximity-cue{bottom:calc(50% + 25px);left:57%;max-width:54vw;padding:9px 10px;font-size:8px;letter-spacing:.08em}}
+@media(prefers-reduced-motion:reduce){.world-proximity-cue,.world-proximity-cue.visible{transition:none;transform:translate(-50%,0)}.world-proximity-cue.visible:before,#app-ui[data-combat=active] .combat-reticle{animation:none}}
+
+.world-perf-display{position:absolute;left:calc(294px + 3vw);bottom:12px;z-index:2;
+ background:rgba(2,12,20,.92);border:1px solid rgba(148,225,233,.28);border-radius:5px;
+ color:#ade9eb;font:600 10px/1.3 monospace;letter-spacing:.035em;padding:8px 12px;pointer-events:none}
+.world-perf-display[hidden]{display:none}
+@media(max-width:1050px){.world-perf-display{left:105px}}
+@media(max-width:760px){.world-perf-display{left:7px;bottom:calc(50% + 4px);font-size:8px}}

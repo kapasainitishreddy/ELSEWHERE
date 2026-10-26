@@ -252,7 +252,7 @@ function begin(next){
  stopPresence();privateSpeech.disable();
  state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{
-  experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater());
+  experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater(),message=>toast(message));
   experience.mount(state);ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');
   document.querySelector('#loading-screen')?.classList.add('hidden');
  }catch(error){

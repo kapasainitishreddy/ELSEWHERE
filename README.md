@@ -1,10 +1,23 @@
-# ELSEWHERE · Future Compass 0.7
+# ELSEWHERE · Kinetic Worlds 0.9
 
 > One life is never enough.
 
 **ELSEWHERE** is a privacy-first, browser-based 3D speculative world prototype by Syrava. Enter portals to another century, meet a fictional older version of yourself, invent technology before its era, trade and steal fictional hours, negotiate with a Warden who remembers your fighting style, and defend a futuristic city from inside a giant original mech.
 
 This is an original experimental game and potential **Meta Global AI Developer Hackathon 2026 Startup-track** submission. It is **not** yet a polished shipped VR game, an MMO, or a verified Meta AI submission. In-world hour balances, fame, wealth and life paths are fictional, never real predictions or financial assets.
+
+## Kinetic Worlds 0.9: interact with the world
+
+The new interaction and animation pass makes the existing worlds more responsive **without adding cloud calls, commercial assets or health claims**:
+
+- **Living characters:** the traveler has jointed walking and breathing; independent story characters idle, turn toward you, shift posture and change their gestures with memory affinity; the fictional future self blinks, tilts their head, opens their mouth during speech and visibly listens while preparing replies. These are expressive procedural animations, not face capture or real personal likenesses.
+- **Real interactions:** five locally described physical artifacts can be examined in their scenes. E works for nearby beacons, artifacts and portals; mouse click and Quest-controller trigger activate corresponding 3D targets. Hover reticles and a proximity cue explain actions before selection.
+- **Spatial response:** original WebXR-friendly ring and spark animations punctuate arrivals, historical inventions, new memories, Warden strikes and mech reactor pulses. The mech also has recoil and animated thrusters. Effects have strict budgets, expire, and are destroyed on scene changes, with a reduced-motion option and no VR camera shaking.
+- **More believable environments:** reactive train movement, softly shifting light in the apartment, hovering papers in 1889, crystalline relics in the dungeon, and animated hangar illumination.
+- **VR performance:** far-off futuristic towers, roofs and lit windows now use Three.js `InstancedMesh` instead of hundreds of individual draw calls. Character, weather and event budgets are smaller on lower-power devices. This is an optimization, **not yet a measured FPS guarantee**.
+- **Local QA:** append `?perf=1` to the game URL to display live frame rate, 95th percentile frame time, draw calls and triangles; metrics are neither stored nor transmitted. Run `npm run motion:check` for animation-budget unit tests.
+
+See [Animation & Quest testing](docs/ANIMATION_AND_XR_QA.md). **111 simulation, dialogue, privacy and motion tests passed in the development environment; production Vite bundling and physical Quest controls are not verified.** This release still needs visual QA and device performance measurements before being used as a competition demo.
 
 ## Future Compass 0.7: a life beyond the headset
 
