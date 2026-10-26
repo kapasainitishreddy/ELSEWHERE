@@ -27,6 +27,8 @@ test('animation states are bounded to real imported Survey Walk Run clips',()=>{
 test('companion runtime only reads its own origin; external download is dev-only',async()=>{
  const runtime=await source('src/animated-companion.js'),installer=await source('scripts/vendor-animated.mjs');
  assert.match(runtime,/loader\.loadAsync\('\/assets\/companions\/fox\.glb'\)/);
+ assert.match(runtime,/speed\*Math\.min\(dt,\.05\)/);
+ assert.match(runtime,/THREE\.MathUtils\.clamp\(avatar\.position\.x/);
  assert.doesNotMatch(runtime,/https?:\/\/|raw\.githubusercontent\.com|\b(?:sendBeacon|localStorage)\b/);
  assert.match(installer,/gitSha\(data\)!==COMPANION_SOURCE\.sha/);
  assert.match(installer,/redirect:'error'/);

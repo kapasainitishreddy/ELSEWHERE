@@ -1,4 +1,4 @@
-# ELSEWHERE · Living Presence 1.0
+# ELSEWHERE · Living Presence 1.0.1
 
 > One life is never enough.
 
@@ -6,13 +6,13 @@
 
 This is an original experimental game and potential **Meta Global AI Developer Hackathon 2026 Startup-track** submission. It is **not** yet a polished shipped VR game, an MMO, or a verified Meta AI submission. In-world hour balances, fame, wealth and life paths are fictional, never real predictions or financial assets.
 
-## Living Presence 1.0: animated people and meaningful details
+## Living Presence 1.0.1: animated people and meaningful details
 
 **New in this source update:**
 
 - **Original skinned humanoids** replace the abstract future-self mannequin and four supporting cast models. They use real Three.js bone hierarchies and a skinned coat, not just a spinning capsule. Six authored clips (`idle`, `listening`, `speaking`, `walking`, `delighted`, `startled`) are cross-faded using `AnimationMixer`; the future self animates when a conversation begins. Facial expressions and the mouth movement are stylized and **not audio-driven lip sync**.
 - **Three new local 3D keepsakes** in 2046: the blueprint changes with inventions and patents, the borrowed-hours watch describes your branch's **fictional** time balance, and the portrait reflects your imagined city. Select via E, click, or WebXR controller ray. Examining each object triggers brief story text and a related future-self gesture; no additional personal records are collected.
-- **A genuinely animated open-source fox companion** is supported. The optional **Khronos glTF Sample Assets Fox** has imported Survey/Walk/Run skin animations. You must run `npm run assets:animated` on a network-connected developer computer; the game never fetches from third parties during gameplay. Its mixed CC0/CC-BY 4.0 authorship and license are documented in [the attribution file](docs/ANIMATED_ASSET_LICENSE.md). **The GLB is not bundled in this default repository.**
+- **A genuinely animated open-source fox companion** is supported. The optional **Khronos glTF Sample Assets Fox** has imported Survey/Walk/Run skin animations. You must run `npm run assets:animated` on a network-connected developer computer; the game never fetches from third parties during gameplay. Its mixed CC0/CC-BY 4.0 authorship and license are documented in [the attribution file](docs/ANIMATED_ASSET_LICENSE.md). **The GLB is not bundled in this default repository. When installed, the companion follows the traveler with bounded walk/run movement instead of simply running in place.**
 - **VR/headset comfort:** a bounded desktop pixel ratio, no new forced camera motion, idle animation reductions under the OS reduced-motion setting, local-only haptic attempts and original built-in teleport/snap-turn controls.
 - **Offline cache consistency:** a refreshed same-origin service worker does not indefinitely cache stale optional 3D asset manifests after a developer installs an art pack.
 

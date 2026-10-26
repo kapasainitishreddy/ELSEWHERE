@@ -31,6 +31,7 @@ test('real skeleton coat is animated by offline original clips with no external 
 test('the interactive future apartment is wired to actor gestures and near-world object rays',async()=>{
  const world=await source('src/worlds.js');
  assert.match(world,/createActor\(\{age:'older'/);
+ assert.match(world,/elder\.update\(t,dt,\{target:getTraveler\?\.\(\)/);
  assert.match(world,/buildFutureKeepsakes\(world,state,targets,animated,nearbyProps\)/);
  assert.match(world,/setDialogueActivity\(keepsakeReaction\(action\.id\),2\.2\)/);
  assert.match(world,/buildLivingCharacters\(world,state,targets,animated,\(\)=>playerPos,nearbyProps\)/);

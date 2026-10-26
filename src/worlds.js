@@ -226,7 +226,7 @@ function buildFuture(g,state,animated){
    animated.push(t=>{vehicle.position.x=((t*(i%2?-.4:.6)+(i*7))%78)-39;vehicle.position.y+=Math.sin(t*.02+i)*.0003;});
  }
 }
-function buildSelf(g,state,animated){
+function buildSelf(g,state,animated,getTraveler){
  // Warm, intimate architectural contrast to the outer worlds.
  box(g,19,.14,20,mat(0x27333c,.15,.7),0,0,-2);
  box(g,20,9,.35,mat(0x1b222e,.25,.5),0,4,-12);
@@ -251,7 +251,7 @@ function buildSelf(g,state,animated){
  const speechHalo=ring(g,.7,.014,emissive(0xffdfb8,.53),0,3.7,-5.3);speechHalo.rotation.x=Math.PI/2;
  animated.push((t,walking,dt)=>{
   elder.setMode(presence);
-  elder.update(t,dt,{reducedMotion:dt===0});
+  elder.update(t,dt,{target:getTraveler?.(),reducedMotion:dt===0});
   halo.rotation.z=t*.16;
   speechHalo.visible=presence==='speaking';
   if(speechHalo.visible)speechHalo.scale.setScalar(1+Math.sin(t*2)*.055);
@@ -708,7 +708,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    ground(world,p);stars(world,state.world==='dungeon'?0xd5bcff:0xb1dce8,state.world==='self'?180:280);
    addAtmosphere(world,state.world,animated,atmosphereBudget({headset:renderer.xr.isPresenting,reducedMotion,smallScreen:window.innerWidth<900}));
    if(state.world==='future')buildFuture(world,state,animated);
-   else if(state.world==='self'){elderPresence=buildSelf(world,state,animated);stillwaterTerrace=buildStillwaterTerrace(world,animated,targets);}
+   else if(state.world==='self'){elderPresence=buildSelf(world,state,animated,()=>renderer.xr.isPresenting?rig.position:playerPos);stillwaterTerrace=buildStillwaterTerrace(world,animated,targets);}
    else if(state.world==='past')buildPast(world,state,animated);
    else if(state.world==='dungeon')buildDungeon(world,state,animated);
    else if(state.world==='mech')titan=buildMech(world,state,animated);
