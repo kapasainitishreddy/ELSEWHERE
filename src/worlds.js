@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { WORLDS, INVENTIONS, cityRipple, worldOptions } from './game.js';
+import { addScenery, collisionRects } from './scenery.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
 const palettes = {
@@ -36,15 +37,40 @@ function buildPortal(group,world,x,z,interactables,animated){
  const base=new THREE.Group();base.position.set(x,0,z);group.add(base);
  const frame=emissive(COLORS[world],1.4);ring(base,1.5,.105,frame,0,2.1,0);
  ring(base,1.68,.025,emissive(0xffffff,.55),0,2.1,0);
- const membrane=mesh(base,new THREE.CircleGeometry(1.4,64),glass(COLORS[world],.27),0,2.1,-.03);
+ const membraneMaterial=new THREE.ShaderMaterial({
+  uniforms:{uTime:{value:0},uColor:{value:new THREE.Color(COLORS[world])}},transparent:true,depthWrite:false,side:THREE.DoubleSide,
+  vertexShader:`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+  fragmentShader:`varying vec2 vUv; uniform float uTime; uniform vec3 uColor;
+    void main(){vec2 p=vUv*2.0-1.0;float r=length(p);if(r>1.0)discard;
+    float a=atan(p.y,p.x);float swirl=sin(12.0*r-2.9*uTime+sin(a*5.0+uTime)*1.6);
+    float swirl2=sin(18.0*r+sin(a*8.0-uTime)*1.3+uTime*3.2);
+    float central=1.0-smoothstep(0.2,1.0,r);float edge=smoothstep(.74,.97,r);
+    vec3 col=uColor*(.23+.32*central+.2*swirl+.16*swirl2)+vec3(.17,.21,.3)*central;
+    gl_FragColor=vec4(col,.32+.27*central+.2*edge);}`
+ });
+ const membrane=mesh(base,new THREE.CircleGeometry(1.4,64),membraneMaterial,0,2.1,-.03);
  membrane.userData.action={type:'world',world};interactables.push(membrane);
  const hit=mesh(base,new THREE.CircleGeometry(1.62,64),new THREE.MeshBasicMaterial({transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}),0,2.1,.06);
  hit.userData.action={type:'world',world};interactables.push(hit);
  cylinder(base,1.48,1.63,.18,mat(0x111e29,.8,.2),0,.03,0);
  sign(base,WORLDS[world].name.toUpperCase(),'ENTER WORLD',0,4.4,.08,3.2);
  light(base,COLORS[world],1.8,0,2.2,0,10);
- animated.push((time)=>{frame.emissiveIntensity=1.3+Math.sin(time*1.25+x)*.35;base.children[0].rotation.z=Math.sin(time*.21+x)*.1;});
+ animated.push((time)=>{frame.emissiveIntensity=1.3+Math.sin(time*1.25+x)*.35;base.children[0].rotation.z=Math.sin(time*.21+x)*.1;membraneMaterial.uniforms.uTime.value=time;});
  return base;
+}
+function buildActionBeacon(group,option,index,accent,animated,targets,beacons){
+  const x=(index-1)*5.1,z=-1.5;
+  const b=new THREE.Group();group.add(b);b.position.set(x,0,z);
+  const base=cylinder(b,.66,.82,.24,mat(0x21303e,.76,.38),0,.14,0);
+  const halo=ring(b,.75,.06,emissive(accent,1.4),0,.3,0);halo.rotation.x=Math.PI/2;
+  const core=orb(b,.27,glass(accent,.52),0,1.02,0);const spine=cylinder(b,.035,.035,1.35,mat(accent,.7,.3),0,.95,0);
+  const title=option.title.toUpperCase().slice(0,27);
+  const panel=mesh(b,new THREE.PlaneGeometry(3.15,1.05),new THREE.MeshBasicMaterial({map:labelTexture(title,'TOUCH / CLICK / E','#effaff',`#${new THREE.Color(accent).getHexString()}`),side:THREE.DoubleSide,transparent:true,depthWrite:false}),0,2.34,.05);
+  panel.userData.action={type:'choice',id:option.id};targets.push(panel);
+  const hit=mesh(b,new THREE.PlaneGeometry(3.3,1.2),new THREE.MeshBasicMaterial({opacity:0,transparent:true,depthWrite:false,side:THREE.DoubleSide}),0,2.34,.08);
+  hit.userData.action={type:'choice',id:option.id};targets.push(hit);
+  beacons.push({position:b.position.clone(),action:option.id,title:option.title});
+  animated.push(t=>{core.position.y=1.03+Math.sin(t*1.1+index)*.13;halo.rotation.z=t*.45;spine.scale.y=.94+Math.sin(t*.9+index)*.05;});
 }
 function billboards(g,text,x,y,z,accent='#5fe5e0'){
  const signplane=sign(g,text,'EVERY CHOICE REMAINS',x,y,z,5.3);
@@ -230,28 +256,61 @@ function makePlayer(root){
 /** Create a self-contained Three.js renderer with WebXR controller support. */
 export function createExperience(container, onWorld, onAction){
  const scene=new THREE.Scene();const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
- renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,1.75));renderer.setSize(container.clientWidth||window.innerWidth,container.clientHeight||window.innerHeight);
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,window.innerWidth<800?1.1:1.5));renderer.setSize(container.clientWidth||window.innerWidth,container.clientHeight||window.innerHeight);
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;
  renderer.shadowMap.enabled=false;renderer.xr.enabled=true;
  renderer.domElement.style.cssText='width:100%;height:100%;display:block;touch-action:none;';
  container.append(renderer.domElement);
  const rig=new THREE.Group();scene.add(rig);const camera=new THREE.PerspectiveCamera(63,1,.08,200);rig.add(camera);camera.position.set(0,5,17);
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.055;controls.enablePan=false;controls.maxPolarAngle=Math.PI*.47;controls.minDistance=5;controls.maxDistance=28;controls.target.set(0,2,0);
- const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],player=null,titan=null,moving=false;
+ const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],player=null,titan=null,moving=false;
+ const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
+ const hover=document.querySelector('#interaction-hint');let pointerDown=null;
  const clock=new THREE.Clock();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();
  const vrButton=VRButton.createButton(renderer);
  vrButton.id='enter-vr-button';vrButton.setAttribute('aria-label','Enter VR headset mode');container.append(vrButton);
- const vrController=renderer.xr.getController(0);scene.add(vrController);
- const controllerRay=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0x7feeff}));controllerRay.scale.z=10;vrController.add(controllerRay);
+ const vrControllers=[renderer.xr.getController(0),renderer.xr.getController(1)];
+ for(const vrController of vrControllers){
+   scene.add(vrController);
+   const ray=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0x7feeff}));
+   ray.scale.z=10;vrController.add(ray);
+   vrController.addEventListener('select',()=>{
+     const origin=new THREE.Vector3(),quat=new THREE.Quaternion();vrController.getWorldPosition(origin);vrController.getWorldQuaternion(quat);
+     const dir=new THREE.Vector3(0,0,-1).applyQuaternion(quat);const action=intersect(targets,origin,dir);
+     if(action){trigger(action);return;}
+     // Comfortable controller teleportation to a walkable floor (rather than forced smooth movement).
+     const point=new THREE.Vector3();const floor=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+     const rayToFloor=new THREE.Ray(origin,dir);
+     if(rayToFloor.intersectPlane(floor,point)&&point.distanceTo(origin)<15){
+       rig.position.x=THREE.MathUtils.clamp(point.x,-18,18);
+       rig.position.z=THREE.MathUtils.clamp(point.z,-18,17);
+     }
+   });
+ }
  function intersect(objects,origin,dir){raycaster.set(origin,dir);const hits=raycaster.intersectObjects(objects,false);return hits[0]?.object.userData.action || null;}
- vrController.addEventListener('select',()=>{const origin=new THREE.Vector3(),quat=new THREE.Quaternion();vrController.getWorldPosition(origin);vrController.getWorldQuaternion(quat);const dir=new THREE.Vector3(0,0,-1).applyQuaternion(quat);const action=intersect(targets,origin,dir);if(action) trigger(action);});
  function trigger(action){if(action.type==='world')onWorld(action.world);else if(action.type==='choice')onAction(action.id);}
  function click(event){if(renderer.xr.isPresenting)return;
+   if(pointerDown && Math.hypot(event.clientX-pointerDown.x,event.clientY-pointerDown.y)>7)return;
    const rect=renderer.domElement.getBoundingClientRect();mouse.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
    raycaster.setFromCamera(mouse,camera);const hit=raycaster.intersectObjects(targets,false)[0];if(hit)trigger(hit.object.userData.action);
  }
  renderer.domElement.addEventListener('click',click);
+ renderer.domElement.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY};});
+ renderer.domElement.addEventListener('pointermove',e=>{
+   if(!hover||renderer.xr.isPresenting)return;
+   const rect=renderer.domElement.getBoundingClientRect();mouse.set(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+   raycaster.setFromCamera(mouse,camera);const h=raycaster.intersectObjects(targets,false)[0];
+   renderer.domElement.style.cursor=h?'pointer':'grab';
+   hover.textContent=h?.object.userData.action?.type==='choice'?'CLICK TO INTERACT':h?'STEP INTO ANOTHER WORLD':'';
+   hover.classList.toggle('active',!!h);
+   hover.style.left=`${e.clientX+12}px`;hover.style.top=`${e.clientY+12}px`;
+ });
+ renderer.domElement.addEventListener('pointerleave',()=>hover?.classList.remove('active'));
  function keydown(e){if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
+   if(document.querySelector('.modal-shade'))return;
+   if(!e.repeat && e.code==='KeyE'){interact();e.preventDefault();return;}
+   if(!e.repeat && e.code==='Space' && state?.world==='mech' && state.mechBattle.active){onAction('fire-pulse');e.preventDefault();return;}
+   if(!e.repeat && e.code==='KeyQ' && state?.world==='mech' && state.mechBattle.active){onAction('raise-shield');e.preventDefault();return;}
    if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft'].includes(e.code)){pressed.add(e.code);e.preventDefault();}}
  function keyup(e){pressed.delete(e.code);}window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',()=>pressed.clear());
  function xrChoicePanels(worldId){
@@ -266,10 +325,16 @@ export function createExperience(container, onWorld, onAction){
    return choices.filter(c=>!c.disabled);
  }
  function mount(next){
-   state=next;scene.remove(world);world.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(o.material?.map)o.material.map.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();}else if(o.isPoints){o.geometry?.dispose();o.material?.dispose();}});
+   const sameWorld=state?.world===next.world;
+   const lastPos=playerPos.clone();const lastCamera=camera.position.clone(),lastTarget=controls.target.clone();
+   state=next;scene.remove(world);world.traverse(o=>{
+     o.geometry?.dispose();
+     const materials=Array.isArray(o.material)?o.material:o.material?[o.material]:[];
+     for(const material of materials){material.map?.dispose();material.dispose();}
+   });
    world=new THREE.Group();scene.add(world);scene.background=new THREE.Color(palettes[state.world].bg);
    scene.fog=new THREE.FogExp2(palettes[state.world].fog,state.world==='self'?.012:.008);
-   targets=[];animated=[];titan=null;
+   targets=[];beacons=[];animated=[];titan=null;
    const p=palettes[state.world];world.add(new THREE.HemisphereLight(p.light,0x080d17,state.world==='self'?1.4:1.75));
    const sun=new THREE.DirectionalLight(p.light,2.8);sun.position.set(5,17,5);world.add(sun);
    ground(world,p);stars(world,state.world==='dungeon'?0xd5bcff:0xb1dce8,state.world==='self'?180:280);
@@ -278,15 +343,28 @@ export function createExperience(container, onWorld, onAction){
    else if(state.world==='past')buildPast(world,state,animated);
    else if(state.world==='dungeon')buildDungeon(world,state,animated);
    else if(state.world==='mech')titan=buildMech(world,state,animated);
+   addScenery(world,state,animated);
    // Three interactive wormholes, placed at each world's far edge.
    const all=Object.keys(WORLDS).filter(w=>w!==state.world);
    for(let i=0;i<all.length;i++){
      const x=(i-1.5)*5.7;buildPortal(world,all[i],x,-20.5,targets,animated);
    }
+   const active=worldOptions(state).filter(o=>!o.disabled && !o.id.startsWith('go-'));
+   const priority={future:['talk-city','find-shard','buy-penthouse'],self:['confess','purpose','find-shard'],past:['invent-cell','patent','gift','find-shard'],dungeon:['rune-moon','rune-crown','rune-star','face-warden','find-shard'],mech:['start-defense','fire-pulse','raise-shield','defend-city','find-shard']};
+   const physical=[...active].sort((a,b)=>{
+     const aa=priority[state.world].indexOf(a.id),bb=priority[state.world].indexOf(b.id);
+     return (aa===-1?100:aa)-(bb===-1?100:bb);
+   }).slice(0,3);
+   physical.forEach((o,i)=>buildActionBeacon(world,o,i,COLORS[state.world],animated,targets,beacons));
    xrChoicePanels(state.world);
    player=makePlayer(world);player.visible=!renderer.xr.isPresenting && !(state.world==='mech'&&state.mechDeployed);
-   playerPos.set(0,0,6);rig.position.set(0,0,0);
-   camera.position.set(0,5.5,18);controls.target.set(0,2,0);controls.update();
+   playerPos.copy(sameWorld?lastPos:new THREE.Vector3(0,0,6));
+   if(!renderer.xr.isPresenting)rig.position.set(0,0,0);
+   if(sameWorld){camera.position.copy(lastCamera);controls.target.copy(lastTarget);}
+   else {camera.position.set(0,5.5,18);controls.target.set(0,2,0);}
+   player.position.copy(playerPos);
+   if(titan && state.mechDeployed){titan.position.x=playerPos.x;titan.position.z=playerPos.z-13;}
+   controls.update();
    if(state.world==='self')light(world,0xf9c98c,2,4,8,-5,17);
  }
  function move(dt){
@@ -297,24 +375,41 @@ export function createExperience(container, onWorld, onAction){
    moving=Boolean(mx||mz);
    if(!moving)return;
    const norm=Math.hypot(mx,mz)||1;const dx=mx/norm*speed,dz=mz/norm*speed;
-   playerPos.x=THREE.MathUtils.clamp(playerPos.x+dx,-22,22);
-   playerPos.z=THREE.MathUtils.clamp(playerPos.z+dz,-22,18);
+   const collisions=collisionRects(state.world);
+   const tryX=THREE.MathUtils.clamp(playerPos.x+dx,-22,22),tryZ=THREE.MathUtils.clamp(playerPos.z+dz,-22,18);
+   const blocked=(x,z)=>!(state.world==='mech'&&state.mechDeployed)&&collisions.some(([a,b,c,d])=>x>a-.45&&x<b+.45&&z>c-.45&&z<d+.45);
+   if(!blocked(tryX,playerPos.z))playerPos.x=tryX;
+   if(!blocked(playerPos.x,tryZ))playerPos.z=tryZ;
    if(state.world==='mech'&&state.mechDeployed&&titan){titan.position.x=playerPos.x;titan.position.z=playerPos.z-13;titan.rotation.y=Math.atan2(dx,dz)+Math.PI;}
    else {player.position.copy(playerPos);player.rotation.y=Math.atan2(dx,dz)+Math.PI;}
-   const target=new THREE.Vector3(playerPos.x,2,playerPos.z-3);
+   const target=new THREE.Vector3(playerPos.x,state.world==='mech'&&state.mechDeployed?5:2,playerPos.z-3);
    const d=target.clone().sub(controls.target);controls.target.add(d);camera.position.add(d);
  }
- function tick(){const dt=Math.min(clock.getDelta(),.05);const t=clock.elapsedTime;move(dt);
+ function tick(){const dt=Math.min(clock.getDelta(),.05);const t=reduceMotion?0:clock.elapsedTime;move(dt);
    if(player && player.visible){player.position.y=Math.sin(t*(moving?9:1))*(moving?.08:.03);}
-   for(const fn of animated)fn(t,moving);controls.enabled=!renderer.xr.isPresenting;if(!renderer.xr.isPresenting)controls.update();renderer.render(scene,camera);
+   for(const fn of animated)fn(t,moving,reduceMotion?0:dt);controls.enabled=!renderer.xr.isPresenting;if(!renderer.xr.isPresenting)controls.update();renderer.render(scene,camera);
  }
  renderer.setAnimationLoop(tick);
  renderer.xr.addEventListener('sessionstart',()=>{controls.enabled=false;rig.position.set(0,0,5);camera.position.set(0,0,0);if(player)player.visible=false;});
  renderer.xr.addEventListener('sessionend',()=>{controls.enabled=true;rig.position.set(0,0,0);camera.position.set(0,5.5,18);if(player)player.visible=!(state.world==='mech'&&state.mechDeployed);});
  function resize(){const w=container.clientWidth||window.innerWidth;const h=container.clientHeight||window.innerHeight;camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h);}
  window.addEventListener('resize',resize);
- mount({world:'future',...({world:'future',credits:1200,owned:[],pilotTrained:false,mechDeployed:false})});
- return {mount,resize,vrSupported:()=>Boolean(navigator.xr),
+ resize();
+ function interact(){
+   if(!state||!beacons.length)return;
+   const closest=beacons.map(b=>({b,d:b.position.distanceTo(playerPos)})).sort((a,b)=>a.d-b.d)[0];
+   if(closest && closest.d<6)onAction(closest.b.action);
+ }
+ function effect(current,event){
+   if(!event||!world)return;
+   const pulse=state.world==='mech'&&/Threat|pulse|final/i.test(event.title);
+   if(reduceMotion||(!pulse && !/Memory|Warden|cipher|Ending/i.test(event.title)))return;
+   const ringMaterial=new THREE.MeshBasicMaterial({color:pulse?0xffae83:COLORS[state.world],transparent:true,opacity:.78,depthWrite:false,side:THREE.DoubleSide});
+   const burst=new THREE.Mesh(new THREE.TorusGeometry(.8,.055,8,44),ringMaterial);burst.position.set(0,pulse?8:3,pulse?-19:-2);world.add(burst);
+   const born=clock.elapsedTime;
+   animated.push(t=>{const age=t-born;if(age<0)return;burst.scale.setScalar(1+Math.min(age*4,8));ringMaterial.opacity=Math.max(0,.78-age*.84);if(age>1)burst.visible=false;});
+ }
+ return {mount,resize,effect,interact,setMove(code,on){if(on)pressed.add(code);else pressed.delete(code);},vrSupported:()=>Boolean(navigator.xr),
    enterVR(){vrButton.click();},
    dispose(){renderer.setAnimationLoop(null);renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);controls.dispose();renderer.dispose();container.replaceChildren();}
  };

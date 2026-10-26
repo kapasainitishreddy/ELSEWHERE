@@ -1,7 +1,7 @@
 {
   "name": "syrava-elsewhere",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "ELSEWHERE: a playable alternate-lives world simulation for desktop and WebXR.",
   "scripts": {

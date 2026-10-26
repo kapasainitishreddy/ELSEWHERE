@@ -8,14 +8,17 @@ Project: ELSEWHERE by Syrava. Startup track. Public repository: https://github.c
 
 **A possible life engine, not an NPC chatbot.** Bring future-self storytelling, alternate history, invention economics, powers and machines into a single persistent world. The differentiator is that causally valid actions are separate from generative dialogue. AI may narrate a future but can never grant wealth, items or abilities itself.
 
-## What's new in this hackathon codebase
+## What the current prototype implements (original new code)
 
 - Five original procedural Three.js environments, portals and movement.
 - Local state machine tracking fictional currency, reputation, trust, property, alternate inventions, powers and mech pilot status.
 - Story choices with consequences, prevention of repeated monetary payouts and compact journal of events.
 - Future-self dialogue driven by a bounded snapshot of the player's fictional state; deterministic offline fallback.
 - Same-origin backend bridge with API key separation, input limits, timeout and rate limiting.
-- Desktop interaction and WebXR controller-ray prototype.
+- Desktop and touch interactions, original WebXR controller rays, spatial action beacons and controller floor teleport prototype.
+- Separate tactical mech defense and dungeon cipher minigames.
+- 5 collectible memory fragments, 3 story endings, and exported/imported save files.
+- Context-sensitive original procedural 3D details and optional procedural ambience.
 - Node test suite and responsive story HUD. No GitHub Actions.
 
 ## Judging rubric alignment
@@ -29,19 +32,7 @@ Project: ELSEWHERE by Syrava. Startup track. Public repository: https://github.c
 
 ## Three-minute demonstration storyboard
 
-0:00–0:20: Open Neo Elysium, show original skyline and world portals, walk with keyboard.
-
-0:20–0:50: Enter 1889. Build the Aether Cell, **patent** it. Show credit and fame change, explain irreversibility.
-
-0:50–1:15: Return to the city. Show altered energy architecture and own the sky residence using fictional game currency.
-
-1:15–1:55: Travel to The Other You. Ask a question about wealth and regret. **If configured, visibly show a successful real Meta Muse Spark dialogue, not a pre-recorded fake API interaction.**
-
-1:55–2:25: Choose a dungeon power and defeat the Warden; enter the mech hangar, train and drive ATLAS-09.
-
-2:25–2:45: Refresh the browser to demonstrate persistence, open the timeline journal; rerun the same path with shared invention choice as a contrasting consequence if time allows.
-
-2:45–3:00: Show architecture, attribution, tests, repo and public URL; clearly distinguish the working baseline from the vision for a creator-built world platform.
+See [DEMO_3MIN.md](DEMO_3MIN.md) for a current evidence-first storyboard covering the new cipher, mech defense, Echo Atlas, three endings, and the first verified Meta API request. Do not show combat or model integrations that have not actually been tested.
 
 ## Rights and safety
 
