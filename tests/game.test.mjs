@@ -3,6 +3,12 @@ import assert from 'node:assert/strict';
 import { initialState, travel, applyAction, futureProfile, cityRipple, worldOptions, dialogueFallback, addConversation, loadState, saveState, resetState, SAVE_KEY, RUNE_SEQUENCES, sealClue, SHARD_NAMES, echoMap, writeLetter, encounterDialogue } from '../src/game.js';
 function go(state,world){const r=travel(state,world);assert.equal(r.ok,true);return r.state;}
 function act(state,action){const r=applyAction(state,action);assert.equal(r.ok,true,`Action ${action}: ${r.error||'unknown'}`);return r.state;}
+function defeatWarden(state){
+ for(const action of ['warden-power','warden-strike','warden-guard','warden-power','warden-strike','warden-strike']){
+  if(state.dungeonOutcome)break;state=act(state,action);
+ }
+ assert.equal(state.dungeonOutcome,'victory');return state;
+}
 
 test('initial timeline and available destinations',()=>{
  const s=initialState();assert.equal(s.credits,1200);assert.equal(s.world,'future');assert.equal(s.fame,0);
@@ -36,7 +42,7 @@ test('dungeon powers and relic resolve exactly once',()=>{
  let s=go(initialState(),'dungeon');assert.equal(applyAction(s,'face-warden').ok,false);
  s=act(s,'power-phase');assert.equal(s.power,'phase');assert.equal(applyAction(s,'power-gravity').ok,false);
  for(const rune of RUNE_SEQUENCES.phase)s=act(s,`rune-${rune}`);
- s=act(s,'face-warden');s=act(s,'guard-relic');assert.equal(s.dungeonOutcome,'victory');
+ s=defeatWarden(act(s,'face-warden'));s=act(s,'guard-relic');assert.equal(s.dungeonOutcome,'victory');
  assert.equal(applyAction(s,'sell-relic').ok,false);assert.ok(s.trust>10);
 });
 
@@ -87,7 +93,7 @@ test('dungeon seal gives deterministic hints, wrong order resets and all three p
    s=act(s,`rune-${wrong}`);assert.equal(s.runeProgress,0);assert.equal(s.runeMistakes,1);
    assert.equal(applyAction(s,'face-warden').ok,false);
    for(const rune of RUNE_SEQUENCES[power])s=act(s,`rune-${rune}`);
-   assert.equal(s.runeProgress,3);s=act(s,'face-warden');assert.equal(s.dungeonOutcome,'victory');
+   assert.equal(s.runeProgress,3);s=defeatWarden(act(s,'face-warden'));assert.equal(s.dungeonOutcome,'victory');
  }
 });
 

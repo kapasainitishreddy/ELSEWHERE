@@ -1,47 +1,42 @@
-# ELSEWHERE 0.2: Echo Protocol architecture
-
-## Goals
-
-One authored world feels more real when it remembers a choice. The system does not ask a language model to invent game rules or award riches. It gives the model a narrow task: portray a fictional, reactive future self.
+# ELSEWHERE 0.3 — Privacy-first causal architecture
 
 ```text
-Browser 3D (Three.js, WebXR) ──┬── Original geometric worlds + portals + spatial actions
-                              ├── Player motion, atmospheric particles, original synthesized sound
-                              └── Scene rebuild based on deterministic saved state
-                                      ↑
-UI / Story Deck ── worldOptions ── applyAction / travel / writeLetter
-                                      │
-                              Local causal state engine
-                                      │
-                           versioned browser localStorage / explicit private JSON import and export
+Three.js + WebXR (rendering, controller rays, floor teleport, original shaders)
+    ↕ local gameplay input
+Game state machine (src/game.js)
+    ├── Chronal Exchange (src/chronal.js): hours, debt, era rates, paradox, heists
+    ├── Character memory (src/characters.js): mood, affinity, bounded events
+    ├── Warden director (src/warden.js): patterns, guards, focus, mercy
+    ├── Parallel gate (src/branches.js): Prime/Echo isolated snapshots
+    ├── Original 13-chapter story (src/story.js): unlocks based on actions
+    └── Five worlds/scenery (src/worlds.js + src/scenery.js)
+    ↓ never sent to a server in Private Mode
+Passphrase AES-256-GCM vault (src/vault.js) → localStorage ciphertext
+    ↔ manual encrypted backup import/export
+    ↔ lock/rekey functions
 
-Future-self text conversation (optional)
-Browser ── bounded POST /api/character ── Node bridge ── Meta Model API (Muse Spark)
-        └── local response fallback when key, network or provider is unavailable
+OPTIONAL, explicitly non-private hackathon demonstration (not started by default):
+Player consents → only immediate typed question + allowlisted FICTIONAL summary
+    → same-origin /api/character → 127.0.0.1-only bridge (server.mjs)
+    → Meta Model API → result (narrative only; cannot mutate game rules)
 ```
 
-## Authoritative state and safety invariants
+## Security invariants
 
-- `src/game.js` owns all currency, reputation, inventions, powers, mission outcomes, endings and event log mutations.
-- Invention decisions and dividend collection are irreversible within one timeline. Warden and defense rewards are one-time.
-- `worldOptions(state)` constrains actions to enabled choices. Disabled options are also refused by `applyAction`, not just by HTML buttons.
-- `saveState` and `loadState` use a schema-compatible v1 file with new default fields. Legacy saves retain their current world, inventions, wealth and history. Stored arrays, flags and dialogue have size/format limits.
-- NPC local replies are deterministic and react to relevant story facts. This is intentionally not advertised as a full autonomous simulation.
-- API-generated speech is **narrative-only**. JSON returned from Meta is not parsed as executable commands, in-game credits or game-state patches.
-- The letter is a local note unless a player enables a separate opt-in. Voice transcription depends on browser capabilities and may use an external provider.
+1. `src/game.js` determines game mutations; dialogue cannot grant credits, move worlds, unlock powers or mint hours. Options are validated on each action, not just disabled in HTML.
+2. A one-time time trade cannot be repeated by recrossing portals. Hour buy rates exceed all sell rates. A Chronal heist is a one-time moral choice per reality. Repayment removes debt and consumes hours.
+3. Prime/Echo snapshots do not transfer wealth, NPC memory, hidden flags or endings. Fork costs are paid before snapshotting both realities.
+4. The Web Crypto passphrase is never persisted; salt and IV are unsecret, ciphertext authenticated. Secure context is required. Old plaintext saves are deleted **only after** the new encrypted record is written.
+5. Local UI text is escaped before insertion into HTML. Public service-worker caches exclude `/api/` and `/private/` requests. In production a SW may cache application code, not vault payloads.
+6. Optional Meta bridge requires explicit `cloudConsent:true` and sends no stored letters, previous chat turns, full timeline, NPC memories, alternate branch snapshots or passphrases. A real question/summary still crosses the network if enabled.
+7. Local authored dialogue is deterministic and reactive, **not** a locally installed general-purpose model or autonomous character AI.
 
-## Scenes and interactions
+## XR and interaction
 
-`src/worlds.js` builds the original 3D level layouts, camera, hit-testing, portals, XR controller rays and room switching. `src/scenery.js` adds context-sensitive scenery and coarse collision proxies. For movement, a lightweight collision system blocks the most significant scene obstacles. This is not a full rigid-body physics engine. `src/audio.js` synthesizes a different chord per world, entirely client-side and opt-in. `src/ui.js` is the semantic HTML layer and accessibility fallback.
+WebXR uses Three.js' VRButton and controller `select`/`squeeze`: point and select portals, panels, objects or floor. Active combat maps trigger to attack and grip to guard/shield, preventing attack triggers from accidentally teleporting. XR floor teleport is restricted to bounds and coarse obstacles. Thumbstick snap-turn works where supported; desktop WASD, mouse orbit and tactile story buttons are fallbacks. Custom geometry/materials are disposed during world rebuilds; browser and headset tests remain outstanding.
 
-Desktop uses keyboard orbit/movement and click targets. Mobile uses a directional pad. VR uses controller ray selection and floor teleportation. The headset path remains unverified.
+## Test evidence and unfinished work
 
-## Next prioritized engineering milestones
+Node tests cover simulation, randomized playthroughs, branch separation, vault cryptography, malformed backups, action boundaries, output escaping, a fallback-only dialogue mode and a consented Meta request's allowlist. A passing simulation suite is **not** proof of production WebXR quality.
 
-1. Run `npm install`, `npm run check` and all routes on a real GPU/browser. Record screenshots and actual frame rates on low-end phones and a supported Quest.
-2. Prove actual Meta Model API credentials and model output work from the server. Record model fallback, rate limits and input privacy behavior.
-3. Build a player action tool schema with deterministic approval, so NPCs can propose verifiable consequences without directly mutating the world.
-4. Replace scene collision proxies with a physics layer, implement true mech cockpit interaction, gameplay animations and interaction sound design.
-5. Add legal/licensing notices and integration proof for any external models, assets or tools introduced after this baseline.
-
-No GitHub Actions workflows are used.
+Unfinished: real frame rate/device QA, robust navmesh/rigid-body physics, real ragdoll/hand interactions, full mission pacing, locally hosted eligible Meta open-weights inference, cryptographic review, manual offline-shell testing, automated screenshot comparison and accessibility audits. No GitHub Actions workflows are used.

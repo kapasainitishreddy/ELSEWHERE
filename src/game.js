@@ -1,3 +1,8 @@
+import { initialChronal, sanitizeChronal, timeOptions, performTimeTrade } from './chronal.js';
+import { initialCast, sanitizeCast, rememberWorldEvent, speakAs, CAST, roleplayReply } from './characters.js';
+import { initialParallel, branchOptions, forkIntoEcho, switchBranch, branchSnapshot } from './branches.js';
+import { initialWardenBattle, sanitizeWardenBattle, wardenOptions, resolveWardenTurn } from './warden.js';
+
 /**
  * ELSEWHERE's deterministic causal-world state machine.
  * The AI narrates worlds but never awards currency, superpowers or achievements.
@@ -42,7 +47,9 @@ export function initialState() {
     conversation: [], revision: 0,
     echoShards: [], runeProgress: 0, runeMistakes: 0,
     mechBattle: DEFAULT_BATTLE(), encounters: {future:0,past:0,dungeon:0,mech:0}, lastEncounter: null,
-    letter: '', ending: null, worldVisits: { future:1, self:0, past:0, dungeon:0, mech:0 }
+    letter: '', ending: null, worldVisits: { future:1, self:0, past:0, dungeon:0, mech:0 },
+    chronal: initialChronal(), stars: 1, cast: initialCast(), parallel: initialParallel(),
+    wardenBattle: initialWardenBattle()
   };
 }
 
@@ -60,7 +67,7 @@ export function sealClue(s) {
 
 export function worldOptions(s) {
   const shard = {id:'find-shard', title:'Recover a memory fragment',detail:'Take one piece of this world with you.',disabled:s.echoShards.includes(s.world),reason:'Memory already collected'};
-  switch (s.world) {
+  const options = (() => { switch (s.world) {
     case 'future': return [
       { id: 'go-past', title: 'Cross into the year 1889', detail: 'Change history, invent technology and return richer or wiser.' },
       { id: 'go-self', title: 'Meet your future self', detail: 'Speak to the person you might become.' },
@@ -90,8 +97,10 @@ export function worldOptions(s) {
     ];
     case 'dungeon': return s.power ? [
       { id: 'talk-witness', title: 'Listen to the Hollow Witness', detail: 'Ask why the kingdom locked its crown away.' },
+      { id: 'talk-warden', title: 'Confront the Warden about its stolen hours', detail: 'Your opponent recalls the choices you made before returning.' },
+      ...(s.wardenBattle?.active ? wardenOptions(s):[]),
       ...(!s.dungeonOutcome && s.runeProgress<3 ? Object.keys(RUNES).map(id=>({id:`rune-${id}`,title:`Touch the ${id} rune ${RUNES[id]}`,detail:`The seal remembers ${s.runeProgress}/3 correct marks.`})):[]),
-      { id: 'face-warden', title: 'Face the Hollow Warden', detail: 'The three seals have been broken. The throne is exposed.', disabled: Boolean(s.dungeonOutcome)||s.runeProgress!==3, reason: s.dungeonOutcome ? 'Encounter completed' : `Solve the rune cipher (${s.runeProgress}/3)` },
+      ...(!s.wardenBattle?.active?[{ id: 'face-warden', title: s.wardenBattle?.outcome==='defeat'?'Challenge the Warden again':'Enter the Warden’s arena', detail: 'Fight, shield, cast or negotiate. The Warden learns from your moves.', disabled: Boolean(s.dungeonOutcome)||s.runeProgress!==3||s.wardenBattle?.active, reason: s.dungeonOutcome ? 'Encounter completed' : 'Solve all three runes first' }]:[]),
       { id: 'sell-relic', title: 'Sell the Chrono Relic', detail: 'Exchange a timeless artifact for a fortune.', disabled: s.dungeonOutcome !== 'victory' || once(s,'relic-decision'), reason: once(s,'relic-decision') ? 'Choice made' : 'Requires victory' },
       { id: 'guard-relic', title: 'Protect the relic', detail: 'Some power should never belong to anyone.', disabled: s.dungeonOutcome !== 'victory' || once(s,'relic-decision'), reason: once(s,'relic-decision') ? 'Choice made' : 'Requires victory' },
       shard
@@ -124,7 +133,10 @@ export function worldOptions(s) {
       shard
     ];
     default: return [];
-  }
+  } })();
+  const time=timeOptions(s), branch=(s.world==='future'||s.world==='self')?branchOptions(s):[];
+  const combat=s.world==='dungeon'?wardenOptions(s).filter(o=>o.id!=='face-warden'):[];
+  return [...options,...combat,...time,...branch];
 }
 
 export function futureProfile(s) {
@@ -136,6 +148,7 @@ export function futureProfile(s) {
     };
     return endings[s.ending];
   }
+  if (s.chronal?.futureDebt >= 12 || s.chronal?.paradox >= 10) return {headline:'The borrowed tomorrow',badge:'TIME DEBT',speech:`I had a strange dream about missing hours. You owe ${s.chronal.futureDebt} to tomorrow and ${s.chronal.pastDebt} to yesterday. I do not know which memories survive if the bill remains unpaid.`,warning:'A fictional timeline debt, not a prediction about your real future.'};
   const wealthy = s.credits >= 10000 || has(s,'penthouse');
   const famous = s.fame >= 40;
   const guardian = s.trust >= 40 || once(s,'defend-city');
@@ -197,6 +210,8 @@ export function dialogueFallback(s, message) {
   const q = message.toLowerCase();
   const f = futureProfile(s);
   if (/letter|promise|remember|note/.test(q) && s.letter) return `You left me a letter: “${s.letter.slice(0,160)}” I cannot tell you whether that promise came true. But I can tell you it was worth writing down.`;
+  if (/hour|time bank|debt|steal|borrow|time currency|repay/.test(q)) return `Our account contains ${s.chronal.hours} hours. We owe ${s.chronal.futureDebt} hours to tomorrow and ${s.chronal.pastDebt} to yesterday. I remember the trade, even if you regret it. You can still repay what you took.`;
+  if (/parallel|other branch|echo reality|prime reality/.test(q)) return s.parallel.forked ? `There are two versions of this life. You are in ${s.parallel.active}. We can choose differently without erasing what happened in the other reality.` : 'You have not opened your second life yet. Gather stars, then split the timeline through the Echo portal.';
   if (/rich|money|wealth|buy|famous|success|fortune|business/.test(q)) return s.fate === 'patent'
     ? 'We made a fortune from that invention. Yes, we could buy almost anything. But money kept expanding the questions, not answering them.'
     : 'There are futures where we become wealthy, but no future guarantees happiness. What would we want the money to make possible?';
@@ -211,13 +226,16 @@ export function dialogueFallback(s, message) {
 
 function write(s, actionId, title, detail) {
   s.revision += 1;
-  s.history.unshift({ at: s.revision + 1, title, detail, world: s.world });
+  s.history.unshift({ at: s.revision + 1, title: String(title).slice(0,120), detail: String(detail ?? '').slice(0,300), world: s.world });
   s.history = s.history.slice(0, 32);
   s.credits = Math.max(0, Math.floor(s.credits));
   s.fame = clamp(s.fame, 0, 999);
   s.trust = clamp(s.trust, 0, 999);
   s.influence = clamp(s.influence, 0, 999);
-  if (actionId) s.flags[actionId] = true;
+  s.stars = clamp(Number.isFinite(s.stars)?s.stars:0,0,9999);
+  s.chronal.hours = clamp(s.chronal.hours,0,9999);
+  if(actionId)rememberWorldEvent(s,actionId,title);
+  if (actionId && !actionId.startsWith('time-repay-')) s.flags[actionId] = true;
   return s;
 }
 
@@ -236,21 +254,39 @@ export function applyAction(state, id) {
   if (id.startsWith('go-')) return travel(state, id.slice(3));
   const s = copy(state);
   let event = { title: option.title, detail: option.detail };
-  if (id === 'find-shard') {
+  if(id.startsWith('time-')){
+    const changed=performTimeTrade(s,id);if(!changed)return {ok:false,state,error:'The time exchange has rejected this transaction.'};
+    event=changed;
+  } else if(id==='fork-parallel'){
+    if(!forkIntoEcho(s))return {ok:false,state,error:'Earn two stars and save three hours first.'};
+    event={title:'Echo reality awakened',detail:'Two versions of this life now exist. Their decisions, wealth, and character memories can diverge.'};
+  } else if(id==='switch-parallel'){
+    if(!switchBranch(s))return {ok:false,state,error:'The parallel gate is not ready.'};
+    event={title:`Entered the ${s.parallel.active.toUpperCase()} reality`,detail:'A familiar world unfolds differently. The other version is safely preserved in its own branch.'};
+  } else if (id === 'find-shard') {
     if (s.echoShards.includes(s.world)) return {ok:false,state,error:'This memory fragment is already yours.'};
-    s.echoShards.push(s.world); s.influence += 2;
+    s.echoShards.push(s.world); s.influence += 2; s.stars += 1;
     event={title:`Memory recovered: ${SHARD_NAMES[s.world]}`,detail:`A world fragment joins your Echo Atlas. ${s.echoShards.length}/5 recovered.`};
-  } else if (['talk-city','talk-clockmaker','talk-witness','talk-commander'].includes(id)) {
+  } else if (['talk-city','talk-clockmaker','talk-witness','talk-commander','talk-warden'].includes(id)) {
+    const npcId=({'talk-city':'iris','talk-clockmaker':'ada','talk-witness':'witness','talk-commander':'sol','talk-warden':'warden'})[id];
     const character=CHARACTER_NAMES[s.world] || 'A stranger';
-    const text=encounterDialogue(s);
-    s.lastEncounter={world:s.world,name:character,text};
+    const text=speakAs(s,npcId);
+    s.lastEncounter={world:s.world,name:id==='talk-warden'?'The Hollow Warden':character,text};
     s.encounters[s.world]=(s.encounters[s.world]||0)+1;
-    event={title:`A conversation with ${character}`,detail:text};
+    event={title:`A conversation with ${id==='talk-warden'?'the Hollow Warden':character}`,detail:text};
   } else if (id.startsWith('rune-')) {
     if (!s.power || s.dungeonOutcome || s.runeProgress===3) return {ok:false,state,error:'The cipher is not accepting runes.'};
     const candidate=id.slice(5);const expected=RUNE_SEQUENCES[s.power][s.runeProgress];
     if(candidate===expected){s.runeProgress++;event={title:`The ${candidate} rune answers`,detail:s.runeProgress===3?'The three seals are open. You may face the Warden.':`The cipher remembers ${s.runeProgress}/3 marks.`};}
     else {s.runeProgress=0;s.runeMistakes++;event={title:'The cipher unravels',detail:'The marks scatter. Read your power’s clue again and restart the sequence.'};}
+  } else if(id.startsWith('warden-')) {
+    const changed=resolveWardenTurn(s,id);if(!changed)return {ok:false,state,error:'This combat move is unavailable.'};
+    event=changed;
+    const foe=s.cast.warden;
+    foe.interactions=Math.min(9999,foe.interactions+1);
+    foe.memories.push(`On turn ${s.wardenBattle.turn}, the traveler chose ${id.slice(7)}. ${changed.title}`);
+    foe.memories=foe.memories.slice(-8);
+    foe.mood=s.wardenBattle.outcome==='mercy'?'grateful':s.wardenBattle.tactic==='countering'?'angry':'wary';
   } else if (id === 'start-defense') {
     s.mechBattle={...DEFAULT_BATTLE(),active:true};event={title:'Breakwater defense initiated',detail:'Three hostile drones approach. Use pulses, shields and ventilation to survive.'};
   } else if (id === 'fire-pulse') {
@@ -297,8 +333,9 @@ export function applyAction(state, id) {
   } else if (id.startsWith('power-')) {
     s.power = id.slice(6); s.influence += 5; event={title:'A new power awakens',detail:`You learned ${s.power === 'phase' ? 'Phase Shift' : s.power === 'gravity' ? 'Gravity Weaving' : 'Storm Calling'}.`};
   } else if (id === 'face-warden') {
-    if(s.runeProgress!==3)return {ok:false,state,error:'Three runes must be solved before facing the Warden.'};
-    s.dungeonOutcome = 'victory'; s.fame += 12; event={title:'The Warden falls',detail:'A Chrono Relic remains. Keep it safe or sell it.'};
+    if(s.runeProgress!==3||s.dungeonOutcome||s.wardenBattle.active)return {ok:false,state,error:'The arena is sealed.'};
+    s.wardenBattle={...initialWardenBattle(),active:true};
+    event={title:'The Warden enters the arena',detail:'Your opponent remembers every repeated strike. SPACE attacks, Q guards, F channels magic. Mercy is an alternative victory.'};
   } else if (id === 'sell-relic') {
     s.credits += 3900; s.trust = Math.max(0, s.trust - 4); s.flags['relic-decision'] = true; event={title:'The relic changes hands',detail:'A mysterious collector pays 3,900 credits. The kingdom may remember.'};
   } else if (id === 'guard-relic') {
@@ -336,6 +373,20 @@ export function addConversation(state, question, answer) {
   return s;
 }
 
+export function askCharacter(state,id,question){
+  const s=copy(state);
+  if(!CAST[id]||CAST[id].world!==s.world)return {ok:false,state,error:'That person is not present in this reality.'};
+  const safe=String(question??'').trim().slice(0,240);
+  if(!safe)return {ok:false,state,error:'Ask a question to begin a conversation.'};
+  const reply=roleplayReply(s,id,safe);
+  if(!reply)return {ok:false,state,error:'This character cannot answer now.'};
+  const person=s.cast[id];person.interactions=Math.min(9999,person.interactions+1);
+  person.dialogue.push({question:safe,reply});person.dialogue=person.dialogue.slice(-8);
+  s.revision+=1;
+  s.lastEncounter={world:s.world,name:CAST[id].name,text:reply};
+  return {ok:true,state:s,reply};
+}
+
 export function writeLetter(state, text) {
   const trimmed=String(text ?? '').trim().slice(0,480);
   const s=copy(state);s.letter=trimmed;s.revision++;
@@ -361,7 +412,12 @@ export function loadState(storage) {
     s.pilotTrained = value.pilotTrained === true;
     s.mechDeployed = s.pilotTrained && value.mechDeployed === true;
     s.owned = Array.isArray(value.owned) ? [...new Set(value.owned.filter((x) => ['penthouse','library'].includes(x)))].slice(0,2) : [];
-    s.flags = Object.fromEntries(Object.entries(value.flags || {}).filter(([k,v]) => /^[a-z-]{2,40}$/.test(k) && v === true).slice(0,40));
+    s.flags = Object.fromEntries(Object.entries(value.flags || {}).filter(([k,v]) => /^[a-z0-9-]{2,60}$/.test(k) && v === true).slice(0,110));
+    s.chronal=sanitizeChronal(value.chronal);
+    s.stars=clamp(Number.isInteger(value.stars)?value.stars:1,0,9999);
+    s.cast=sanitizeCast(value.cast);
+    s.wardenBattle=sanitizeWardenBattle(value.wardenBattle);
+    if(s.dungeonOutcome)s.wardenBattle.active=false;
     s.history = Array.isArray(value.history) ? value.history.slice(0,32).filter(x => x && WORLDS[x.world] && typeof x.title === 'string').map(x=>({at:Number.isFinite(x.at)?x.at:1, world:x.world, title:x.title.slice(0,120),detail:String(x.detail||'').slice(0,300)})) : s.history;
     s.conversation = Array.isArray(value.conversation) ? value.conversation.slice(-16).filter(x=>x && ['user','assistant'].includes(x.role) && typeof x.text==='string').map(x=>({role:x.role,text:x.text.slice(0,1200)})) : [];
     s.echoShards=Array.isArray(value.echoShards)?[...new Set(value.echoShards.filter(w=>WORLDS[w]))].slice(0,5):[];
@@ -380,6 +436,15 @@ export function loadState(storage) {
     s.encounters=Object.fromEntries(Object.keys(CHARACTER_NAMES).map(k=>[k,clamp(Number.isInteger(value.encounters?.[k])?value.encounters[k]:0,0,999)]));
     const e=value.lastEncounter;
     s.lastEncounter=e && CHARACTER_NAMES[e.world] && typeof e.text==='string' && typeof e.name==='string' ? {world:e.world,name:e.name.slice(0,70),text:e.text.slice(0,850)} : null;
+    // Sanitize branch snapshots using the same rules as main saves, without recursion.
+    if(value.parallel?.forked===true && ['prime','echo'].includes(value.parallel.active) && value.parallel.snapshots && typeof value.parallel.snapshots==='object') {
+      const other=value.parallel.active==='prime'?'echo':'prime';
+      const snapshot=value.parallel.snapshots[other];
+      if(snapshot && typeof snapshot==='object' && JSON.stringify(snapshot).length<150000){
+        const sanitized=loadState({getItem:k=>k===SAVE_KEY?JSON.stringify({...snapshot,version:1,parallel:null}):null});
+        s.parallel={active:value.parallel.active,forked:true,snapshots:{[other]:branchSnapshot(sanitized)}};
+      }
+    }
     return s;
   } catch {return initialState();}
 }

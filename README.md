@@ -1,93 +1,91 @@
-# ELSEWHERE
+# ELSEWHERE · Chronal Veil 0.3
 
-**One life is never enough.**
+**ONE LIFE IS NEVER ENOUGH.** A privacy-first, browser-based 3D interactive science-fantasy prototype from Syrava, developed for the **Meta Global AI Developer Hackathon (Startup track, October 26 – November 4, 2026)**.
 
-An original, browser-first interactive world prototype by **Syrava**. Travel to five very different realities, change an alternate past, confront a possible future self, unlock powers, and pilot a giant original robot. The causal state engine carries decisions, wealth, reputation, relationships, artifacts and world changes between scenes.
+Five linked worlds, **Prime and Echo parallel realities**, fictional hours as currency, a future-self encounter, a three-rune dungeon, an adaptive Warden, and an original giant mech. Choices carry across worlds. NPCs have role-specific motivations, locally authored free-text responses, and bounded memories of what you do. An original 13-chapter interactive story unfolds inside the Echo Atlas.
 
-The project is an early, publicly inspectable entry candidate for the **2026 Meta Global AI Developer Hackathon, Startup track**. It is a playable prototype, not yet a finished MMO, production VR release, or fully autonomous world simulator.
+> **Prototype boundaries:** This is a source-code milestone, not a headset-verified consumer VR release. No live Meta API response, complete Vite build or Quest headset session has been verified in this environment. Character dialogue in Private Mode is deterministic/authored; it is **not a local generative language model** or independent autonomous-agent runtime.
 
-## Get started
+## Start completely local
 
-Requires **Node.js 22+** and an installation of the npm dependencies.
+Prerequisites: Node.js 22+, npm packages downloaded once, and a browser with WebGL and Web Crypto. For headset/WebXR, use a supported browser, HTTPS or localhost and compatible VR hardware.
 
 ```sh
 npm install
 npm run dev
 ```
 
-Open the Vite URL, usually `http://localhost:5173`.
+Open **http://127.0.0.1:5173** (check the port Vite displays). Create a private passphrase of 10–256 characters. Your story then loads **only after the encrypted vault is unlocked**. The local mode never needs an account, API key, microphone, analytics service or game server. The development server can make ordinary package/development requests, but the private gameplay logic does not transmit player data.
 
 ```sh
-npm run test      # pure state/mission/privacy tests
-npm run build     # production frontend bundle
-npm run check     # both tests and build
+npm run test        # deterministic game, privacy and data integrity checks
+npm run build       # production frontend (requires npm dependencies)
+npm run check       # tests and production build
+npm run preview     # preview a built frontend locally
 ```
 
-`npm run dev` starts Vite and the optional API bridge together. You can play the entire deterministic story without a Meta API key. Offline *story mode* means no AI request is needed for built-in interactions. It does not imply that your browser has already cached the website for disconnected use.
+### The private layer
 
-## Five worlds, one timeline
+- Game states, NPC memories, questions, private future-self letters, purchases and both parallel branches are stored in a **passphrase-protected AES-256-GCM vault** in browser localStorage; PBKDF2-SHA256 uses 310,000 iterations, random salt and a fresh nonce for each save.
+- An existing unencrypted v0.1/v0.2 save is migrated on vault creation. The old plaintext key is removed **after** encrypted writing succeeds.
+- Export creates a ciphertext-only `.vault.json` backup; import requires its passphrase. **No automatic sync or server upload.** Manual transfer between devices is possible by carrying the encrypted file yourself.
+- Lock clears the active vault key from this page session. Lose the passphrase and there is no recovery service.
+- The authored **local** future-self and NPC conversations use no cloud AI, browser speech transcription or network call.
+- **Important limits:** At-rest encryption is not protection against a compromised device, malicious browser extension, active-memory access, or malicious updates to hosted code. Running a locally served and trusted copy with the network off gives stronger isolation. Your hosting provider can still observe ordinary page requests if you use a hosted website. See [Privacy and threat model](docs/PRIVACY.md).
 
-| Destination | What you can experience | What follows you |
+### Separate, explicitly non-private Meta demonstration
+
+For hackathon development only, the code includes an **optional opt-in cloud conversation bridge**. It is disabled every session and unavailable during normal `npm run dev` unless the operator deliberately starts the separate bridge. When enabled, it sends each entered question plus a small allowlisted fictional timeline summary to Meta's Model API. It does **not** send your encrypted vault, passphrase, NPC memories, previous chat turns, other timeline or private letter. It is **not completely local or completely private**, so users who want strict locality should never enable it.
+
+```sh
+# Only if you intentionally want a cloud demonstration
+cp .env.example .env
+# Add your own MODEL_API_KEY to .env on your trusted machine
+npm run dev:meta
+```
+
+Never put secrets in `VITE_` variables or commit `.env`. The Meta bridge runs on `127.0.0.1:8787`, proxied by Vite in development. This feature is **not verified live** without a valid key. Using only authored offline NPCs does **not** meet the competition's Meta-model usage requirement; we must validate an eligible Meta integration before submission. A future local open-weight model is only a research milestone and is not built here.
+
+## Worlds and cause-and-effect
+
+| World | Main experience | Story consequences |
 | --- | --- | --- |
-| **Neo Elysium, 2087** | Walk a neon city, meet archivist Iris, acquire property, invest in robotics, build a public library | Wealth, fame, trust, investments and visible city architecture |
-| **The Other You, 2046** | Speak to an imaginative older self, ask questions, write a local future letter | Remembered inventions, fictional possible life outcomes, optional letter |
-| **The First Spark, 1889** | Create an Aether Cell, Clockwork Oracle or Skyrail Drive. Patent, gift or auction the breakthrough | A changing skyline, altered social trust and future-self narrative |
-| **The Hollow Crown** | Choose one of three powers, follow its rune riddle, unlock the chamber, decide the Chrono Relic's fate | Powers, progress, ethical legacy |
-| **Titan Foundry, 2199** | Synchronize with ATLAS-09, drive it, shield, cool its reactor, repel three hostile drones | Mission status, fame and public trust |
+| **Neo Elysium, 2087** | Neon skyline, living archivist Iris, sky residence, robotics investments, public library | Wealth, influence, reputation, invention effects and time-exchange heist |
+| **The Other You, 2046** | Quiet apartment, speculative older self, private future letter, branching conversation | Possible outcomes based on choices, debt and the hours you stole from another self |
+| **The First Spark, 1889** | Ada's workshop; invent the fictional Aether Cell, Clockwork Oracle or Skyrail Drive | Patent, gift or auction it to reshape the other eras; borrow or steal hours from the past |
+| **The Hollow Crown** | Phase Shift, Gravity Weaving or Storm Calling; three-rune cipher, tactical Warden confrontation | Your enemy remembers repeated attacks, stolen hours and mercy; relic decision |
+| **Titan Foundry, 2199** | Original ATLAS-09 mech and a tactical drone-defense battle | Reactor heat, hull, shields, the evacuation corridor and Sol's opinion of you |
 
-**Echo Protocol 0.2 additions:**
+**The Chronal Exchange:** Hours are *fictional opportunities*, not a player's real lifespan. Sell/buy using different era rates, earn hours by helping, borrow against future/past debt, or steal from the clocktower, a parallel self, the Exchange or Warden. **Heists alter NPC memory, trust, paradox and future dialogue.** A limited restitution choice can mend some harm. Prices have a buy/sell spread and one-time transactions to prevent infinite farming. **Stars** are earned by finding memory fragments; two stars and three hours can split the story into Prime/Echo, each with independent money, NPC memories and endings.
 
-- Find five original **memory fragments**, one in each world. Three fragments plus an altered past unlock three epilogue choices: Empire, Legacy and Wanderer. Endings are exclusive to a timeline but do not lock travel.
-- Local characters **Iris, Ada Voss, the Hollow Witness and Commander Sol** change their dialogue based on your actions. These are authored, deterministic interactions, not autonomous AI agents.
-- The dungeon requires solving a **three-rune sequence** before confronting the Warden. Each power reveals a different clue. Wrong attempts reset the sequence.
-- Mech defense is now a **resource-management battle**. Space fires, Q raises a shield, reactor heat and hull loss affect your choices. Mission rewards cannot be farmed.
-- **Echo Atlas** shows causal history, world impacts and fragments. Export and import portable JSON backups, with a warning that backups include private letters and conversations. Existing 0.1 saves are migrated additively.
-- Original procedural atmosphere and scene details: animated city gardens and traffic, memory mementos, steam-era airships, floating dungeon crystals, enemy drones, glowing portals and weather particles.
-- World beacons can be selected from the scene. VR controllers ray-select portals and actions, and can teleport to walkable ground.
-- Optional procedural ambient sound, keyboard controls, mobile directional controls, reduced-motion support, a cinematic HUD mode and text-first fallback for WebGL failures.
+**Story:** Read all 13 original chapters of *The Museum of Unlived Days* inside **MY TIMELINE → STORY**. Chapters unlock as worlds and choices develop; the manuscript explores future selves, stolen hours, invention ethics, the Warden's memory and a machine that learns why it should stop fighting.
 
-## Controls
+## Controls and comfort
 
-| Control | Desktop | Touch / VR |
+| Interaction | Desktop/mobile | VR prototype |
 | --- | --- | --- |
-| Move | `W A S D` or arrows, `Shift` to move faster | Touch D-pad; in VR, point at open ground and select to teleport |
-| Look | Drag mouse | Touch orbit; headset tracking in VR |
-| Interact | Click portal or beacon, `E` near a beacon | Tap or controller select |
-| Mech pulse | `Space` during defense | Select the pulse action in the story or spatial choice panels |
-| Mech shield | `Q` during defense | Select shield action |
-| World navigation | Left rail or portals | World selectors or portals |
-| Story history | **MY TIMELINE** | Same menu on flat browser UI |
-| Cinematic presentation | Top-right square button | Available in browser UI |
-| Sound | Top-right note button, off by default | Supported on browsers allowing Web Audio |
+| Move | WASD/arrows, Shift to sprint; on touch use on-screen D-pad | Point and trigger at unobstructed floor to teleport |
+| Look | Mouse drag/touch orbit | Natural head tracking; thumbstick snap-turn where supported |
+| Portals | Click glowing portals or world selector | Aim at portal and press trigger |
+| Interact | E or click scene beacons; story choices on right | Aim + trigger at panels, beacons and characters |
+| Dungeon | SPACE strike, F magic, Q guard, E negotiate | Trigger strikes, grip guards, ray-select alternative moves |
+| Mech | WASD drive, SPACE pulse, Q shield, R vent | Trigger fires, grip shields, select panels for other actions |
+| Save/privacy | Vault lock icon, passphrase change, encrypted export/import | Same browser UI and private vault |
 
-VR support is built on **plain Three.js WebXR**, not Meta IWSDK. A supported secure-origin WebXR browser and suitable VR controller are required. Quest headset testing has **not** been performed.
+The visuals use custom procedural Three.js geometry, portal shaders, NPC silhouettes with memory-dependent mood, animated atmosphere, an hourglass orrery and 3D time/choice panels. **Real VR controller ergonomics, accessibility and frame rate still require hardware validation.** Text-first controls remain available when WebGL fails.
 
-## Optional Meta Muse Spark conversations
+## Open-source components actually in use
 
-1. Copy `.env.example` to `.env`.
-2. Set `MODEL_API_KEY` in the local server environment. **Never put the key in frontend environment variables.**
-3. Start `npm run dev` and check `http://localhost:8787/api/health`.
-4. Enter **The Other You** and ask a question.
+- [Three.js](https://github.com/mrdoob/three.js) `^0.181.0`, MIT. Also uses its OrbitControls and VRButton/WebXR helpers.
+- [Vite](https://github.com/vitejs/vite) `^7.1.0`, MIT, as a development and build tool.
+- Original Syrava game logic, characters, narrative, vault, shaders and encounter systems, released under the project's MIT license.
 
-The Node backend forwards bounded text requests to Meta Model API `muse-spark-1.3`, using `https://api.meta.ai/v1/chat/completions`. If the service is unavailable, safe deterministic dialogue remains playable. Model output never changes currency, inventory, achievements, mission status or powers. Only pure simulation actions can mutate the game state.
+**Not yet integrated:** Meta IWSDK, AI Town, Godot, Rapier, Yuka, downloaded film/mech IP or third-party character assets. No copyrighted Pacific Rim or manhwa characters are included. These may inform later designs, but their use must be licensed and actually tested before being claimed.
 
-**Privacy:** The optional future-self letter is stored in this browser. It is **not sent to the Meta API by default**. Players can opt in with the checkbox beside the letter. Speech input uses browser speech recognition when available, which may send audio to the browser/provider. The game does not store microphone recordings. Synthesized browser voice and procedural ambience are opt-in.
+## Status, evidence and next milestones
 
-## Technology and open source
+Tests cover economic exploits, character state, time heists and restitution, Prime/Echo divergence, Warden adaptation, passphrase encryption, legacy migration, tamper detection, imported encrypted backups, UI escaping and randomized playthroughs. See [QA](docs/QA.md). No GitHub Actions are used.
 
-- [`three`](https://github.com/mrdoob/three.js) `^0.181.0`, MIT licensed, including the bundled OrbitControls and VRButton add-ons.
-- [`vite`](https://github.com/vitejs/vite) `^7.1.0`, MIT licensed, development/build tooling.
-- **Original ELSEWHERE code**: scene generators, shaders, gameplay rules, story dialogue, audio synthesis, save migration, tests and HUD, MIT licensed by Syrava.
-- **Optional paid service**: Meta Muse Spark via the official Meta Model API. No API key or other proprietary model weights are checked into this repository.
+The biggest unfinished tasks are **actual WebGL and Quest testing**, richer physically embodied VR combat, autonomous local-model dialogue, visual animation/rigging, and an auditable Meta-model demonstration for hackathon eligibility. See [Architecture](docs/ARCHITECTURE.md), [Story and design bible](docs/STORY_BIBLE.md), [Demo outline](docs/DEMO_3MIN.md) and [Hackathon constraints](docs/HACKATHON.md).
 
-Meta's Immersive Web SDK, Godot XR Tools, AI Town, Rapier, Project Flowerbed, and existing manhwa/anime/game assets are **not incorporated** at this stage. Character art is intentionally abstract and original. The titan is an original geometric design, not a Pacific Rim character or model.
-
-## Checks and known limitations
-
-`npm run test` currently runs 24 automated checks covering world transitions, economy anti-exploits, rune puzzles, mech battle invariants, 40 randomized 90-turn playthroughs, v0.1 save compatibility, JSON backup validation, UI output escaping, privacy boundaries and Meta request construction. Full `npm run build` and headset/browser playtesting are still required before a release. Do not present runtime VR or Meta API functionality as verified until you have tested them with a headset and configured credentials.
-
-Current limits: small authored worlds rather than an infinite universe; no NPC autonomous scheduling, multiplayer, real historical simulations, physical haptics beyond device controls, or in-app real-currency purchases. In-game credits and fame are fictional.
-
-See [Architecture](docs/ARCHITECTURE.md), [Demo script](docs/DEMO_3MIN.md), [QA checklist](docs/QA.md), and [Hackathon notes](docs/HACKATHON.md).
-
-**Built under Syrava.** The source is MIT licensed; retain required notices when reusing it. See [LICENSE](LICENSE).
+Copyright © 2026 Syrava. [MIT License](LICENSE).

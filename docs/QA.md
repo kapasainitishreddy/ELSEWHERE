@@ -1,32 +1,38 @@
-# QA checklist for ELSEWHERE 0.2
+# ELSEWHERE 0.3 — Validation ledger
 
-## Automated tests
+## Automated (executed locally)
 
-- [x] 24 automated tests of pure state, UI output, imports, server request boundaries and randomized invariants.
-- [x] Old v0.1 saves load with the new fields.
-- [x] One-time grants are non-repeatable.
-- [x] Three separate rune sequences, reset on wrong attempt, boss gated by cipher.
-- [x] Reactor heat, hull, shield state, limited reward.
-- [x] Letter stays optional and conversation prompt explicitly treats user text as untrusted.
-- [x] Explicit JSON timeline export/import handles malformed inputs safely.
-- [ ] Full Vite production build on a system with npm dependencies. Dependency installation was blocked by DNS in the build environment.
-- [ ] Real graphical regression screenshots and WebGL developer console check.
-- [ ] Meta Model API live request using the user's own valid key.
+- [x] State schema migration from v0.1/v0.2.
+- [x] Cross-era trade limits, repayment, exploit-resistant buy/sell rates and heist consequences.
+- [x] Two isolated realities retain different inventions, economic state, debts and NPC memories.
+- [x] Three power-specific rune ciphers, tactical Warden adaptation and peaceful resolution boundaries.
+- [x] Mech heat, hull, guard/shield and one-time defensive rewards.
+- [x] Original story chapters unlock based on actual state; role-playing messages display safely.
+- [x] Randomized 90-step playthroughs preserve game state invariants and survive save/reload.
+- [x] PBKDF2/AES-GCM vault creation, wrong passphrase, tamper rejection, legacy migration, queued writes, rekey and encrypted backup portability.
+- [x] Private letter escaping, no third-party mic transcription, explicit cloud-consent contract and cloud input allowlist.
+- [x] JavaScript syntax check via `node --check`.
 
-## Human acceptance journey
+## Not independently verified
 
-- [ ] Load index page with a normal browser and no API key, verify it renders a canvas and right-side choice panel.
-- [ ] Start in Neo Elysium, visit 1889, invent Cell, choose gift, return to city. Compare changed structures and archivist dialogue.
-- [ ] Open future-self room, submit a text question and verify local fallback. Save a letter and reload; confirm it persists privately.
-- [ ] Enable letter sharing and confirm consent text is clear. Disable again; inspect outbound `/api/character` to make sure the letter is omitted.
-- [ ] Enter Hollow Crown, choose Phase Shift, touch Moon, Crown, Star. Wrong rune should clear progress. Confront Warden after the correct sequence.
-- [ ] Enter Titan Foundry, train, deploy, start defense, pulse three drones, use shields and vent. Confirm hull and reactor meter changes.
-- [ ] Recover shards in three different worlds; test all three endings separately with fresh timelines.
-- [ ] Open Atlas tabs, cinematic mode, sound toggle, and help. Confirm focus and keyboard navigation.
-- [ ] Browser responsive tests at 390px, 768px, 1440px. Confirm touch D-pad and scrollable story panel.
-- [ ] Quest/WebXR: verify portal/controller selection and teleportation do not cause nausea or accidental actions.
-- [ ] Stress: cross worlds 50 times and monitor GPU memory, CPU time, and lost WebGL contexts.
+- [ ] `npm install`, `npm run build` and actual Three.js/Vite bundle in this restricted environment. npm dependency downloads were blocked by DNS/network access.
+- [ ] Visual rendering, animation composition, shadows, XR portal highlighting and collision paths in a real browser.
+- [ ] Meta Quest headset/controller comfort, frame rate, accessibility and motion sickness testing.
+- [ ] Production offline service worker cache after warm first visit and safe cache updates.
+- [ ] Live Meta Model API model access/usage in the separate opt-in demo (needed for Meta hackathon eligibility).
+- [ ] Independent privacy penetration test, DOM injection review and supply-chain audit.
 
-## Caveats
+## Manual verification journey
 
-No live Meta request, VR session, native mobile tap testing, or production bundle has been executed in this environment. Do not mark those complete simply because the implementation code exists.
+1. Launch on **127.0.0.1**, create strong passphrase, reload and confirm lock screen. Inspect localStorage for `syrava.elsewhere.private-v1` ciphertext only, no plaintext `syrava.elsewhere.v1`.
+2. Export ciphertext, import to separate browser profile with passphrase, test incorrect passphrase, confirm Prime/Echo history survives. Lock the vault and verify the UI clears.
+3. Go Future → Past, prototype an invention and gift or patent it, return to Future and compare geometry and Iris's reply.
+4. Enter 2046, converse about the changed future, leave a letter, lock and unlock; confirm letter remains private.
+5. Trade hours in each era, attempt duplicate sells/buys, steal from past/self/future, check paradox and character mood, then choose limited restitution.
+6. Collect two stars, enter Echo reality, patent in one branch and share in the other, switch back and verify their ledgers diverge without duplication.
+7. In the dungeon solve the runes, face the Warden, test three repeated strikes, power, guard, attempted parley, and lawful/tainted mercy.
+8. In Titan Foundry train, deploy, fire and shield the mech. Test both desktop and actual VR controller inputs.
+9. Turn off network after caching production shell; verify game remains usable with the local authored dialogue.
+10. **Optional cloud-only demo:** intentionally start backend, opt in, inspect browser network panel; verify only immediate question + allowlisted fictional summary leaves the browser, no private letter, full save or NPC memory. Confirm opt-in resets after reload.
+
+Do not call a build or headset experience verified until these manual checks have actually been executed.

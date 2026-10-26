@@ -1,39 +1,23 @@
-# Hackathon submission notes — ELSEWHERE
+# Meta Global AI Developer Hackathon — Startup track
 
-Project: ELSEWHERE by Syrava. Startup track. Public repository: https://github.com/kapasainitishreddy/ELSEWHERE.
+ELSEWHERE is being developed during the October 26 – November 4, 2026 event. The user-supplied participant guide requires: public GitHub repo, new work clearly identified, a functioning product, a **three-minute demonstration**, evidence of **actual Meta model use**, and submission by **November 4 at 9:00 PM ET**. Top five per track are evaluated using impact (30%), Meta model tooling (25%), demo (25%) and technical execution (20%). The guide lists a **$250,000 first-place Startup prize**, not a guarantee.
 
-**Participant guide requirements:** public source, original new work within event window, clearly attributable features, demonstrable use of Meta models, a live product, a three-minute video, and a November 4, 2026 at 9 PM ET submission deadline. Current core prototype code authored October 26, 2026. A Meta API key and a successful live Muse Spark conversation must be demonstrated before claiming working model integration in a submission. Do not claim a live Meta demo just because the connector is wired.
+**Privacy-first product vs Meta eligibility:** The private app is genuinely offline with deterministic authored NPCs but this mode **does not satisfy the mandatory Meta-model criterion by itself**. A separate, opt-in backend bridge is coded for a Meta Muse conversation but its live credentials/model response have not been tested. For a submitted build, separately demonstrate an eligible Meta model running and comply with both model-use and user-consent rules. A locally served eligible Meta open-weights model might reconcile privacy and eligibility, but no such inference has been installed or benchmarked in this repo. Do **not** claim it exists or that a third-party cloud request is fully private.
 
-## Project thesis
+## New work to highlight
 
-**A possible life engine, not an NPC chatbot.** Bring future-self storytelling, alternate history, invention economics, powers and machines into a single persistent world. The differentiator is that causally valid actions are separate from generative dialogue. AI may narrate a future but can never grant wealth, items or abilities itself.
+- Reactivity and causality of five linked original procedural worlds.
+- Time-as-currency engine, fictional past/present/future heists, debt and paradox rules with no endless trading exploit.
+- Star-powered Prime/Echo parallel realities with independent economic and personal memories.
+- Original NPCs with role-specific persistent bounded memory and a 13-chapter authored interactive story.
+- Warden combat director with repeated-move adaptation and peaceful victory conditions; tactical mech defense.
+- Explicit local encryption, migration and passphrase portability; optional model consent separated from strict Private Mode.
 
-## What the current prototype implements (original new code)
+## Submission integrity
 
-- Five original procedural Three.js environments, portals and movement.
-- Local state machine tracking fictional currency, reputation, trust, property, alternate inventions, powers and mech pilot status.
-- Story choices with consequences, prevention of repeated monetary payouts and compact journal of events.
-- Future-self dialogue driven by a bounded snapshot of the player's fictional state; deterministic offline fallback.
-- Same-origin backend bridge with API key separation, input limits, timeout and rate limiting.
-- Desktop and touch interactions, original WebXR controller rays, spatial action beacons and controller floor teleport prototype.
-- Separate tactical mech defense and dungeon cipher minigames.
-- 5 collectible memory fragments, 3 story endings, and exported/imported save files.
-- Context-sensitive original procedural 3D details and optional procedural ambience.
-- Node test suite and responsive story HUD. No GitHub Actions.
-
-## Judging rubric alignment
-
-| Category | Weight | Evidence to capture |
-| --- | ---: | --- |
-| Impact | 30% | Interactive stories, world creation/education possibilities, repeat-use narrative platform and a concrete audience hypothesis (to be user tested) |
-| Meta AI tooling | 25% | Record a live Muse Spark call contextualized to player-driven state; show model responding to different timelines, not merely a generic chat |
-| Demo | 25% | Cold-start playable flow, world portals, invention choice, skyline changes, future-self reaction, pilot movement |
-| Technical depth | 20% | Deterministic simulation engine, atomic decisions, guarded payouts, offline fallback, secrets kept on server, regression tests |
-
-## Three-minute demonstration storyboard
-
-See [DEMO_3MIN.md](DEMO_3MIN.md) for a current evidence-first storyboard covering the new cipher, mech defense, Echo Atlas, three endings, and the first verified Meta API request. Do not show combat or model integrations that have not actually been tested.
-
-## Rights and safety
-
-All scene art is generated from original Three.js primitives (no borrowed manhwa or film IP). The titans are original designs, not characters from Pacific Rim. Credits, fame and time travel are fictional. Real futures and real economic gains are not predicted. Voices are browser speech synthesis and optionally browser speech recognition, not Meta Voice Transcribe. Meta IWSDK is a possible migration, not implemented in the current prototype.
+- Verify the exact rules about the Oct 26 kickoff versus Oct 27 building window before presenting Oct 26 commits as eligible work.
+- Keep a public `main` history and clearly distinguish original code from OSS dependencies (Three.js and Vite).
+- Show **actual screen recordings** from the running build. A mockup, AI-generated visual, or code alone is not proof of a working VR scene.
+- Verify Meta Model API request or an eligible local open-weights implementation, with corresponding live evidence, before submitting as a qualifying Meta project.
+- Test WebGL, browser audio, mobile layout, and VR headset when available. A passing Node unit test does not validate physical controller comfort.
+- Do not use GitHub Actions, copyrighted manhwa art, Pacific Rim assets, or inaccessible/private dependencies.

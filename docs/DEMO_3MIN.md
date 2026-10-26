@@ -1,35 +1,17 @@
-# Three-minute, evidence-first hackathon demonstration
+# ELSEWHERE three-minute proof-of-work demo (planned, not yet recorded)
 
-Only capture functioning features you actually have working at recording time. The participant guide requires showing the features developed during the event, not preexisting library behavior presented as original work.
+**00:00–00:25** Open the encrypted vault after entering a passphrase. Show a playable original procedural skyline. "This world saves only encrypted memories on my device."
 
-## Scene 1: Your future is not fixed (0:00–0:30)
+**00:25–00:55** Step through the glowing portal to 1889. Create an invention and choose patent versus gift. Return to 2087 to reveal a visibly changed skyline and Iris's remembered reaction.
 
-Start in Neo Elysium 2087. Show the current skyline and the Echo Atlas, then walk through a portal to The Other You 2046. Ask, "What would make our life meaningful?" Show the deterministic offline reply or configured live Meta response with visible attribution. Do not suggest real future prediction.
+**00:55–01:20** Enter 2046, ask a speculative future self about the choice and show a private letter. Explain this is an authored future possibility, not a prediction.
 
-## Scene 2: A change in 1889 (0:30–1:12)
+**01:20–01:45** Earn memory stars, open the Prime/Echo gate, choose a different invention outcome in the second branch and show distinct story ledgers.
 
-Cross to The First Spark. Choose the Aether Cell, then take one ownership path. Return to Neo Elysium and reveal the changed skyline and archivist's memory. Briefly show `src/game.js` state events proving that economic choices are deterministic, irreversible, and carry across worlds.
+**01:45–02:10** Trade/steal fictional hours at the exchange and show the price, paradox counter, future debt and NPC response. Demonstrate why switching portals cannot farm hours.
 
-## Scene 3: An alternative power (1:12–1:43)
+**02:10–02:35** Fight the adaptive Warden with strike, magic, guard or words. Switch briefly to the ATLAS-09 mech and block a hostile drone.
 
-Enter The Hollow Crown, choose a power and show the clue. Input the three correct runes, face the Warden, and choose whether to guard or sell its relic. Show how the other ending stays locked.
+**02:35–03:00** Show test results and source; describe real audiences and what is next. **Critical Meta eligibility proof:** only include a live Meta-model clip when verified, and explicitly disclose that optional cloud mode is separate and not fully private. Otherwise do not present this as a qualifying final submission.
 
-## Scene 4: Pilot ATLAS-09 (1:43–2:15)
-
-Enter Titan Foundry, synchronize and deploy. Start defense. Fire a pulse, observe the heat and hull meters, raise a shield, then complete the mission when the drones are gone. Show a real 3D scene from the build, not a generated cinematic substitute.
-
-## Scene 5: The echo that remains (2:15–2:45)
-
-Recover three memory shards. Open the Atlas to connect 1889, 2046, 2087, and 2199. Choose an ending. Return to The Other You and ask how they feel about the result.
-
-## Technical proof and ask (2:45–3:00)
-
-Show the GitHub commit history, a terminal test run and the optional Meta API integration only if verified. Explain that Syrava is building an authorable platform for immersive causally consistent stories. The prototype establishes the engine; the next challenge is deeper autonomy, XR performance and authored world creation.
-
-## Before posting
-
-- Confirm demo runtime with no key and with key. Meta-model use must be real to qualify at Stage One.
-- Show raw gameplay interactions rather than a trailer assembled entirely from effects.
-- Public repository, attribution and a three-minute accessible video URL.
-- Test performance before stating Quest support. Do not claim headset verification based on WebXR API detection alone.
-- Be precise about hackathon-built work. The official guide calls out an Oct 27–Nov 4 building period, while the kickoff is Oct 26. Verify with organizers how Oct 26 commits are treated before representing them as eligible new work.
+Only record the real game, with developer-captured screens, input and measured results. Never use visual concept art as proof of implemented features. The final public repo must state what was built during the event and identify all third-party licensed code.

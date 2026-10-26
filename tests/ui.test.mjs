@@ -28,10 +28,11 @@ test('dungeon cipher and mech meter display authoritative simulation state',()=>
  assert.match(root.innerHTML,/REACTOR HEAT/);assert.match(root.innerHTML,/84%/);
  assert.match(root.innerHTML,/2 HOSTILES REMAINING/);
 });
-test('letter is escaped, and opt-in is clear and off by default',()=>{
+test('private letters are escaped and cloud and microphone controls are absent',()=>{
  const {root,ui}=makeUI();let s=go(initialState(),'self');s=writeLetter(s,'<script>alert(1)</script>');ui.render(s);
  assert.ok(!root.innerHTML.includes('<script>'));assert.match(root.innerHTML,/&lt;script&gt;/);
- assert.match(root.innerHTML,/Optional, and off by default/);
- assert.match(root.innerHTML,/id="share-letter"/);
- assert.ok(!root.innerHTML.includes('id="share-letter" checked'));
+ assert.match(root.innerHTML,/No upload or optional sharing/);
+ assert.ok(!root.innerHTML.includes('id="share-letter"'));
+ assert.ok(!root.innerHTML.includes('id="cloud-consent"'));
+ assert.ok(!root.innerHTML.includes('data-cmd="mic"'));
 });

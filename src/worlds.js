@@ -58,6 +58,68 @@ function buildPortal(group,world,x,z,interactables,animated){
  animated.push((time)=>{frame.emissiveIntensity=1.3+Math.sin(time*1.25+x)*.35;base.children[0].rotation.z=Math.sin(time*.21+x)*.1;membraneMaterial.uniforms.uTime.value=time;});
  return base;
 }
+function buildChronalOrrey(group,state,animated){
+ // Original hourglass/orrery built from primitives. No external assets or telemetry.
+ const location={future:[-8,0,-6],past:[-8,0,-6],self:[6.9,0,-4.2],dungeon:[9,0,-7],mech:[-8.7,0,-6.5]}[state.world];
+ const [x,y,z]=location,clock=new THREE.Group();group.add(clock);clock.position.set(x,y,z);
+ const core=orb(clock,.82,glass(0x9ee8e1,.35),0,2.8,0);core.material.depthWrite=false;
+ const rings=[];
+ for(let i=0;i<3;i++){const r=ring(clock,1.28+i*.36,.04,emissive(i===0?0x97e8ec:i===1?0xc4a4ee:0xf6bd83,1.3),0,2.8,0);
+  r.rotation.x=i*.5+Math.PI/3;r.rotation.y=i*.4;rings.push(r);}
+ const hourglass=new THREE.Group();clock.add(hourglass);hourglass.position.y=2.8;
+ const brass=mat(0xb1a789,.82,.23);cylinder(hourglass,.47,.47,.13,brass,0,.88,0);cylinder(hourglass,.47,.47,.13,brass,0,-.88,0);
+ mesh(hourglass,new THREE.ConeGeometry(.42,.75,18),glass(0xaceaea,.42),0,.44,0,Math.PI);
+ mesh(hourglass,new THREE.ConeGeometry(.42,.75,18),glass(0xaceaea,.42),0,-.44,0);
+ orb(hourglass,.14,emissive(0xcffcf2,1.7),0,0,0);
+ sign(clock,'THE HOURS BANK',`${state.chronal.hours} STORED · ${state.chronal.futureDebt+state.chronal.pastDebt} OWED`,0,5.25,0,3.9);
+ animated.push(t=>{rings.forEach((r,i)=>{r.rotation.y=t*(i%2?-.28:.22);r.rotation.z=Math.sin(t*.21+i)*.3;});hourglass.rotation.y=t*.13;core.position.y=2.8+Math.sin(t*.9)*.06;});
+}
+function buildLivingCharacters(group,state,targets,animated){
+ // Hand-built original low-poly NPCs with readable silhouettes and interactive 3D dialogue.
+ const actors={
+  future:[{id:'iris',action:'talk-city',name:'IRIS VALE',x:7,z:-7,cape:0x345f71,hair:0xc7d8db}],
+  past:[{id:'ada',action:'talk-clockmaker',name:'ADA VOSS',x:7.8,z:-5,cape:0x695142,hair:0x4c302b}],
+  dungeon:[{id:'witness',action:'talk-witness',name:'THE WITNESS',x:-7.5,z:-9,cape:0x615076,hair:0xd8d1e5}],
+  mech:[{id:'sol',action:'talk-commander',name:'COMMANDER SOL',x:7.8,z:-7,cape:0x475b6a,hair:0xb5ab9f}]
+ }[state.world]||[];
+ for(const actor of actors){
+  const memory=state.cast?.[actor.id],affinity=memory?.affinity||0;
+  const palette=memory?.mood==='grateful'?0x79f5c0:memory?.mood==='angry'?0xf58a90:0xbce3f3;
+  const figure=new THREE.Group();figure.position.set(actor.x,0,actor.z);group.add(figure);
+  // Sculpted coat, collar, gloves, hair, hands. Subtle, legible at headset distances.
+  mesh(figure,new THREE.CapsuleGeometry(.36,.85,5,10),mat(actor.cape,.18,.82),0,1.35,0);
+  box(figure,.5,.16,.1,mat(0xc5b1a0,.2,.7),0,1.85,.36);
+  orb(figure,.32,mat(0xbfa38c,.07,.8),0,2.45,0);
+  mesh(figure,new THREE.SphereGeometry(.33,12,9,0,Math.PI*2,0,Math.PI*.45),mat(actor.hair,0,.8),0,2.55,-.05);
+  for(const dir of [-1,1]){
+   const arm=box(figure,.18,.8,.2,mat(actor.cape,.2,.72),dir*.48,1.38,0);arm.rotation.z=dir*.13;
+   orb(figure,.13,mat(0xd2ad92,0,.8),dir*.51,.94,.03);
+   box(figure,.23,.72,.25,mat(0x29313b,.25,.55),dir*.2,.48,0);
+   orb(figure,.027,emissive(0xf5e9d6,.85),dir*.105,2.45,.31);
+  }
+  const a=ring(figure,.53,.028,emissive(palette,1.2),0,.08,0);a.rotation.x=Math.PI/2;
+  const memoryOrb=orb(figure,.14,emissive(palette,.8+Math.min(1,Math.max(0,affinity/70))),0,3.35,0);
+  const plaque=sign(figure,actor.name,(memory?.mood||'WATCHFUL').toUpperCase()+' · REMEMBERS YOU',0,4.12,.1,3.3);
+  for(const hit of [plaque]){hit.userData.action={type:'choice',id:actor.action};targets.push(hit);}
+  const halo=mesh(figure,new THREE.PlaneGeometry(1.5,3.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}),0,1.8,.42);
+  halo.userData.action={type:'choice',id:actor.action};targets.push(halo);
+  animated.push(t=>{figure.position.y=Math.sin(t*.7+actor.x)*.035;memoryOrb.position.y=3.3+Math.sin(t*1.1+actor.x)*.17;a.rotation.z=t*.19;});
+ }
+}
+function buildParallelGate(group,state,targets,animated){
+ if(!['future','self'].includes(state.world))return;
+ const gate=new THREE.Group();gate.position.set(-9.3,0,-2.5);group.add(gate);
+ const unlocked=state.parallel.forked,canFork=state.stars>=2&&state.chronal.hours>=3;
+ const tint=unlocked?0x86fae4:canFork?0xc4b2ff:0x4c6676;
+ for(let i=0;i<2;i++){const r=ring(gate,1.35+i*.17,.065,emissive(tint,unlocked?2:1),0,2.1,0);
+  r.rotation.y=i?Math.PI/3:-Math.PI/4;animated.push(t=>r.rotation.y=(i?1:-1)*(.18*t+Math.PI/4));}
+ const disc=mesh(gate,new THREE.CircleGeometry(1.26,48),glass(tint,.26),0,2.1,-.08);
+ const action={type:'choice',id:unlocked?'switch-parallel':'fork-parallel'};
+ disc.userData.action=action;targets.push(disc);
+ const hit=mesh(gate,new THREE.PlaneGeometry(3,3.8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}),0,2.3,.02);
+ hit.userData.action=action;targets.push(hit);
+ sign(gate,unlocked?'CROSS REALITIES':'THE ECHO DOOR',unlocked?`TO ${state.parallel.active==='prime'?'ECHO':'PRIME'}`:'2 STARS · 3 HOURS',0,4.5,0,3.5);
+}
 function buildActionBeacon(group,option,index,accent,animated,targets,beacons){
   const x=(index-1)*5.1,z=-1.5;
   const b=new THREE.Group();group.add(b);b.position.set(x,0,z);
@@ -272,21 +334,40 @@ export function createExperience(container, onWorld, onAction){
  const vrControllers=[renderer.xr.getController(0),renderer.xr.getController(1)];
  for(const vrController of vrControllers){
    scene.add(vrController);
+   const gripLight=new THREE.Group();vrController.add(gripLight);
+   orb(gripLight,.065,emissive(0xb1faff,.9),0,0,0);
+   ring(gripLight,.11,.009,emissive(0x90dbf0,.9),0,0,-.03);
    const ray=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0x7feeff}));
    ray.scale.z=10;vrController.add(ray);
    vrController.addEventListener('select',()=>{
      const origin=new THREE.Vector3(),quat=new THREE.Quaternion();vrController.getWorldPosition(origin);vrController.getWorldQuaternion(quat);
      const dir=new THREE.Vector3(0,0,-1).applyQuaternion(quat);const action=intersect(targets,origin,dir);
      if(action){trigger(action);return;}
+     // In encounters the primary trigger means attack, never accidental teleport.
+     if(state?.world==='mech'&&state.mechBattle.active&&state.mechBattle.enemies>0){onAction('fire-pulse');return;}
+     if(state?.world==='dungeon'&&state.wardenBattle?.active){onAction('warden-strike');return;}
      // Comfortable controller teleportation to a walkable floor (rather than forced smooth movement).
      const point=new THREE.Vector3();const floor=new THREE.Plane(new THREE.Vector3(0,1,0),0);
      const rayToFloor=new THREE.Ray(origin,dir);
      if(rayToFloor.intersectPlane(floor,point)&&point.distanceTo(origin)<15){
-       rig.position.x=THREE.MathUtils.clamp(point.x,-18,18);
-       rig.position.z=THREE.MathUtils.clamp(point.z,-18,17);
+       const x=THREE.MathUtils.clamp(point.x,-18,18),z=THREE.MathUtils.clamp(point.z,-18,17);
+       // XR locomotion shares the desktop collision proxies. Do not drop a player inside a wall.
+       const blocked=collisionRects(state.world).some(([x0,x1,z0,z1])=>x>=x0-.5&&x<=x1+.5&&z>=z0-.5&&z<=z1+.5);
+       if(!blocked && Number.isFinite(x) && Number.isFinite(z)){
+         rig.position.x=x;rig.position.z=z;
+       }
      }
    });
+   vrController.addEventListener('squeeze',()=>{
+     if(state?.world==='mech'&&state.mechBattle.active)onAction('raise-shield');
+     else if(state?.world==='dungeon'&&state.wardenBattle?.active)onAction('warden-guard');
+   });
  }
+ const watchCanvas=document.createElement('canvas');watchCanvas.width=512;watchCanvas.height=160;
+ const watchTexture=new THREE.CanvasTexture(watchCanvas);watchTexture.colorSpace=THREE.SRGBColorSpace;
+ const xrWatch=new THREE.Mesh(new THREE.PlaneGeometry(.9,.28),new THREE.MeshBasicMaterial({map:watchTexture,transparent:true,depthTest:false}));
+ xrWatch.position.set(-.34,-.33,-1.0);camera.add(xrWatch);xrWatch.visible=false;
+ function updateXRWatch(){const c=watchCanvas.getContext('2d');c.clearRect(0,0,512,160);c.fillStyle='rgba(4,17,25,.88)';c.fillRect(0,0,512,160);c.strokeStyle='#91ece9';c.strokeRect(6,6,500,148);c.fillStyle='#c8f8f3';c.font='bold 32px Arial';c.fillText((state?.world||'WORLD').toUpperCase()+' / '+(state?.parallel?.active||'prime').toUpperCase(),24,58);c.font='26px Arial';c.fillText(`HOURS ${state?.chronal.hours||0} · STARS ${state?.stars||0} · ${state?.world==='mech'?'TRIGGER FIRE / GRIP SHIELD':state?.world==='dungeon'?'TRIGGER STRIKE / GRIP GUARD':'TRIGGER SELECT / TELEPORT'}`,24,115,465);watchTexture.needsUpdate=true;}
  function intersect(objects,origin,dir){raycaster.set(origin,dir);const hits=raycaster.intersectObjects(objects,false);return hits[0]?.object.userData.action || null;}
  function trigger(action){if(action.type==='world')onWorld(action.world);else if(action.type==='choice')onAction(action.id);}
  function click(event){if(renderer.xr.isPresenting)return;
@@ -308,9 +389,13 @@ export function createExperience(container, onWorld, onAction){
  renderer.domElement.addEventListener('pointerleave',()=>hover?.classList.remove('active'));
  function keydown(e){if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
    if(document.querySelector('.modal-shade'))return;
-   if(!e.repeat && e.code==='KeyE'){interact();e.preventDefault();return;}
+   if(!e.repeat && e.code==='KeyE'){if(state?.world==='dungeon'&&state.wardenBattle?.active)onAction('warden-parley');else interact();e.preventDefault();return;}
    if(!e.repeat && e.code==='Space' && state?.world==='mech' && state.mechBattle.active){onAction('fire-pulse');e.preventDefault();return;}
+   if(!e.repeat && e.code==='Space' && state?.world==='dungeon'&&state.wardenBattle?.active){onAction('warden-strike');e.preventDefault();return;}
+   if(!e.repeat && e.code==='KeyF' && state?.world==='dungeon'&&state.wardenBattle?.active){onAction('warden-power');e.preventDefault();return;}
+   if(!e.repeat && e.code==='KeyR' && state?.world==='mech'&&state.mechBattle.active){onAction('vent-reactor');e.preventDefault();return;}
    if(!e.repeat && e.code==='KeyQ' && state?.world==='mech' && state.mechBattle.active){onAction('raise-shield');e.preventDefault();return;}
+   if(!e.repeat && e.code==='KeyQ' && state?.world==='dungeon'&&state.wardenBattle?.active){onAction('warden-guard');e.preventDefault();return;}
    if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft'].includes(e.code)){pressed.add(e.code);e.preventDefault();}}
  function keyup(e){pressed.delete(e.code);}window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',()=>pressed.clear());
  function xrChoicePanels(worldId){
@@ -327,7 +412,7 @@ export function createExperience(container, onWorld, onAction){
  function mount(next){
    const sameWorld=state?.world===next.world;
    const lastPos=playerPos.clone();const lastCamera=camera.position.clone(),lastTarget=controls.target.clone();
-   state=next;scene.remove(world);world.traverse(o=>{
+   state=next;updateXRWatch();scene.remove(world);world.traverse(o=>{
      o.geometry?.dispose();
      const materials=Array.isArray(o.material)?o.material:o.material?[o.material]:[];
      for(const material of materials){material.map?.dispose();material.dispose();}
@@ -344,13 +429,16 @@ export function createExperience(container, onWorld, onAction){
    else if(state.world==='dungeon')buildDungeon(world,state,animated);
    else if(state.world==='mech')titan=buildMech(world,state,animated);
    addScenery(world,state,animated);
+   buildChronalOrrey(world,state,animated);
+   buildLivingCharacters(world,state,targets,animated);
    // Three interactive wormholes, placed at each world's far edge.
    const all=Object.keys(WORLDS).filter(w=>w!==state.world);
    for(let i=0;i<all.length;i++){
      const x=(i-1.5)*5.7;buildPortal(world,all[i],x,-20.5,targets,animated);
    }
+   buildParallelGate(world,state,targets,animated);
    const active=worldOptions(state).filter(o=>!o.disabled && !o.id.startsWith('go-'));
-   const priority={future:['talk-city','find-shard','buy-penthouse'],self:['confess','purpose','find-shard'],past:['invent-cell','patent','gift','find-shard'],dungeon:['rune-moon','rune-crown','rune-star','face-warden','find-shard'],mech:['start-defense','fire-pulse','raise-shield','defend-city','find-shard']};
+   const priority={future:['talk-city','switch-parallel','fork-parallel','find-shard','buy-penthouse'],self:['confess','switch-parallel','fork-parallel','find-shard'],past:['invent-cell','patent','gift','find-shard'],dungeon:['warden-strike','warden-power','warden-guard','warden-parley','face-warden','rune-moon','rune-crown','rune-star','find-shard'],mech:['fire-pulse','raise-shield','vent-reactor','start-defense','defend-city','find-shard']};
    const physical=[...active].sort((a,b)=>{
      const aa=priority[state.world].indexOf(a.id),bb=priority[state.world].indexOf(b.id);
      return (aa===-1?100:aa)-(bb===-1?100:bb);
@@ -364,7 +452,7 @@ export function createExperience(container, onWorld, onAction){
    else {camera.position.set(0,5.5,18);controls.target.set(0,2,0);}
    player.position.copy(playerPos);
    if(titan && state.mechDeployed){titan.position.x=playerPos.x;titan.position.z=playerPos.z-13;}
-   controls.update();
+   controls.update();updateXRWatch();
    if(state.world==='self')light(world,0xf9c98c,2,4,8,-5,17);
  }
  function move(dt){
@@ -385,13 +473,21 @@ export function createExperience(container, onWorld, onAction){
    const target=new THREE.Vector3(playerPos.x,state.world==='mech'&&state.mechDeployed?5:2,playerPos.z-3);
    const d=target.clone().sub(controls.target);controls.target.add(d);camera.position.add(d);
  }
+ let snapReady=true;
  function tick(){const dt=Math.min(clock.getDelta(),.05);const t=reduceMotion?0:clock.elapsedTime;move(dt);
+   if(renderer.xr.isPresenting){
+     // Optional snap turn with right thumbstick. No forced smooth locomotion.
+     const source=[...(renderer.xr.getSession()?.inputSources||[])].find(s=>s.handedness==='right'&&s.gamepad);
+     const axes=source?.gamepad?.axes||[];const horizontal=Math.abs(axes[2]||0)>Math.abs(axes[0]||0)?axes[2]||0:axes[0]||0;
+     if(Math.abs(horizontal)<.35)snapReady=true;
+     else if(snapReady&&Math.abs(horizontal)>.8){rig.rotation.y-=Math.sign(horizontal)*Math.PI/6;snapReady=false;}
+   }
    if(player && player.visible){player.position.y=Math.sin(t*(moving?9:1))*(moving?.08:.03);}
    for(const fn of animated)fn(t,moving,reduceMotion?0:dt);controls.enabled=!renderer.xr.isPresenting;if(!renderer.xr.isPresenting)controls.update();renderer.render(scene,camera);
  }
  renderer.setAnimationLoop(tick);
- renderer.xr.addEventListener('sessionstart',()=>{controls.enabled=false;rig.position.set(0,0,5);camera.position.set(0,0,0);if(player)player.visible=false;});
- renderer.xr.addEventListener('sessionend',()=>{controls.enabled=true;rig.position.set(0,0,0);camera.position.set(0,5.5,18);if(player)player.visible=!(state.world==='mech'&&state.mechDeployed);});
+ renderer.xr.addEventListener('sessionstart',()=>{controls.enabled=false;rig.position.set(0,0,5);camera.position.set(0,0,0);xrWatch.visible=true;updateXRWatch();if(player)player.visible=false;});
+ renderer.xr.addEventListener('sessionend',()=>{controls.enabled=true;rig.position.set(0,0,0);rig.rotation.y=0;xrWatch.visible=false;camera.position.set(0,5.5,18);if(player)player.visible=!(state.world==='mech'&&state.mechDeployed);});
  function resize(){const w=container.clientWidth||window.innerWidth;const h=container.clientHeight||window.innerHeight;camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h);}
  window.addEventListener('resize',resize);
  resize();
