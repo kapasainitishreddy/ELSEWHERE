@@ -1,3 +1,4 @@
+import { futureConversationReply } from './future-dialogue.js';
 import { initialChronal, sanitizeChronal, timeOptions, performTimeTrade } from './chronal.js';
 import { initialCast, sanitizeCast, rememberWorldEvent, speakAs, CAST, roleplayReply } from './characters.js';
 import { initialParallel, branchOptions, forkIntoEcho, switchBranch, branchSnapshot } from './branches.js';
@@ -208,21 +209,7 @@ export function echoMap(s) {
 }
 
 export function dialogueFallback(s, message) {
-  const q = message.toLowerCase();
-  const f = futureProfile(s);
-  if (/letter|promise|remember|note/.test(q) && s.letter) return `You left me a letter: “${s.letter.slice(0,160)}” I cannot tell you whether that promise came true. But I can tell you it was worth writing down.`;
-  if (/hour|time bank|debt|steal|borrow|time currency|repay/.test(q)) return `Our account contains ${s.chronal.hours} hours. We owe ${s.chronal.futureDebt} hours to tomorrow and ${s.chronal.pastDebt} to yesterday. I remember the trade, even if you regret it. You can still repay what you took.`;
-  if (/parallel|other branch|echo reality|prime reality/.test(q)) return s.parallel.forked ? `There are two versions of this life. You are in ${s.parallel.active}. We can choose differently without erasing what happened in the other reality.` : 'You have not opened your second life yet. Gather stars, then split the timeline through the Echo portal.';
-  if (/rich|money|wealth|buy|famous|success|fortune|business/.test(q)) return s.fate === 'patent'
-    ? 'We made a fortune from that invention. Yes, we could buy almost anything. But money kept expanding the questions, not answering them.'
-    : 'There are futures where we become wealthy, but no future guarantees happiness. What would we want the money to make possible?';
-  if (/regret|mistake|wrong|failure/.test(q)) return 'I regret the moments when I let fear decide for me. Not every bold choice succeeded, but the decisions I never made still echo.';
-  if (/love|friend|family|alone|relationship/.test(q)) return 'The people who stayed mattered. So did the ones we made space to leave. A meaningful life is not a collection of people we convinced to stay.';
-  if (/past|invent|change|timeline/.test(q)) return s.fate
-    ? `You changed history with the ${AVAILABLE_INVENTIONS[s.invention].name}. Look outside. The effects are real in this simulation, but there are always consequences.`
-    : 'You can visit the First Spark and bring impossible knowledge into 1889. The future will change, but no invention tells you what kind of person to become.';
-  if (/power|dungeon|magic|robot|mech|pilot/.test(q)) return 'Every world offers a new way to be powerful. In the end, our choices about that power follow us home.';
-  return `${f.speech} Ask me about a regret, money, the past, power, or the paths we did not take.`;
+  return futureConversationReply(s, message);
 }
 
 function write(s, actionId, title, detail) {

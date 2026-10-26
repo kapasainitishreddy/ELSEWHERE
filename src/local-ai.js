@@ -4,6 +4,7 @@
  * is included. The receiving service is loopback-only and does not persist prompts.
  */
 import { CAST } from './characters.js';
+import { isUrgentSafetyMessage } from './future-dialogue.js';
 
 export const LOCAL_AI_PATH = '/api/local-dialogue';
 export function isLoopbackHostname(hostname) {
@@ -16,6 +17,7 @@ const cappedInt = (value, low, high) => Math.min(high, Math.max(low, Number.isFi
 export function localCharacterRequest(state, id, question) {
   const actor = CAST[id];
   const clean = boundedText(question, 350);
+  if(isUrgentSafetyMessage(clean))return null;
   if (!actor || !clean || actor.world !== state?.world) return null;
   const memory = state.cast?.[id] || {};
   return {
@@ -29,6 +31,8 @@ export function localCharacterRequest(state, id, question) {
       dialogue: Array.isArray(memory.dialogue) ? memory.dialogue.slice(-3).map(x=>({
         question: boundedText(x?.question, 180), reply: boundedText(x?.reply, 380)
       })) : [],
+      // Only an explicitly enabled same-device model sees these selected turns.
+      ...(id==='elder'?{recentFutureConversation:(state.conversation||[]).slice(-4).map(x=>({role:x.role==='user'?'user':'assistant',text:boundedText(x.text,240)}))}:{}),
       fiction: {
         invention: boundedText(state.invention, 20), fate: boundedText(state.fate, 20),
         power: boundedText(state.power, 20), ending: boundedText(state.ending, 20),

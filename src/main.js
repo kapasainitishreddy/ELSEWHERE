@@ -8,6 +8,7 @@ import {createExperience} from './worlds.js';
 import {createInterface} from './ui.js';
 import {createSoundscape} from './audio.js';
 import {createLocalVault} from './vault.js';
+import {isUrgentSafetyMessage} from './future-dialogue.js';
 import {isLoopbackHostname,localCharacterRequest,sanitizeLocalReply,LOCAL_AI_PATH} from './local-ai.js';
 
 const storage=window.localStorage;
@@ -99,7 +100,9 @@ async function ask(question){
  // Local authored dialogue by default. Consent never survives a reload or vault lock.
  let reply=dialogueFallback(state,question), mode='LOCAL · ENCRYPTED';
  const before=state, epoch=sessionEpoch;
- if(localAiEnabled){
+ if(isUrgentSafetyMessage(question)){
+  mode='PRIVATE · SUPPORT INFORMATION';
+ }else if(localAiEnabled){
   const local=await localNpcReply(before,'elder',question);
   if(!started||sessionEpoch!==epoch||state!==before){toast('World changed. Old dialogue was discarded.',false);return;}
   if(local){reply=local;mode='ON-DEVICE AI · ENCRYPTED SAVE';}else mode='LOCAL · AUTHORED FALLBACK';
@@ -144,6 +147,11 @@ async function npcAsk(person,question){
  ui.updateStatus(reply?'ON-DEVICE NPC · ENCRYPTED SAVE':'LOCAL · AUTHORED NPC');
 }
 function listen(){toast('Voice transcription is disabled in Private Mode because browser services may transmit your speech. Type instead.',false);}
+function forgetConversation(){
+ if(!window.confirm('Erase the future-self conversation in this reality? An old encrypted export may still contain it.'))return;
+ state={...state,conversation:[],revision:state.revision+1};
+ void persist();ui.render(state);toast('Conversation erased from the active encrypted timeline.');
+}
 function writeFutureLetter(text){state=writeLetter(state,text);void persist();ui.render(state);toast(state.letter?'Private letter encrypted on this device.':'Letter cleared.');}
 function toggleSound(enabled){soundscape.toggle(enabled);soundscape.setScene(state.world);}
 function mobileMove(code,on){experience?.setMove?.(code,on);}
@@ -186,7 +194,7 @@ async function lock(){
 }
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,
- sound:toggleSound,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
+ sound:toggleSound,forgetConversation,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
  privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk
 });
 function begin(next){

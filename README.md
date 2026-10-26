@@ -127,3 +127,7 @@ See [Architecture](docs/ARCHITECTURE.md), [Demo script](docs/DEMO_3MIN.md), [QA]
 
 ## The Quiet Between Worlds · research-informed optional story
 A new voluntary, nonclinical experience includes a virtual garden, imagined future-self dialogue, kind roleplay and meaningful small choices. Open it from the header or approach the Stillwater terrace in the future-self world. The calm story choices are ephemeral, never saved, scored or sent to AI. No dopamine/serotonin claims or health advice. The independent /glasses/ Pocket page offers a glanceable concept for Meta Ray-Ban Display; it has not been tested on actual glasses and it does not sync private game data. See docs/RESEARCH_AND_SAFETY.md.
+
+## Future Self testing and research (v0.6)
+
+This version adds the missing loopback-only Ollama bridge, a memory-aware offline future-self conversation, optional private dialogue starters, and a clear-conversation action. It is fictional, not a clinical intervention or prediction. See [testing and Quest checklist](docs/TESTING_AND_QA.md), [hackathon scorecard](docs/HACKATHON_SCORECARD.md), and [research and safeguards](docs/FUTURE_SELF_RESEARCH.md). For optional local generative conversations install Ollama, run `ollama pull qwen2.5:1.5b`, then run `npm run dev:local-ai`. Cloud Meta remains independently opt-in and nonprivate.
