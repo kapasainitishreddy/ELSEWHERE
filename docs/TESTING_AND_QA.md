@@ -74,3 +74,8 @@ This is an **optional story-to-real-life bridge**, not a wellbeing intervention 
 8. With a deliberately mocked Ollama response promising a depression cure, the endpoint should reject its output and authored dialogue should remain usable. Run `node --test tests/dialogue-guard.test.mjs` for a reproducible mock test.
 
 Run `npm run readiness` for an honest preflight status. It never turns an untested Quest, model endpoint, demo, or human usability session into a fake green check. Record a **real** Quest test and inspect frame rate/comfort before claiming the VR experience is ready.
+
+
+## H. Future Self Presence Lab acceptance (v0.8)
+
+Read [`FUTURE_SELF_PRESENCE.md`](FUTURE_SELF_PRESENCE.md). Run `npm run dialogue:check` and `node --test tests/local-voice.test.mjs tests/presence-dialogue.test.mjs`. Verify optional **device-local** speech output, strictly local-only recognition, deliberate editable transcripts, avatar listening/speaking animation, and instant muting on lock or portal transition. Unsupported browsers should never open the microphone. Record only fictional test data; do not collect private health disclosures.

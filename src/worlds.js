@@ -210,39 +210,72 @@ function buildSelf(g,state,animated){
  // Deliberately abstract, original character design. No face scan or personal likeness.
  const elder=new THREE.Group();g.add(elder);elder.position.set(0,0,-5.3);
  const body=mesh(elder,new THREE.CapsuleGeometry(.58,1.2,6,12),mat(0x323b48,.1,.78),0,1.7,0);
- orb(elder,.46,mat(0xbba38f,.1,.8),0,3.03,0);
- const hair=mesh(elder,new THREE.SphereGeometry(.47,14,12,0,Math.PI*2,0,Math.PI*.48),mat(0xb0bcc5,.1,.7),0,3.15,-.015);
- const eye=emissive(0xe7cfb2,.5);orb(elder,.035,eye,-.15,3.03,.43);orb(elder,.035,eye,.15,3.03,.43);
- for(let x of [-.75,.75]){box(elder,.21,.9,.23,mat(0x303a48,.1,.7),x,1.86,0);box(elder,.29,.65,.29,mat(0x313b48,.1,.72),x*.48,.48,0);}
+ const head=new THREE.Group();head.position.set(0,3.03,0);elder.add(head);
+ orb(head,.46,mat(0xbba38f,.1,.8),0,0,0);
+ const hair=mesh(head,new THREE.SphereGeometry(.47,14,12,0,Math.PI*2,0,Math.PI*.48),mat(0xb0bcc5,.1,.7),0,.12,-.015);
+ const eye=emissive(0xe7cfb2,.5);orb(head,.035,eye,-.15,0,.43);orb(head,.035,eye,.15,0,.43);
+ const arms=[];
+ for(let side of [-1,1]){
+   const arm=new THREE.Group();arm.position.set(side*.72,2.12,0);elder.add(arm);
+   box(arm,.23,.83,.25,mat(0x303a48,.1,.7),0,-.38,0);
+   orb(arm,.13,mat(0xbba38f,.1,.8),0,-.83,.04);
+   arms.push(arm);
+   box(elder,.29,.65,.29,mat(0x313b48,.1,.72),side*.48,.48,0);
+ }
+ let presence='idle';
  const halo=ring(g,1.3,.025,emissive(0xecc29f,.55),0,3.45,-5.5);
- animated.push(t=>{halo.rotation.z=t*.16;elder.position.y=Math.sin(t*.5)*.035;});
+ const speechHalo=ring(g,.7,.014,emissive(0xffdfb8,.53),0,3.7,-5.3);speechHalo.rotation.x=Math.PI/2;
+ animated.push(t=>{
+   const speaking=presence==='speaking',listening=presence==='listening';
+   halo.rotation.z=t*.16;elder.position.y=Math.sin(t*.5)*.035;
+   head.rotation.x=speaking?Math.sin(t*5)*.075:listening?.07+Math.sin(t*1.2)*.014:Math.sin(t*.63)*.012;
+   head.rotation.z=speaking?Math.sin(t*3.4)*.03:0;
+   arms[0].rotation.x=speaking?-.22+Math.sin(t*3.1)*.15:0;
+   arms[1].rotation.x=speaking?-.28+Math.sin(t*2.9+.8)*.16:listening?-.08:0;
+   speechHalo.visible=speaking;
+   if(speaking)speechHalo.scale.setScalar(1+Math.sin(t*4)*.07);
+ });
  sign(g,'THE OTHER YOU','A POSSIBLE FUTURE, NOT A PREDICTION',0,5,-7.9,5.3);
+ const keepsake=state.fate==='gift'?'A PUBLIC WORKSHOP':state.fate==='patent'?'A TOWER WITH OUR NAME':state.fate==='auction'?'A MUSEUM PLAQUE':state.flags?.['defend-city']?'THE LIGHTS OF THE HARBOR':'AN UNOPENED LETTER';
+ sign(g,'A REMEMBERED POSSIBILITY',keepsake,5.4,3.8,-9,3.25);
  window.userData.noRay=true;sofa.userData.noRay=true;lamp.userData.noRay=true;hair.userData.noRay=true;body.userData.noRay=true;table.userData.noRay=true;
+ return {setMode(mode){presence=['speaking','listening'].includes(mode)?mode:'idle';}};
 }
-/** Low-motion original restorative setting. No personal telemetry or forced breathing. */
+/** Voluntary restorative environment: original lightweight geometry, no biological sensing.
+ * Visual design takes inspiration from research on virtual nature and perspective-taking.
+ */
 function buildStillwaterTerrace(g,animated,targets){
  const root=new THREE.Group();root.position.set(12,0,6.5);g.add(root);
  const stone=mat(0x3d6260,.08,.89),wood=mat(0x574d42,.13,.93),leaf=mat(0x7dc2a0,.08,.8),petal=mat(0xc7dca9,.06,.9);
+ // Walking surface has no moving platform or camera motion; stationary viewing is comfortable in VR.
  const platform=cylinder(root,6.1,6.3,.23,stone,0,.03,0);platform.scale.z=.85;
  for(let i=0;i<9;i++){
-  const a=i/9*Math.PI*2,x=Math.cos(a)*5.25,z=Math.sin(a)*4.15;
+  const ang=i/9*Math.PI*2, x=Math.cos(ang)*5.25,z=Math.sin(ang)*4.15;
   cylinder(root,.18,.28,.8,stone,x,.45,z);
   const bulb=orb(root,.21,emissive(i%2?0xa6eacc:0xf3e0b7,.7),x,.99,z);
   animated.push(t=>bulb.scale.setScalar(1+Math.sin(t*.32+i)*.025));
  }
+ // Handcrafted bonsai inspired by forest shapes, not a copied licensed environment.
  cylinder(root,.38,.62,3.2,wood,0,1.55,-1.6);
  for(let i=0;i<14;i++){
   const a=i*2.39996,r=.5+Math.sqrt(i/14)*2.5;
   orb(root,.68+(i%3)*.17,i%4===0?petal:leaf,Math.cos(a)*r,3.1+(i%5)*.25,-1.6+Math.sin(a)*r*.7);
  }
- mesh(root,new THREE.CircleGeometry(2.15,40),glass(0x83b9b3,.42),0,.21,2.1,-Math.PI/2);
- for(let i=0;i<3;i++){const ripple=ring(root,.7+i*.57,.016,emissive(0xbce9d7,.26),0,.231,2.1);ripple.rotation.x=Math.PI/2;animated.push(t=>ripple.scale.setScalar(1+Math.sin(t*.17+i)*.013));}
- box(root,2.8,.2,.75,wood,-3,.71,-1.3);for(const x of [-4,-2])box(root,.14,.72,.14,stone,x,.33,-1.3);
+ const pool=mesh(root,new THREE.CircleGeometry(2.15,40),glass(0x83b9b3,.42),0,.21,2.1,-Math.PI/2);
+ for(let i=0;i<3;i++){
+  const ripple=ring(root,.7+i*.57,.016,emissive(0xbce9d7,.26),0,.231,2.1);
+  ripple.rotation.x=Math.PI/2;
+  animated.push(t=>{ripple.scale.setScalar(1+Math.sin(t*.17+i)*.013);});
+ }
+ const bench=box(root,2.8,.2,.75,wood,-3,.71,-1.3);
+ for(const x of [-4,-2])box(root,.14,.72,.14,stone,x,.33,-1.3);
  light(root,0x8ed9c1,.45,0,4,0,10);
  const board=sign(root,'THE QUIET BETWEEN WORLDS','NO CLOCKS · NO SCORES',0,4.95,3.9,4.7);
+ // Desktop opens the extended story; in headset a readable local in-world note appears.
  board.userData.action={type:'stillwater',id:'welcome'};targets.push(board);
- const note=sign(root,'YOU ARE ALLOWED TO REST','A CHOICE, NOT A TEST',0,3.55,4,3.8);note.visible=false;
- return {show(){note.visible=true;},hide(){note.visible=false;}};
+ const note=sign(root,'YOU ARE ALLOWED TO REST','A CHOICE, NOT A TEST',0,3.55,4,3.8);
+ note.visible=false;
+ return {show(){note.visible=!note.visible;},hide(){note.visible=false;}};
 }
 function buildPast(g,state,animated){
  const brick=mat(0x67514c,.04,.9);const timber=mat(0x392c2d,.14,.6);const copper=mat(0xad7b50,.76,.28);
@@ -382,7 +415,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  container.append(renderer.domElement);
  const rig=new THREE.Group();scene.add(rig);const camera=new THREE.PerspectiveCamera(63,1,.08,200);rig.add(camera);camera.position.set(0,5,17);
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.055;controls.enablePan=false;controls.maxPolarAngle=Math.PI*.47;controls.minDistance=5;controls.maxDistance=28;controls.target.set(0,2,0);
- const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],player=null,titan=null,moving=false,stillwaterTerrace=null;
+ const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],player=null,titan=null,moving=false,stillwaterTerrace=null,elderPresence=null,dialogueUntil=0;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  const hover=document.querySelector('#interaction-hint');let pointerDown=null;
  const clock=new THREE.Clock();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();
@@ -499,13 +532,13 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    });
    world=new THREE.Group();scene.add(world);scene.background=new THREE.Color(palettes[state.world].bg);
    scene.fog=new THREE.FogExp2(palettes[state.world].fog,state.world==='self'?.012:.008);
-   targets=[];beacons=[];portalLocations=[];animated=[];titan=null;stillwaterTerrace=null;
+   targets=[];beacons=[];portalLocations=[];animated=[];titan=null;stillwaterTerrace=null;elderPresence=null;dialogueUntil=0;
    const p=palettes[state.world];world.add(new THREE.HemisphereLight(p.light,0x080d17,state.world==='self'?1.4:1.75));
    const sun=new THREE.DirectionalLight(p.light,2.8);sun.position.set(5,17,5);world.add(sun);
    ground(world,p);stars(world,state.world==='dungeon'?0xd5bcff:0xb1dce8,state.world==='self'?180:280);
    addAtmosphere(world,state.world,animated,atmosphereBudget({headset:renderer.xr.isPresenting,reducedMotion,smallScreen:window.innerWidth<900}));
    if(state.world==='future')buildFuture(world,state,animated);
-   else if(state.world==='self'){buildSelf(world,state,animated);stillwaterTerrace=buildStillwaterTerrace(world,animated,targets);}
+   else if(state.world==='self'){elderPresence=buildSelf(world,state,animated);stillwaterTerrace=buildStillwaterTerrace(world,animated,targets);}
    else if(state.world==='past')buildPast(world,state,animated);
    else if(state.world==='dungeon')buildDungeon(world,state,animated);
    else if(state.world==='mech')titan=buildMech(world,state,animated);
@@ -560,6 +593,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  }
  let snapReady=true;
  function tick(){const dt=Math.min(clock.getDelta(),.05);const t=reduceMotion?0:clock.elapsedTime;desktopGamepad();move(dt);
+   if(dialogueUntil&&clock.elapsedTime>=dialogueUntil){dialogueUntil=0;elderPresence?.setMode('idle');}
    if(renderer.xr.isPresenting){
      // Optional snap turn with right thumbstick. No forced smooth locomotion.
      const source=[...(renderer.xr.getSession()?.inputSources||[])].find(s=>s.handedness==='right'&&s.gamepad);
@@ -593,7 +627,12 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    const born=clock.elapsedTime;
    animated.push(t=>{const age=t-born;if(age<0)return;burst.scale.setScalar(1+Math.min(age*4,8));ringMaterial.opacity=Math.max(0,.78-age*.84);if(age>1)burst.visible=false;});
  }
- return {mount,resize,effect,interact,setMove(code,on){if(on)pressed.add(code);else pressed.delete(code);},vrSupported:()=>Boolean(navigator.xr),
+ function setDialogueActivity(mode,durationSeconds=0){
+   if(state?.world!=='self'||!elderPresence)return;
+   elderPresence.setMode(mode);
+   dialogueUntil=durationSeconds>0?clock.elapsedTime+Math.min(durationSeconds,9):0;
+ }
+ return {mount,resize,effect,interact,setDialogueActivity,setMove(code,on){if(on)pressed.add(code);else pressed.delete(code);},vrSupported:()=>Boolean(navigator.xr),
    enterVR(){vrButton.click();},
    dispose(){renderer.setAnimationLoop(null);renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);controls.dispose();renderer.dispose();container.replaceChildren();}
  };

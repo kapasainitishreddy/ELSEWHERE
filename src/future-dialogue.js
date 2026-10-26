@@ -9,7 +9,7 @@ export const FUTURE_STARTERS = Object.freeze([
   'What is one small thing worth doing today?',
   'Do you remember what I was worried about?',
   'What did we learn about starting again?',
-  'How did our choices change this city?'
+  'Tell me about an ordinary day we might live in 2046.'
 ]);
 
 export function isUrgentSafetyMessage(input) {
@@ -83,6 +83,19 @@ function cityMemory(state) {
   if (state?.flags?.['defend-city']) return 'The evacuation lights across the harbor are still on because we chose to protect strangers.';
   return 'The skyline outside is unfinished. So are we, and there is room for more than one ending.';
 }
+/** Vignettes are authored alternate-history fiction, never personal predictions. */
+export function possibleFutureVignette(state) {
+  if(state?.fate==='gift')
+    return 'This morning I passed the public workshop. A little girl was teaching her grandfather to repair a lamp powered by the invention we gave away. I bought bread, carried it home through the rain, and remembered that sharing something can keep changing a city long after we stop watching.';
+  if(state?.fate==='patent')
+    return 'A tram stopped outside a tower with our name on it. I used to stare at that name and wonder whether it made me important. Today I let the next tram go, sat beside a stranger, and listened to her describe a small idea nobody had funded yet.';
+  if(state?.fate==='auction')
+    return 'The city has a museum exhibit about the invention we sold. The plaque talks about a fortune, but not the people who built it. I spent my morning asking the archivist whether we could add their names. There are always more choices after the big one.';
+  if(state?.flags?.['defend-city'])
+    return 'After the breakwater defense, the city felt strangely quiet. I walked past the harbor where the evacuation lights still worked, and a mechanic waved from a rooftop. Sometimes the best adventure is the ordinary day that comes afterward.';
+  return 'I got up, made tea, and watched the sunlight crawl across this table. On the shelf are train tickets from places we might visit and an unopened letter. Nothing spectacular happened, and I found myself grateful that this version of life still had room for a new decision.';
+}
+
 export function futureConversationReply(state, message) {
   const q = normalized(message);
   if (!q) return '';
@@ -96,6 +109,10 @@ export function futureConversationReply(state, message) {
     return 'I am one invented possibility, not a prediction or a replacement for people in your life. The city around me is a story shaped by your choices. What part of this possible future feels worth exploring?';
   if (/^(?:yes|yeah|okay|ok|please|tell me more|go on|why|how|and then|what next)[.!? ]*$/.test(lower))
     return followUp(state,prior);
+  if (/\b(?:tell me (?:a story|about (?:your|our|an ordinary) day)|what (?:is|was|will) (?:an ordinary day|your life) like|what happened (?:this morning|yesterday)|show me (?:our|the) future)\b/i.test(lower))
+    return `${possibleFutureVignette(state)} Of all those details, which one would you have wanted to see for yourself?`;
+  if (/\b(?:do you know my name|what is my name|do you know everything about me|have you seen my real future)\b/.test(lower))
+    return 'I only know what you choose to tell me in this world, and what happens in this fictional timeline. I would rather ask than pretend I know the years you have not lived. What should I understand about you?';
   if (/\b(?:i (?:tried|did it|finished|made it|started)|i gave it a try)\b/.test(lower))
     return `${compass||'You came back and told me you tried something. That matters more than a perfect outcome.'} What was the experience like for you?`;
   if (/\b(?:my (?:intention|small step|compass|plan)|the (?:small step|compass)|did i (?:plan|choose))\b/.test(lower))

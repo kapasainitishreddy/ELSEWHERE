@@ -7,7 +7,7 @@ import { readdirSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 const cwd=resolve(import.meta.dirname,'..');
-const sources=['src/future-dialogue.js','src/compass.js','src/local-ai.js','src/game.js','src/branches.js','src/ui.js','src/main.js','server.mjs','local-server.mjs'];
+const sources=['src/future-dialogue.js','src/local-voice.js','src/compass.js','src/local-ai.js','src/game.js','src/branches.js','src/ui.js','src/main.js','server.mjs','local-server.mjs'];
 const checks=[];
 for(const file of sources){
  const r=spawnSync(process.execPath,['--check',file],{cwd,encoding:'utf8'});

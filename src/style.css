@@ -238,3 +238,12 @@
 .compass-current small{font-size:11px;line-height:1.5;color:rgba(214,232,229,.65)}.compass-choices{display:flex;gap:9px;flex-wrap:wrap;margin:9px 0 12px}
 .compass-footnote{margin-bottom:0}.compass-panel :is(button,input,select):focus-visible{outline:2px solid #a9f5e0;outline-offset:3px}
 @media(max-width:600px){.compass-panel{padding:13px}.compass-intro h3{font-size:20px}}
+
+/* On-device future-self speech controls. Legible, optional, no engagement pressure. */
+.future-voice-controls{display:flex;flex-wrap:wrap;align-items:center;gap:9px 11px;padding:11px 0 13px;border-bottom:1px solid rgba(180,214,225,.14)}
+.future-voice-controls button{background:rgba(150,205,211,.065);color:#dbeae8;border:1px solid rgba(177,219,220,.27);border-radius:9px;padding:11px 13px;min-height:42px;font-family:inherit;font-weight:600;line-height:1.35;font-size:10px;letter-spacing:.07em;cursor:pointer;transition:background .2s,border-color .2s}
+.future-voice-controls button:hover,.future-voice-controls button:focus-visible{background:rgba(158,225,226,.16);border-color:#a1e8e4;outline-offset:3px}
+.future-voice-controls [data-voice-status]{color:#a5cfc9;font-size:10px;font-weight:600;letter-spacing:.09em}
+.future-voice-controls p{flex-basis:100%;font-size:11px;color:rgba(226,239,237,.65);margin:0;line-height:1.55}
+@media(max-width:600px){.future-voice-controls button{flex:1 1 150px}}
+@media(prefers-reduced-motion:reduce){.future-voice-controls button{transition:none}}

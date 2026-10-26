@@ -8,7 +8,8 @@ import {createExperience} from './worlds.js';
 import {createInterface} from './ui.js';
 import {createSoundscape} from './audio.js';
 import {createLocalVault} from './vault.js';
-import {isUrgentSafetyMessage} from './future-dialogue.js';
+import {isUrgentSafetyMessage,sanitizeGeneratedDialogue} from './future-dialogue.js';
+import {createPrivateSpeech,openPrivateDictation} from './local-voice.js';
 import {isLoopbackHostname,localCharacterRequest,sanitizeLocalReply,LOCAL_AI_PATH} from './local-ai.js';
 
 const storage=window.localStorage;
@@ -25,6 +26,42 @@ const soundscape=createSoundscape();
 let state=initialState(), experience=null, started=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
 const pendingLocalRequests=new Set();
 const onLocalMachine=isLoopbackHostname(window.location.hostname);
+// No microphone or voice activity starts automatically. Only voices explicitly
+// marked local by the browser may speak. A private passphrase is never read.
+const privateSpeech=createPrivateSpeech({
+ synthesis:window.speechSynthesis,Utterance:window.SpeechSynthesisUtterance,
+ onActivity:mode=>experience?.setDialogueActivity?.(mode)
+});
+let dictationSession=null,dictationStatus='idle',dictationPending=false;
+function stopDictation(){dictationSession?.stop();dictationSession=null;dictationStatus='idle';}
+function stopPresence(){privateSpeech.stop();stopDictation();experience?.setDialogueActivity?.('idle');}
+function togglePrivateVoice(){
+ if(privateSpeech.enabled()){
+  privateSpeech.disable();experience?.setDialogueActivity?.('idle');toast('On-device future-self speech disabled.');
+ }else{
+  const result=privateSpeech.enable();toast(result.ok?'On-device future-self voice enabled for this session.':result.reason,result.ok);
+ }
+ ui.render(state);
+}
+async function listen(){
+ if(dictationPending){toast('Checking the on-device speech capability.',false);return;}
+ if(dictationSession){stopDictation();ui.updateVoiceStatus?.('NOT LISTENING');return;}
+ dictationPending=true;
+ const epoch=sessionEpoch;
+ ui.updateVoiceStatus?.('CHECKING LOCAL SPEECH PACK');
+ const result=await openPrivateDictation({
+  browser:window,mayStart:()=>started&&state?.world==='self'&&epoch===sessionEpoch,
+  onText:text=>{if(started&&epoch===sessionEpoch&&state?.world==='self'){
+   ui.injectDictation?.(text);toast('Local transcription inserted. Review it before sending.');
+  }},
+  onStatus:status=>{dictationStatus=status;ui.updateVoiceStatus?.(status==='listening'?'MICROPHONE · ON DEVICE':'NOT LISTENING');if(status==='idle')dictationSession=null;}
+ });
+ dictationPending=false;
+ if(!result.ok){ui.updateVoiceStatus?.('TYPING · PRIVATE');toast(result.reason,false);return;}
+ if(!started||epoch!==sessionEpoch){result.stop();return;}
+ dictationSession=result;
+ ui.updateVoiceStatus?.('MICROPHONE · ON DEVICE');
+}
 
 function toast(message,positive=true){
  const node=document.createElement('div');node.className=`toast ${positive?'positive':'negative'}`;node.textContent=String(message).slice(0,240);
@@ -41,6 +78,7 @@ function persist(){
 }
 function publish(next,event){
  const changed=previousWorld!==next.world;
+ if(changed)stopPresence();
  previousWorld=next.world;
  state=next;
  void persist();
@@ -98,6 +136,7 @@ async function toggleLocalAi(){
 }
 async function ask(question){
  // Local authored dialogue by default. Consent never survives a reload or vault lock.
+ privateSpeech.stop();stopDictation();experience?.setDialogueActivity?.('listening');
  let reply=dialogueFallback(state,question), mode='LOCAL · ENCRYPTED';
  const before=state, epoch=sessionEpoch;
  if(isUrgentSafetyMessage(question)){
@@ -121,16 +160,18 @@ async function ask(question){
     const res=await fetch('/api/character',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal,credentials:'same-origin',cache:'no-store'});
     if(!res.ok)throw new Error('Provider unavailable');
     const data=await res.json();if(typeof data?.reply!=='string'||!data.reply.trim())throw new Error('No AI dialogue');
-    reply=data.reply.slice(0,1200);mode='META · CLOUD RESPONSE';
+    const safe=sanitizeGeneratedDialogue(data.reply,600);if(!safe)throw new Error('Unsafe generated claim');
+    reply=safe;mode='META · CLOUD RESPONSE';
    }finally{clearTimeout(timer);}
   }catch{
    mode='META ATTEMPTED · LOCAL FALLBACK';
    toast('Meta unavailable. Continuing with local dialogue. A remote request may have been attempted.',false);
   }
  }
- if(!started||sessionEpoch!==epoch||state!==before)return;
+ if(!started||sessionEpoch!==epoch||state!==before){experience?.setDialogueActivity?.('idle');return;}
  state=addConversation(state,question,reply);
  void persist();ui.render(state);ui.updateStatus(mode);
+ if(!privateSpeech.speak(reply))experience?.setDialogueActivity?.('speaking',Math.min(5,1.6+reply.length/80));
 }
 function toggleCloud(){
  if(cloudEnabled){cloudEnabled=false;ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');toast('Remote conversations disabled.');return;}
@@ -146,8 +187,8 @@ async function npcAsk(person,question){
  publish(answer.state);
  ui.updateStatus(reply?'ON-DEVICE NPC · ENCRYPTED SAVE':'LOCAL · AUTHORED NPC');
 }
-function listen(){toast('Voice transcription is disabled in Private Mode because browser services may transmit your speech. Type instead.',false);}
 function forgetConversation(){
+ stopPresence();
  if(!window.confirm('Erase the future-self conversation in this reality? An old encrypted export may still contain it.'))return;
  state={...state,conversation:[],revision:state.revision+1};
  void persist();ui.render(state);toast('Conversation erased from the active encrypted timeline.');
@@ -193,6 +234,7 @@ async function rekey(){
 }
 async function lock(){
  if(!started)return;
+ stopPresence();privateSpeech.disable();
  await vault.save(state);
  await vault.lock();ui.resetEphemeral();sessionEpoch++;for(const c of pendingLocalRequests)c.abort();cloudEnabled=false;localAiEnabled=false;soundscape.toggle(false);
  experience?.dispose?.();experience=null;started=false;
@@ -203,9 +245,11 @@ async function lock(){
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,
  sound:toggleSound,forgetConversation,compassSave,compassTried,compassClear,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
- privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk
+ privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
+ voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus
 });
 function begin(next){
+ stopPresence();privateSpeech.disable();
  state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{
   experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater());

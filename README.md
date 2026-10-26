@@ -151,3 +151,12 @@ The on-device roleplay bridge now includes the previously missing `local-server.
 See [TESTING_AND_QA.md](docs/TESTING_AND_QA.md) for step-by-step desktop and Meta Quest testing; [HACKATHON_SCORECARD.md](docs/HACKATHON_SCORECARD.md) for the official judging rubric and target evidence; and [FUTURE_SELF_RESEARCH.md](docs/FUTURE_SELF_RESEARCH.md) for the relevant research and limitations.
 
 To opt into local language-model roleplay on your computer, install [Ollama](https://ollama.com/) and download a compatible small model, e.g. `ollama pull qwen2.5:1.5b`; start Ollama and run `npm run dev:local-ai`. The model and its logs/process remain under your control, subject to the local computer's security. This is *not* the Meta API. If you enable the separate Meta cloud demo, selected typed questions and fictional context leave your device and no longer qualify as completely local.
+
+
+## Future Self Presence Lab (v0.8)
+
+The imagined future-self encounter now has **subtle listening/speaking avatar animation** and a room keepsake that reflects your alternate-history choices. Authored, offline dialogue includes concrete, choice-dependent fictional moments; optional local Ollama provides more flexible conversation. The player's actual future is never predicted.
+
+**Opt-in voice** is deliberately conservative. Hear Future Self will use **only English voices flagged as on-device by the browser**. Experimental dictation opens a microphone **only when the browser verifies an installed on-device speech-recognition pack**; it inserts editable words, never sends them automatically, and never falls back to cloud transcription. Many browser/headset configurations will stay text-only. See [Future Self Presence Lab](docs/FUTURE_SELF_PRESENCE.md).
+
+Run `npm run dialogue:check` for the authored narrative smoke evaluation, `npm test` for regression tests, and `npm run readiness` for the honest submission preflight. These are not replacements for an actual visual browser/Quest test, voluntary usability feedback, or proof of Meta-model usage. The strongest privacy guarantee depends on the browser and operating system, so an offline locally installed build with typed input remains the most isolated configuration.
