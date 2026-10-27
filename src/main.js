@@ -28,6 +28,7 @@ const gateStatus=gate.querySelector('#vault-notice');
 const gateTitle=gate.querySelector('#vault-title');
 const gateButton=gate.querySelector('#vault-submit');
 const guestButton=gate.querySelector('#guest-play');
+const physicsButton=gate.querySelector('#physics-play');
 const curtain=document.querySelector('#transition-curtain');
 const toastRoot=document.querySelector('#toast-region');
 const soundscape=createSoundscape();
@@ -271,12 +272,12 @@ const ui=createInterface(document.querySelector('#app-ui'),{
  privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
  voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus,comfort:id=>experience?.setComfort?.(id)
 });
-function begin(next,{guest=false}={}){
+function begin(next,{guest=false,physicsPreview=false}={}){
  stopPresence();privateSpeech.disable();
  guestMode=Boolean(guest);
  state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{
-  experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater(),message=>toast(message),()=>ui.enterWorld());
+  experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater(),message=>toast(message),()=>ui.enterWorld(),{spawnNearPhysics:physicsPreview});
   experience.mount(state);document.querySelector('#app').dataset.sceneReady='true';ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');
   document.querySelector('#loading-screen')?.classList.add('hidden');
  }catch(error){
@@ -288,6 +289,10 @@ function begin(next,{guest=false}={}){
  }
 }
 guestButton.addEventListener('click',()=>begin(initialState(),{guest:true}));
+physicsButton.addEventListener('click',()=>{
+ const preview=travel(initialState(),'dungeon');
+ begin(preview.ok?preview.state:initialState(),{guest:true,physicsPreview:true});
+});
 gateForm.addEventListener('submit',async(event)=>{
  event.preventDefault();const pass=gateInput.value;gateInput.value='';gateButton.disabled=true;gateStatus.textContent='Securing your local world…';
  try{const next=vault.present()?await vault.unlock(pass):await vault.create(pass);begin(next);}

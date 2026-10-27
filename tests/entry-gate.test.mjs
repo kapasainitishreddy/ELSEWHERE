@@ -5,7 +5,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('HTML contains the complete unlock screen used by the runtime',()=>{
  const html=read('index.html');
- for(const id of ['vault-gate','vault-title','vault-form','vault-passphrase','vault-submit','vault-notice','guest-play'])
+ for(const id of ['vault-gate','vault-title','vault-form','vault-passphrase','vault-submit','vault-notice','guest-play','physics-play'])
    assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(html,/type="password"/);
  assert.match(html,/minlength="10"/);

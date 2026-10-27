@@ -597,7 +597,7 @@ function buildLivingBackdrop(group,state,animated){
 }
 
 /** Create a self-contained Three.js renderer with WebXR controller support. */
-export function createExperience(container, onWorld, onAction, onOpenStillwater=()=>{}, onInspect=()=>{}, onExplore=()=>{}){
+export function createExperience(container, onWorld, onAction, onOpenStillwater=()=>{}, onInspect=()=>{}, onExplore=()=>{},options={}){
  const scene=new THREE.Scene();const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
  // Bound desktop fill rate; XR selects its own framebuffer.
  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,window.innerWidth<800?1.1:1.5));renderer.setSize(container.clientWidth||window.innerWidth,container.clientHeight||window.innerHeight);
@@ -623,7 +623,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  let lastCue='',focusedPoint=null,activeChoice=null;
  const worldNames=Object.fromEntries(Object.entries(WORLDS).map(([key,w])=>[key,w.name]));
  const clock=new THREE.Clock();const care=createSessionCare();const locomotion=createPlayerMotion();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();let comfortId=DEFAULT_COMFORT;
- let hasExplored=false,travelerSpeed=0;let previousGamepadButtons=new Set(),gamepadAxes={x:0,z:0};
+ let hasExplored=false,travelerSpeed=0,physicsNotified=false;let previousGamepadButtons=new Set(),gamepadAxes={x:0,z:0};
  function desktopGamepad(){
    if(renderer.xr.isPresenting || !state || !document.querySelector('#vault-gate')?.hidden || document.querySelector('.modal-shade')){
      previousGamepadButtons.clear();gamepadAxes={x:0,z:0};return;
@@ -829,7 +829,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
        if(!level.parent){stage.dispose();return;}
        physicsStage=stage;
        sign(level,'TOUCH THE WORLD','E · CLICK · VR TRIGGER',8.4,4.2,5.8,4);
-     }).catch(()=>{}); // scene still works if WASM fails to initialize
+       if(options.spawnNearPhysics&&!physicsNotified){onInspect('Physics is ready. Press E near a relic or click it.');physicsNotified=true;}
+     }).catch(()=>{if(options.spawnNearPhysics&&!physicsNotified){onInspect('Physics could not start in this browser. The story remains playable.');physicsNotified=true;}}); // fallback if WASM fails
    }
    buildCombatTargets(world,state,animated,targets);
    buildChronalOrrey(world,state,animated);
@@ -851,7 +852,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    for(const beacon of beacons)nearbyProps.push({x:beacon.position.x,z:beacon.position.z,action:{type:'choice',id:beacon.action,label:beacon.title}});
    xrChoicePanels(state.world);
    player=makePlayer(world);player.visible=!renderer.xr.isPresenting && !(state.world==='mech'&&state.mechDeployed);
-   playerPos.copy(sameWorld?lastPos:new THREE.Vector3(0,0,6));
+   const startPosition=options.spawnNearPhysics&&state.world==='dungeon'?new THREE.Vector3(5.45,0,5.8):new THREE.Vector3(0,0,6);
+   playerPos.copy(sameWorld?lastPos:startPosition);
    if(!sameWorld)locomotion.reset(Math.PI);
    player.rotation.y=locomotion.heading;
    if(!renderer.xr.isPresenting){
