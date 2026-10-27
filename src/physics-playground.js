@@ -62,25 +62,64 @@ export function createPhysicsStage(THREE,RAPIER,parent,worldId,targets,nearby,op
  plinth.position.y=-.11;root.add(plinth);
  const rim=new THREE.Mesh(new THREE.TorusGeometry(2.95,.035,8,64),new THREE.MeshBasicMaterial({color:accent,transparent:true,opacity:.6}));
  rim.rotation.x=Math.PI/2;rim.position.y=.015;root.add(rim);
+ // Twenty-four index marks are one draw call; the gallery is readable on Quest.
+ const ticks=new THREE.InstancedMesh(
+   new THREE.BoxGeometry(.08,.02,.26),
+   new THREE.MeshBasicMaterial({color:accent,transparent:true,opacity:.55}),24);
+ const marker=new THREE.Object3D();
+ for(let i=0;i<24;i++){
+   const a=i*Math.PI/12;
+   marker.position.set(Math.cos(a)*2.68,.035,Math.sin(a)*2.68);
+   marker.rotation.set(0,-a,0);
+   marker.scale.setScalar(i%6===0?1.45:.72);
+   marker.updateMatrix();ticks.setMatrixAt(i,marker.matrix);
+ }
+ ticks.instanceMatrix.needsUpdate=true;
+ root.add(ticks);
  const visuals=[];
+ let phase=0;
+ let nth=0;
  for(const [id,body] of simulation.bodies){
-   const crate=new THREE.Mesh(new THREE.BoxGeometry(.74,.74,.74),material);
-   crate.name=isMech?'Training cargo':'Runic practice stone';
-   crate.userData.action={type:'physics',id,label:isMech?'PUSH TRAINING CARGO':'PUSH RUNIC STONE'};
+   const color=isMech?[0x9befff,0xffd08d,0x9ef5df][nth]:[0xe8a9ff,0xb2c5ff,0xffcdac][nth];
+   const geometry=isMech?new THREE.BoxGeometry(.74,.74,.74):new THREE.DodecahedronGeometry(.45,0);
+   const crate=new THREE.Mesh(geometry,material);
+   crate.name=isMech?'Training energy cell':'Runic practice relic';
+   crate.userData.action={type:'physics',id,label:isMech?'PUSH ENERGY CELL':'PUSH RUNIC RELIC'};
    root.add(crate);
-   const lines=new THREE.LineSegments(new THREE.EdgesGeometry(crate.geometry),new THREE.LineBasicMaterial({color:0xe0faff,transparent:true,opacity:.64}));
+   const lines=new THREE.LineSegments(new THREE.EdgesGeometry(geometry),
+     new THREE.LineBasicMaterial({color,transparent:true,opacity:.75}));
    crate.add(lines);
+   const glyph=new THREE.Mesh(new THREE.OctahedronGeometry(.14,0),
+     new THREE.MeshBasicMaterial({color}));
+   glyph.position.y=isMech?.42:.43;
+   crate.add(glyph);
+   const ring=new THREE.Mesh(new THREE.TorusGeometry(isMech?.57:.51,.025,8,32),
+     new THREE.MeshBasicMaterial({color,transparent:true,opacity:.72}));
+   ring.rotation.x=Math.PI/2;
+   crate.add(ring);
+   if(isMech){
+     for(const side of [-1,1]){
+       const bar=new THREE.Mesh(new THREE.BoxGeometry(.025,.11,.39),
+         new THREE.MeshBasicMaterial({color}));
+       bar.position.set(side*.38,0,0);crate.add(bar);
+     }
+   }
    const hint={x:PHYSICS_ORIGIN.x,z:PHYSICS_ORIGIN.z,action:crate.userData.action};
-   targets.push(crate);nearby.push(hint);visuals.push({body,crate,hint});
+   targets.push(crate);nearby.push(hint);visuals.push({body,crate,hint,ring,glyph,nth});
+   nth++;
  }
  let ended=false;
  function step(delta){
    if(ended)return;
    simulation.step(delta);
-   for(const {body,crate,hint} of visuals){
+   const dt=Number.isFinite(delta)?Math.max(0,Math.min(delta,.05)):0;
+   if(!options.reducedMotion)phase+=dt;
+   for(const {body,crate,hint,ring,glyph,nth} of visuals){
      const p=body.translation(),q=body.rotation();
      crate.position.set(p.x,p.y,p.z);crate.quaternion.set(q.x,q.y,q.z,q.w);
      hint.x=PHYSICS_ORIGIN.x+p.x;hint.z=PHYSICS_ORIGIN.z+p.z;
+     ring.rotation.z=options.reducedMotion?0:Math.sin(phase*.7+nth)*.16;
+     glyph.scale.setScalar(options.reducedMotion?1:1+Math.sin(phase*1.1+nth)*.05);
    }
  }
  step(0);

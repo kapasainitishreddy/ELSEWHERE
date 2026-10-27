@@ -27,3 +27,6 @@ Meta IWSDK is **not installed into the production Three runtime**; its official 
 - Kenney's CC0 model files are **not bundled by default**. Run `npm run assets:fetch` in a network-enabled developer checkout to vendor verified models and test them.
 - Attribution: https://github.com/gkjohnson/three-mesh-bvh (MIT); https://kenney.nl/assets (CC0).
 - Run `npm run world:check`, `npm test`, `npm run build`, then manually check keyboard/controller picking, repeated world travel, reduced motion, and frame rate.
+
+## Original 3D art polish
+The two physics galleries now have different original silhouettes: rune-cut dodecahedra in Hollow Crown and illuminated reactor cargo cells in Titan Foundry. Materials, color-coded edges, beveled-looking outlines and a 24-marker instanced platform improve readability without relying on a third-party CDN. Each physics body stays authoritative for object transform; ambient glyphs never drive gameplay. Reduced-motion keeps decorative ring and glyph animation still.
