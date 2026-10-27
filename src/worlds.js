@@ -10,6 +10,7 @@ import {characterPose, damp, angleTo, classifyMoment, interactionHint, chooseNea
 import {createKineticEffects} from './kinetic-effects.js';
 import {createFrameSampler,describeFrame} from './performance.js';
 import {createActor} from './actor-studio.js';
+import {installPhysicsStage} from './physics-playground.js';
 import * as YUKA from 'yuka';
 import {createNpcNavigator} from './npc-navigation.js';
 import {futureKeepsakes,keepsakeReaction} from './keepsake-scenes.js';
@@ -160,7 +161,14 @@ function buildLivingCharacters(group,state,targets,animated,getTraveler,nearbyPr
     const traveler=getTraveler?.();
     const step=Math.max(0,dt||0);
     const pose=npcNav.step(step,traveler,step===0);
+    const priorX=figure.position.x,priorZ=figure.position.z;
     figure.position.x=pose.x;figure.position.z=pose.z;
+    if(step>0){
+      const dx=pose.listening?traveler?.x-figure.position.x:pose.x-priorX;
+      const dz=pose.listening?traveler?.z-figure.position.z:pose.z-priorZ;
+      if(Number.isFinite(dx)&&Number.isFinite(dz)&&Math.hypot(dx,dz)>.002)
+        figure.rotation.y=angleTo(figure.rotation.y,Math.atan2(dx,dz),4.2,step);
+    }
     npcHint.x=figure.position.x;npcHint.z=figure.position.z;
     model.setMode(pose.walking?'walking':pose.listening?'listening':affinity>20?'delighted':'idle');
     model.update(t,step,{target:traveler,reducedMotion:step===0});
@@ -608,7 +616,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  container.append(renderer.domElement);
  const rig=new THREE.Group();scene.add(rig);const camera=new THREE.PerspectiveCamera(63,1,.08,200);rig.add(camera);camera.position.set(0,5,17);
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.055;controls.enablePan=false;controls.maxPolarAngle=Math.PI*.47;controls.minDistance=5;controls.maxDistance=28;controls.target.set(0,2,0);
- const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],nearbyProps=[],player=null,titan=null,moving=false,stillwaterTerrace=null,elderPresence=null,dialogueUntil=0,fx=null,ambientStage=null;
+ const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],nearbyProps=[],player=null,titan=null,moving=false,stillwaterTerrace=null,elderPresence=null,dialogueUntil=0,fx=null,ambientStage=null,physicsStage=null;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  const hover=document.querySelector('#interaction-hint');let pointerDown=null;
  const proximityCue=document.createElement('div');proximityCue.className='world-proximity-cue';proximityCue.setAttribute('aria-live','off');container.append(proximityCue);
@@ -709,6 +717,15 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  function intersect(objects,origin,dir){raycaster.set(origin,dir);const hits=raycaster.intersectObjects(objects,false);return hits[0]?.object.userData.action || null;}
  function trigger(action){
    if(!action)return;
+   if(action.type==='physics'){
+     const traveler=renderer.xr.isPresenting?rig.position:playerPos;
+     if(physicsStage?.impulse(action.id,traveler)){
+       fx?.emit('impact',new THREE.Vector3(8.4,1.3,5.8));
+       ambientStage?.react('impact');
+       if(renderer.xr.isPresenting)showXRNote('Training object moved. This does not alter your timeline.');
+     }
+     return;
+   }
    if(action.type==='comfort'){setComfort(action.mode);return;}
    if(action.type==='world')onWorld(action.world);
    else if(action.type==='choice')onAction(action.id);
@@ -773,7 +790,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  function mount(next){
    const sameWorld=state?.world===next.world;if(!sameWorld)hasExplored=false;
    const lastPos=playerPos.clone();const lastCamera=camera.position.clone(),lastTarget=controls.target.clone();
-   state=next;updateXRWatch();fx?.dispose();scene.remove(world);world.traverse(o=>{
+   state=next;updateXRWatch();fx?.dispose();physicsStage?.dispose();physicsStage=null;scene.remove(world);world.traverse(o=>{
      o.geometry?.dispose();
      const materials=Array.isArray(o.material)?o.material:o.material?[o.material]:[];
      for(const material of materials){material.map?.dispose();material.dispose();}
@@ -802,6 +819,16 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    }
    // Async, same-origin only: optional verified CC0 meshes enrich the existing procedural scene.
    void dressWithKenney(world,state.world?state:{world:'future'},animated).catch(()=>{});
+   // A small, disposable Rapier scene; await only after the main world is visible.
+   if(['dungeon','mech'].includes(state.world)){
+     const level=world,levelTargets=targets,levelNearby=nearbyProps;
+     void installPhysicsStage(THREE,level,state.world,levelTargets,levelNearby,{reducedMotion}).then(stage=>{
+       if(!stage)return;
+       if(!level.parent){stage.dispose();return;}
+       physicsStage=stage;
+       sign(level,'TOUCH THE WORLD','E · CLICK · VR TRIGGER',8.4,4.2,5.8,4);
+     }).catch(()=>{}); // scene still works if WASM fails to initialize
+   }
    buildCombatTargets(world,state,animated,targets);
    buildChronalOrrey(world,state,animated);
    buildLivingCharacters(world,state,targets,animated,()=>playerPos,nearbyProps);
@@ -861,7 +888,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    if(care.sample(dt,{xr:renderer.xr.isPresenting,visible:!document.hidden})){
      showXRNote('A natural stopping point. Take a headset break whenever you need one. Your choices are saved.');
    }
-   const t=reduceMotion?0:clock.elapsedTime;desktopGamepad();move(dt);
+   const t=reduceMotion?0:clock.elapsedTime;desktopGamepad();move(dt);physicsStage?.step(dt);
    if(dialogueUntil&&clock.elapsedTime>=dialogueUntil){dialogueUntil=0;elderPresence?.setMode('idle');}
    if(xrNote.visible && clock.elapsedTime>=xrNoteUntil)xrNote.visible=false;
    if(renderer.xr.isPresenting){
@@ -959,6 +986,6 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  }
  return {mount,resize,effect,interact,setDialogueActivity,reactToDialogue,setMove(code,on){if(on)pressed.add(code);else pressed.delete(code);},setComfort,vrSupported:()=>Boolean(navigator.xr),
    enterVR(){vrButton.click();},
-   dispose(){renderer.setAnimationLoop(null);fx?.dispose();xrNote.geometry.dispose();xrNote.material.dispose();noteTexture.dispose();xrWatch.geometry.dispose();xrWatch.material.dispose();watchTexture.dispose();scene.remove(focusReticle);focusReticle.geometry.dispose();focusReticle.material.dispose();renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);window.removeEventListener('blur',onBlur);controls.dispose();renderer.dispose();container.replaceChildren();}
+   dispose(){renderer.setAnimationLoop(null);fx?.dispose();physicsStage?.dispose();xrNote.geometry.dispose();xrNote.material.dispose();noteTexture.dispose();xrWatch.geometry.dispose();xrWatch.material.dispose();watchTexture.dispose();scene.remove(focusReticle);focusReticle.geometry.dispose();focusReticle.material.dispose();renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);window.removeEventListener('blur',onBlur);controls.dispose();renderer.dispose();container.replaceChildren();}
  };
 }
