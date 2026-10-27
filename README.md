@@ -1,3 +1,7 @@
+# ELSEWHERE
+
+**PLAY WITHOUT INSTALLING ANYTHING:** [Open ELSEWHERE in StackBlitz](https://stackblitz.com/fork/github/kapasainitishreddy/ELSEWHERE?startScript=play&view=preview). StackBlitz imports the current public GitHub branch, installs packages and runs Vite in your browser. Click **PLAY GUEST DEMO** for an unsaved session. Browser-based Rapier/WebXR compatibility has not been certified; use Chrome/Brave on a computer first. [Local setup instructions](docs/HOW_TO_PLAY.md).
+
 **Living NPCs 1.9 (October 27, 2026):** Integrated MIT-licensed Yuka steering into the four in-world supporting characters. They follow local bounded routes, avoid existing collision rectangles, stop for conversations, and move their E interaction prompts with their body meshes. The source and isolated contract tests are available, but the full npm install, browser build and physical Quest QA still need verification. [Open-source ledger](docs/OPEN_SOURCE_INTEGRATION.md).
 
 # ELSEWHERE

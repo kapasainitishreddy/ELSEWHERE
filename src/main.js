@@ -27,10 +27,11 @@ const gateInput=gate.querySelector('#vault-passphrase');
 const gateStatus=gate.querySelector('#vault-notice');
 const gateTitle=gate.querySelector('#vault-title');
 const gateButton=gate.querySelector('#vault-submit');
+const guestButton=gate.querySelector('#guest-play');
 const curtain=document.querySelector('#transition-curtain');
 const toastRoot=document.querySelector('#toast-region');
 const soundscape=createSoundscape();
-let state=initialState(), experience=null, started=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
+let state=initialState(), experience=null, started=false, guestMode=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
 const pendingLocalRequests=new Set();
 const onLocalMachine=isLoopbackHostname(window.location.hostname);
 // No microphone or voice activity starts automatically. Only voices explicitly
@@ -81,6 +82,7 @@ function showGate(message=''){
  gateInput.value='';gateInput.focus();
 }
 function persist(){
+ if(guestMode)return Promise.resolve(true); // Guest choices never touch browser storage.
  return vault.save(state).catch(error=>{toast('Your changes could not be saved securely: '+error.message,false);return false;});
 }
 function publish(next,event){
@@ -104,7 +106,7 @@ function publish(next,event){
 }
 function chooseWorld(world){const outcome=travel(state,world);if(outcome.ok&&outcome.event)publish(outcome.state,outcome.event);else if(!outcome.ok)toast(outcome.error,false);}
 function chooseAction(id){const outcome=applyAction(state,id);if(outcome.ok)publish(outcome.state,outcome.event);else toast(outcome.error,false);}
-function reset(){if(!window.confirm('Begin a new story in this vault? The current story will be replaced unless you export an encrypted backup.'))return;publish(initialState(),{title:'A new life begins'});}
+function reset(){const question=guestMode?'Restart guest demo? Your unsaved choices will be lost.':'Begin a new story in this vault? The current story will be replaced unless you export an encrypted backup.';if(!window.confirm(question))return;publish(initialState(),{title:'A new life begins'});}
 /** Explicitly enabled on-device inference. This never routes to Meta or an internet URL.
  * The only backend it contacts is the separately launched local loopback proxy.
  */
@@ -184,7 +186,7 @@ async function ask(question){
  if(!privateSpeech.speak(reply))experience?.setDialogueActivity?.('speaking',Math.min(5,1.6+reply.length/80));
 }
 function toggleCloud(){
- if(cloudEnabled){cloudEnabled=false;ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');toast('Remote conversations disabled.');return;}
+ if(cloudEnabled){cloudEnabled=false;ui.render(state);ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');toast('Remote conversations disabled.');return;}
  if(!window.confirm('Optional CLOUD MODE: Each submitted question and a small fictional game summary will be sent to Meta Model API. This is NOT completely local. Your passphrase, future letter, encrypted save, other timeline, and NPC memories will NOT be sent. Enable until you lock or reload?'))return;
  cloudEnabled=true;localAiEnabled=false;ui.render(state);ui.updateStatus('META OPT-IN · CLOUD');toast('Cloud conversation is now enabled. Type only what you want to send.');
 }
@@ -222,6 +224,7 @@ function toggleSound(enabled){soundscape.toggle(enabled);soundscape.setScene(sta
 function mobileMove(code,on){experience?.setMove?.(code,on);}
 function interact(){experience?.interact?.();}
 async function exportTimeline(){
+ if(guestMode){toast('Guest runs are not saved or exported. Create a private world to keep progress.',false);return;}
  try{
   await vault.save(state);
   const text=vault.exportCiphertext();
@@ -232,6 +235,7 @@ async function exportTimeline(){
  }catch(e){toast(e.message,false);}
 }
 async function importTimeline(file){
+ if(guestMode){toast('Leave guest mode to import an encrypted vault.',false);return;}
  if(!file)return;
  try{
   if(file.size>1_000_000)throw new Error('Vault file is too large.');
@@ -243,6 +247,7 @@ async function importTimeline(file){
  }catch(e){toast(e.message||'Could not read the encrypted backup.',false);}
 }
 async function rekey(){
+ if(guestMode){toast('There is no passphrase in guest mode.',false);return;}
  const old=window.prompt('Current private vault passphrase (not saved):');if(old===null)return;
  const newer=window.prompt('New private vault passphrase, at least 10 characters:');if(newer===null)return;
  try{await vault.save(state);await vault.rekey(old,newer);toast('Your vault is encrypted under the new passphrase. Replace any older backups.');}
@@ -251,13 +256,14 @@ async function rekey(){
 async function lock(){
  if(!started)return;
  stopPresence();privateSpeech.disable();
- await vault.save(state);
- await vault.lock();ui.resetEphemeral();sessionEpoch++;for(const c of pendingLocalRequests)c.abort();cloudEnabled=false;localAiEnabled=false;soundscape.toggle(false);
+ if(!guestMode){await vault.save(state);await vault.lock();}
+ const wasGuest=guestMode;guestMode=false;
+ ui.resetEphemeral();sessionEpoch++;for(const c of pendingLocalRequests)c.abort();cloudEnabled=false;localAiEnabled=false;soundscape.toggle(false);
  experience?.dispose?.();experience=null;started=false;
  document.querySelector('#app').dataset.sceneReady='false';
  document.querySelector('#app-ui').replaceChildren();
  document.querySelector('#loading-screen')?.classList.remove('hidden');
- showGate('Your key has been cleared from this session. Your encrypted timeline remains on this device.');
+ showGate(wasGuest?'Guest demo ended. Nothing was saved.':'Your key has been cleared from this session. Your encrypted timeline remains on this device.');
 }
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,
@@ -265,8 +271,9 @@ const ui=createInterface(document.querySelector('#app-ui'),{
  privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
  voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus,comfort:id=>experience?.setComfort?.(id)
 });
-function begin(next){
+function begin(next,{guest=false}={}){
  stopPresence();privateSpeech.disable();
+ guestMode=Boolean(guest);
  state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{
   experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater(),message=>toast(message),()=>ui.enterWorld());
@@ -280,6 +287,7 @@ function begin(next){
   document.querySelector('#loading-screen').innerHTML='<div class="loading-error"><strong>3D unavailable</strong><p>Explore the entire story with the accessible story controls.</p></div>';
  }
 }
+guestButton.addEventListener('click',()=>begin(initialState(),{guest:true}));
 gateForm.addEventListener('submit',async(event)=>{
  event.preventDefault();const pass=gateInput.value;gateInput.value='';gateButton.disabled=true;gateStatus.textContent='Securing your local world…';
  try{const next=vault.present()?await vault.unlock(pass):await vault.create(pass);begin(next);}
