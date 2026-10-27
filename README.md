@@ -1,3 +1,5 @@
+**Character & Motion Art 1.12.0 (October 27, 2026):** Added layered character silhouettes, facial and hair detailing, ground-contact soft shadows, subtle cloth motion, gait accents and more controlled stylized lighting. The player walk cadence is now matched more closely to travel speed. [Technical notes and QA](docs/CHARACTER_FINISH_V112.md). **Source checks only; actual visual/browser/Quest QA still needed.**
+
 **Instant Physics 1.11.3 (October 27, 2026):** Start screen includes **RUN PHYSICS SANDBOX**, opening a temporary dungeon practice session beside the interactive relics. No save or passphrase; the game reports whether WebAssembly physics started. [Try it](docs/HOW_TO_PLAY.md).
 
 **Physics Feel 1.11.2 (October 27, 2026):** Training relics have realistic damping, reduced bounce, visible object-to-collider alignment, shorter impulses and smoother rendered poses on high-refresh displays. [Physics QA notes](docs/TACTILE_WORLDS_V110.md).

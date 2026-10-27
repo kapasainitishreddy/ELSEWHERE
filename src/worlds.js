@@ -601,7 +601,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  const scene=new THREE.Scene();const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
  // Bound desktop fill rate; XR selects its own framebuffer.
  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,window.innerWidth<800?1.1:1.5));renderer.setSize(container.clientWidth||window.innerWidth,container.clientHeight||window.innerHeight);
- renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;
+ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;
  renderer.shadowMap.enabled=false;renderer.xr.enabled=true;
  renderer.domElement.style.cssText='width:100%;height:100%;display:block;touch-action:none;';
  container.append(renderer.domElement);
@@ -793,8 +793,10 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    targets=[];beacons=[];portalLocations=[];nearbyProps=[];animated=[];
    titan=null;stillwaterTerrace=null;elderPresence=null;dialogueUntil=0;focusedPoint=null;activeChoice=null;
    fx=createKineticEffects(world,{xr:renderer.xr.isPresenting,reducedMotion:reduceMotion,mobile:window.innerWidth<900});
-   const p=palettes[state.world];world.add(new THREE.HemisphereLight(p.light,0x080d17,state.world==='self'?1.4:1.75));
-   const sun=new THREE.DirectionalLight(p.light,2.8);sun.position.set(5,17,5);world.add(sun);
+   const p=palettes[state.world];world.add(new THREE.HemisphereLight(p.light,0x080d17,state.world==='self'?1.04:1.25));
+   const sun=new THREE.DirectionalLight(p.light,1.8);sun.position.set(5,17,5);world.add(sun);
+   const edge=new THREE.DirectionalLight(COLORS[state.world],.74);
+   edge.position.set(-8,9,-11);world.add(edge);
    ground(world,p);stars(world,state.world==='dungeon'?0xd5bcff:0xb1dce8,state.world==='self'?180:280);
    addAtmosphere(world,state.world,animated,atmosphereBudget({headset:renderer.xr.isPresenting,reducedMotion,smallScreen:window.innerWidth<900}));
    if(state.world==='future')buildFuture(world,state,animated);
@@ -911,8 +913,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      const actor=player.userData.actor;
      if(actor){
        actor.setMode(moving?'walking':'idle');
-       actor.mixer.timeScale=moving?THREE.MathUtils.clamp(travelerSpeed/4.1,.65,1.4):1;
-       actor.update(t,dt,{reducedMotion:reduceMotion});
+       actor.mixer.timeScale=moving?THREE.MathUtils.clamp(travelerSpeed/2.55,.7,2.8):1;
+       actor.update(t,dt,{locomotionSpeed:travelerSpeed,reducedMotion:reduceMotion});
      }
    }
    const nearby=chooseNearby([...nearbyProps,...portalLocations],playerPos.x,playerPos.z);

@@ -6,6 +6,8 @@ import * as THREE from 'three';
 import {clipSpec,ACTOR_MODES,wordMouthOpening,nearActorGaze} from './actor-choreography.js';
 import {angleTo} from './motion-language.js';
 import {performanceFrame} from './performance-direction.js';
+import {createCharacterFinish} from './character-finish.js';
+import {gaitAccent} from './gait-accent.js';
 
 const material=(color,opts={})=>new THREE.MeshStandardMaterial({color,roughness:.84,metalness:.10,...opts});
 const element=(parent,geometry,mat,position)=>{
@@ -44,7 +46,7 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
  const undershirt=material(0x192b35),faceMat=material(skin),hairMat=material(hair),bootMat=material(0x18232f);
  // Shoulder and leg joints are real bones, driven by the same AnimationMixer clips.
  const head=pivot('head',spine,0,.67,0);
- sphere(head,.31,faceMat,0,.13,0);
+ const face=sphere(head,.31,faceMat,0,.13,0);face.scale.set(.94,1.05,.93);
  // Hair cap and simple swept fringe. Abstract visual identity, no biometric likeness.
  const scalp=element(head,new THREE.SphereGeometry(.325,16,12,0,Math.PI*2,0,Math.PI*.51),hairMat,[0,.235,-.024]);
  if(age==='older'){
@@ -55,8 +57,8 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
  const eyeMaterial=material(0x19232b,{metalness:.04}),eyebrowMaterial=material(hair);
  for(const sign of [-1,1]){
   brows.push(box(head,sign*.123,.22,.291,.125,.027,.025,eyebrowMaterial));
-  const white=sphere(head,.064,material(0xf2e5d1),sign*.127,.105,.293);
-  const pupil=sphere(head,.030,eyeMaterial,sign*.127,.105,.343);
+  const white=sphere(head,.053,material(0xf2e5d1),sign*.127,.105,.293);white.scale.set(.96,.84,.49);
+  const pupil=sphere(head,.030,eyeMaterial,sign*.127,.105,.329);pupil.scale.set(.79,1,.48);
   eyes.push({white,pupil,baseX:sign*.127});
  }
  const mouth=element(head,new THREE.TorusGeometry(.080,.012,5,20,Math.PI),material(0x7b5351),[0,-.053,.294]);
@@ -75,16 +77,19 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
   arms.push({shoulder,elbow,wrist,sleeve});
  }
  const leftHip=pivot('leftHip',lower,-.2,-.035,0),rightHip=pivot('rightHip',lower,.2,-.035,0);
- for(const leg of [leftHip,rightHip]){
+ const legBones=[leftHip,rightHip];
+ for(const leg of legBones){
   element(leg,new THREE.CapsuleGeometry(.15,.57,4,9),undershirt,[0,-.48,0]);
   element(leg,new THREE.BoxGeometry(.26,.18,.44),bootMat,[0,-1.00,.09]);
  }
  // The head remains a deliberate illustration: no scan or generated likeness of a real person.
  const contactShadow=element(root,new THREE.CircleGeometry(.46,28),new THREE.MeshBasicMaterial({color:0x061019,transparent:true,opacity:.16,depthWrite:false,side:THREE.DoubleSide}),[0,.025,0]);
  contactShadow.rotation.x=-Math.PI/2;
+ const finishing=createCharacterFinish(THREE,{root,head,spine,lower,arms,legs:legBones,
+   coat,hair,skin,accent,age,identity,contactShadow});
  const mixer=new THREE.AnimationMixer(visual);
  const actions=Object.fromEntries(ACTOR_MODES.map(mode=>[mode,mixer.clipAction(animationClip(mode))]));
- let activeMode='idle',yaw=0;
+ let activeMode='idle';
  actions.idle.play();
  const indicator=sphere(visual,.075,new THREE.MeshBasicMaterial({color:accent}),0,2.83,0);
  function setMode(mode){
@@ -92,14 +97,14 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
   const from=actions[activeMode],to=actions[next];to.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).play();
   from.crossFadeTo(to,next==='startled'?.16:.36,true);activeMode=next;
  }
- function update(time,dt,{target=null,walking=false,reducedMotion=false}={}){
+ function update(time,dt,{target=null,walking=false,locomotionSpeed=0,reducedMotion=false}={}){
   const step=Math.max(0,Math.min(.05,Number.isFinite(dt)?dt:0));
   if(walking && activeMode==='idle')setMode('walking');else if(!walking && activeMode==='walking')setMode('idle');
   // Stops skeletal animation for accessibility while retaining eye contact.
   if(!reducedMotion && step)mixer.update(step);
   if(target){
    const dist=Math.hypot(target.x-root.position.x,target.z-root.position.z),attention=nearActorGaze(dist);
-   if(attention){const desired=Math.atan2(target.x-root.position.x,target.z-root.position.z);yaw=angleTo(yaw,desired,3.3,step);root.rotation.y=yaw;}
+   if(attention){const desired=Math.atan2(target.x-root.position.x,target.z-root.position.z);root.rotation.y=angleTo(root.rotation.y,desired,3.3,step);}
   }
   const distance = target ? Math.hypot(target.x-root.position.x,target.z-root.position.z) : 20;
   const acting=performanceFrame(time,{mode:activeMode,mood,identity,distance,reducedMotion});
@@ -114,20 +119,24 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
   mouthInterior.scale.y=.08+acting.mouth*2.5;
   head.rotation.y=acting.headYaw;
   head.rotation.z=acting.headRoll;
-  // AnimationMixer computes each clip pose; secondary acting must never accumulate forever.
-  head.rotation.x=reducedMotion?acting.headNod:THREE.MathUtils.clamp((step?head.rotation.x:0)+acting.headNod,-.45,.45);
+  // Secondary acting layers over the mixer's current sampled pose, never an old frame.
+  head.rotation.x=THREE.MathUtils.clamp((!reducedMotion&&step?head.rotation.x:0)+acting.headNod,-.45,.45);
   head.position.y=.67+acting.chest;
   arms[0].wrist.rotation.z=acting.wristL;
   arms[1].wrist.rotation.z=acting.wristR;
   for(const [i,b] of brows.entries()){
     b.rotation.z=(i?1:-1)*(i?acting.browR:acting.browL);
   }
-  contactShadow.material.opacity=acting.shadow;
+  contactShadow.material.opacity=acting.shadow*2.6;
   indicator.position.y=2.83+(reducedMotion?0:Math.sin(time*.8)*.045);
   indicator.material.color.setHex(activeMode==='speaking'?0xf3c7a7:activeMode==='listening'?0x8ccef8:accent);
-  // Animated gestures never drive locomotion or camera pose.
-  if(reducedMotion)spine.rotation.z=0;
-  else spine.rotation.z=THREE.MathUtils.clamp((step?spine.rotation.z:0)+acting.shoulder*.17,-.22,.22);
+  // Every offset is evaluated once after mixer sampling, never accumulated blindly.
+  spine.rotation.z=THREE.MathUtils.clamp((!reducedMotion&&step?spine.rotation.z:0)+acting.shoulder*.17,-.22,.22);
+  const gait=gaitAccent(locomotionSpeed,time,{reducedMotion});
+  visual.position.y=gait.lift;
+  visual.rotation.x=gait.lean;
+  visual.rotation.z=gait.roll;
+  finishing.update(time,{walking:activeMode==='walking',speed:locomotionSpeed,reducedMotion});
 
  }
  return {root,visual,robe,mixer,setMode,update,get mode(){return activeMode;},bones:{lower,spine,head,arms,leftHip,rightHip},features:{mouth,mouthInterior,eyes,scalp,contactShadow}};
