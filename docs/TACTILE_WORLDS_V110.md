@@ -39,3 +39,6 @@ The original gallery was too floaty: impact impulses were exaggerated, body damp
 
 ## Arena Art 1.12.1
 Visual evidence: the earlier simulation had four giant invisible physics colliders (3 m tall). Those were shortened to 0.86 m and matched with visible, transparent waist-high containment rails and illuminated corner posts. The practice platform also has fine inlays, eight calm floor motifs, colored practical lighting, a single reusable impulse ripple, and beveled mechanical cargo geometry. The physics bodies remain authoritative; stage effects never grant rewards or move the VR camera. The direct guest preview initially frames the practice arena until the player starts walking, then transitions to normal follow camera. No WebGL screenshot or hardware benchmark is claimed yet.
+
+## Explicit one-click object test
+When the 3D physics stage is loaded on desktop, a visible **▶ TEST RUNE PHYSICS / TEST REACTOR CARGO** button performs a real Rapier impulse on the middle object, with the same cooldown as E/click/XR. This is not an animated mockup; it tests the actual physics implementation. The button is hidden in VR. Real WebAssembly engine integration has an additional test (`scene-art-runtime.test.mjs`) but hardware frame times and aesthetics must still be checked visually.

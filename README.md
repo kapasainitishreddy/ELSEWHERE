@@ -1,3 +1,5 @@
+**Hands-on Visual Test 1.12.2 (October 27, 2026):** Added a direct **▶ TEST RUNE PHYSICS** button in the practice arena and new real-Three.js/Rapier runtime regression tests to catch missing geometry, malformed animation and physics errors. [How to launch](docs/HOW_TO_PLAY.md). A visual browser review is still outstanding.
+
 **Arena Art 1.12.1 (October 27, 2026):** Replaced invisible collision-wall behavior with visible, transparent practice rails; added restrained arena geometry, weighted mechanical bevels, lighting and subtle impact feedback. Improved the physics guest-preview camera composition. [QA notes](docs/TACTILE_WORLDS_V110.md). Hardware and browser visual QA remain open.
 
 **Character & Motion Art 1.12.0 (October 27, 2026):** Added layered character silhouettes, facial and hair detailing, ground-contact soft shadows, subtle cloth motion, gait accents and more controlled stylized lighting. The player walk cadence is now matched more closely to travel speed. [Technical notes and QA](docs/CHARACTER_FINISH_V112.md). **Source checks only; actual visual/browser/Quest QA still needed.**

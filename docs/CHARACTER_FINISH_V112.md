@@ -11,3 +11,6 @@ Source changes—not a pre-rendered animation video.
 - No remote models, faces, tracking, saves or extra network requests.
 
 This is a stylized character-art pass, not a promise of realistic motion capture, accurate inverse kinematics, or full art-direction review. Test in a real Chromium browser and Quest device, including returning through portals and ending all animation mixers on disposal.
+
+## Runtime smoke requirements
+The `scene-art-runtime.test.mjs` regression suite constructs each actor with the real Three.js module, updates 240 animation frames and verifies finite bounds. It also initializes the actual Rapier WASM and checks that the dungeon relic reacts to a physical impulse. These checks require `npm install` and cannot substitute for visual review. They are included in `npm run art:check` and `npm run arena:check`.

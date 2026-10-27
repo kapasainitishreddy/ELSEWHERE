@@ -30,3 +30,6 @@ Open http://localhost:5173 in the same computer's browser. `npm run play` instea
 
 ## Reality check
 A package installation and real interactive browser run are still required to certify physics, rendering, and VR performance. A screenshot alone is not proof.
+
+### Try the animation and physics immediately
+Open StackBlitz, select **RUN PHYSICS SANDBOX**, and use the visible **▶ TEST RUNE PHYSICS** button to push the center relic. You can press it repeatedly to compare how the object settles. The button appears only after the physics engine is loaded, and it is intentionally not shown in headset mode, where you use controller triggers. To move: WASD, rotate view: drag mouse, nearby interaction: E. No save or payment required for guest mode. The web preview is not proof of Quest performance.

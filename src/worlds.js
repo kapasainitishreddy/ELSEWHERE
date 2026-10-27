@@ -611,6 +611,21 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  const hover=document.querySelector('#interaction-hint');let pointerDown=null;
  const proximityCue=document.createElement('div');proximityCue.className='world-proximity-cue';proximityCue.setAttribute('aria-live','off');container.append(proximityCue);
+ // Real gameplay input, not a decorative button or video playback.
+ const physicsControl=document.createElement('button');
+ physicsControl.type='button';physicsControl.className='world-physics-action';
+ physicsControl.setAttribute('aria-label','Apply a physics impulse to a training object');
+ physicsControl.textContent='▶ TEST OBJECT PHYSICS';
+ physicsControl.hidden=true;container.append(physicsControl);
+ physicsControl.addEventListener('click',()=>{
+   if(!physicsStage||!state)return;
+   const id=`${state.world}-relic-2`;
+   const applied=physicsStage.impulse(id,playerPos);
+   if(applied){
+     fx?.emit('impact',new THREE.Vector3(8.4,1.3,5.8));
+     ambientStage?.react('impact');
+   }
+ });
  const firstPlay=document.createElement('div');firstPlay.className='world-first-play';
  firstPlay.textContent='WASD MOVE · MOUSE LOOK · SHIFT SPRINT · E INTERACT';container.append(firstPlay);
  // Explicit ?perf=1 opt-in only. No metrics ever leave this browser or enter the save.
@@ -901,6 +916,10 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      showXRNote('A natural stopping point. Take a headset break whenever you need one. Your choices are saved.');
    }
    const t=reduceMotion?0:clock.elapsedTime;desktopGamepad();move(dt);physicsStage?.step(dt);
+   physicsControl.hidden=renderer.xr.isPresenting||!physicsStage||!['dungeon','mech'].includes(state?.world);
+   if(!physicsControl.hidden){
+     physicsControl.textContent=state.world==='mech'?'▶ TEST REACTOR CARGO':'▶ TEST RUNE PHYSICS';
+   }
    if(dialogueUntil&&clock.elapsedTime>=dialogueUntil){dialogueUntil=0;elderPresence?.setMode('idle');}
    if(xrNote.visible && clock.elapsedTime>=xrNoteUntil)xrNote.visible=false;
    if(renderer.xr.isPresenting){
