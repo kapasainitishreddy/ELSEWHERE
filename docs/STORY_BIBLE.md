@@ -56,3 +56,8 @@ The chronal economy lets NPCs take their own small story steps after the player 
 - **The Hour Without a Price:** spend an hour with a possible future self for its own sake, without buying certainty.
 
 These chapters are unlocked by completing their corresponding missions. Return trips through portals preserve changes and do not advance agendas on their own.
+
+
+## Narrative revision v1.5 — The Ninth Platform
+
+The story now has a coherent mystery through all five worlds, six optional playable chapters, a compassionate but accountable antagonist (Elias Vey), a missing passenger named Mara, and three distinct endings. The new choices are evidence-gathering actions, not a second resource economy. Every investigation writes to the existing encrypted timeline, and optional chapter text reacts to the player's actual invention, ownership, debts, combat outcomes and active Prime/Echo branch. See [the full story revision](STORY_V15.md) for the act structure, scene beats and writing guidelines.

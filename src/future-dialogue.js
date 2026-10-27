@@ -125,6 +125,10 @@ export function futureConversationReply(state, message) {
     return `I can still read the note you left here: “${state.letter.slice(0, 130)}.” It is a promise to consider, not a verdict on your life. What would keeping a small part of it look like this week?`;
   if (/\b(depress(?:ed|ion)|hopeless|worthless|empty|numb|anxious|panic|lonely|alone|sad|low|overwhelmed|burned out|exhausted|not okay)\b/.test(lower))
     return 'That sounds like a lot to carry. I won’t pretend that a beautiful room or a few sentences can fix it. Would you rather talk about what has been hard, choose one gentle next step, or reach out to someone you trust? If this has been persisting, talking to a mental health professional may help too.';
+  if (/\b(mara|vey|platform nine|platform 9|umbrella|photograph|photo|ninth platform)\b/.test(lower)) {
+    if(state?.flags?.['story-photograph'])return 'We turned the photograph over together. It showed a station, an open umbrella, and a place where somebody should have stood. I still cannot claim to know their whole life. Iris can show us what the public archive holds, and Ada may recognize the contract. Would you like to investigate, or just sit with me a little longer?';
+    return 'There is a photograph on the table that I have left facedown for a long time. I cannot give you a certain answer, but I can turn it over with you. Shall we look at it?';
+  }
   if (/\b(today|daily|this morning|small step|first step|motivat|habit|do next|start|routine)\b/.test(lower))
     return `${compass ? compass+' ' : goal ? `You once said you wanted to ${goal.slice(0, 80)}. ` : ''}${variation(state)} What is one step you would *choose*, without pressure to report back?`;
   if (/\b(job|interview|rejection|work|career|build|project|startup|failure|mistake|try again|give up)\b/.test(lower))

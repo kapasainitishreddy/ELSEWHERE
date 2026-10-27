@@ -49,3 +49,12 @@
 .memory-pin-form button{border:1px solid #daba99;border-radius:9px;background:#e6c5a1;color:#212a32;padding:9px 12px;font-size:10px;font-weight:750;cursor:pointer}
 .memory-pin-form :focus-visible,.memory-card button:focus-visible{outline:2px solid #ffdfae;outline-offset:3px}
 @media(max-width:490px){.memory-pin-form{flex-direction:column}.memory-pin-form button{min-height:42px}}
+
+/* Ninth Platform investigation: compact, optional, readable in seated VR. */
+.ninth-mystery{margin:16px 0;padding:15px 16px;border:1px solid rgba(167,193,187,.26);border-left:2px solid rgba(244,201,137,.58);border-radius:10px;background:linear-gradient(118deg,rgba(30,37,39,.84),rgba(22,32,35,.55));color:#e9dfd1}
+.ninth-mystery-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;font:700 10px/1.4 var(--ui-face,system-ui);letter-spacing:.16em;color:#f7d8ab}
+.ninth-mystery-heading span:last-child{color:#bdc8c6;white-space:nowrap;letter-spacing:.07em}
+.ninth-mystery p{font:14px/1.65 Georgia,serif;color:#deded7;margin:9px 0 8px}
+.ninth-mystery small{font:600 9px/1.55 var(--ui-face,system-ui);letter-spacing:.07em;color:#91a7a7}
+.story-manuscript{overflow-wrap:anywhere}
+@media(max-width:720px){.ninth-mystery{padding:12px 13px}.ninth-mystery-heading{font-size:9px;letter-spacing:.08em}.ninth-mystery p{font-size:13px}}

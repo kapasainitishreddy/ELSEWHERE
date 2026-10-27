@@ -1,4 +1,8 @@
 # ELSEWHERE
+## Story revision · The Ninth Platform (v1.5)
+
+A new original mystery spans the 2046 apartment, 1889 workshop, Hollow Crown, 2199 titan and 2087 station. Six optional chapters are unlocked by physical-world story choices. Inventions, ownership, time debt, Warden mercy/combat, mech defense and the Empire/Legacy/Wanderer endings produce distinct prose. This narrative requires no network or model and uses the existing encrypted local vault. [Read the five-act story bible](docs/STORY_V15.md).
+
 ## Trust & Comfort 1.4 — research-informed update (Oct 27, 2026)
 
 - **Memory Cards:** While visiting The Other You, *you* choose up to six memories for your possible older self to retain. These are encrypted with your existing local passphrase vault, are separated between Prime and Echo realities, and can be forgotten individually. Only an explicitly enabled loopback/on-device model can read them; Meta Cloud does not receive them.

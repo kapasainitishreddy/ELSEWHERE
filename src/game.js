@@ -6,6 +6,7 @@ import { initialCast, sanitizeCast, rememberWorldEvent, speakAs, CAST, roleplayR
 import { initialParallel, branchOptions, forkIntoEcho, switchBranch, branchSnapshot } from './branches.js';
 import { initialWardenBattle, sanitizeWardenBattle, wardenOptions, resolveWardenTurn } from './warden.js';
 import { initialSociety, sanitizeSociety, societyOptions, performSocietyQuest, advanceSociety } from './society.js';
+import {narrativeOptions, narrativeEvent} from './story-thread.js';
 
 /**
  * ELSEWHERE's deterministic causal-world state machine.
@@ -140,7 +141,7 @@ export function worldOptions(s) {
   } })();
   const time=timeOptions(s), branch=(s.world==='future'||s.world==='self')?branchOptions(s):[];
   const combat=s.world==='dungeon'?wardenOptions(s).filter(o=>o.id!=='face-warden'):[];
-  return [...options,...combat,...time,...branch,...societyOptions(s)];
+  return [...options,...combat,...time,...branch,...societyOptions(s),...narrativeOptions(s)];
 }
 
 export function futureProfile(s) {
@@ -247,7 +248,10 @@ export function applyAction(state, id) {
   if (id.startsWith('go-')) return travel(state, id.slice(3));
   const s = copy(state);
   let event = { title: option.title, detail: option.detail };
-  if(id.startsWith('society-')){
+  if(id.startsWith('story-')){
+    const discovered=narrativeEvent(s,id);if(!discovered)return {ok:false,state,error:'This story clue cannot be discovered twice.'};
+    event=discovered;
+  }else if(id.startsWith('society-')){
     const changed=performSocietyQuest(s,id);if(!changed)return {ok:false,state,error:'This NPC mission is no longer available.'};
     event=changed;
   }else if(id.startsWith('time-')){

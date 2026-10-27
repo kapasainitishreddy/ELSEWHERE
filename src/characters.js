@@ -49,6 +49,19 @@ export function rememberWorldEvent(state,action,title){
  if(action==='fund-city'){remember(c.iris,'A public archive was funded and opened to the city.',30,'grateful');}
  if(action.startsWith('power-')){remember(c.witness,`The traveler chose ${action.slice(6)} magic.`,5,'curious');remember(c.warden,'The traveler has learned a forbidden power.',-4,'wary');}
  if(action==='find-shard'){const id=({future:'iris',past:'ada',dungeon:'witness',mech:'sol',self:'elder'})[state.world];if(id)remember(c[id],`The traveler recovered the memory fragment of ${state.world}.`,6,'curious');}
+ const threadMemory={
+  'story-photograph':['elder','We discovered that the empty seat in the photograph points to Platform Nine.'],
+  'story-contract':['ada','The traveler helped me expose the witness clause in Elias Vey’s contract.'],
+  'story-witness':['witness','The traveler asked about the Warden’s first oath, and learned that no one can sell another person’s hour without consent.'],
+  'story-blackbox':['sol','The traveler heard the titan’s black-box recording. They know who signed the first order.'],
+  'story-platform':['iris','We found Platform Nine and protected the privacy of Mara Vey’s surviving diary.'],
+  'story-unpriced':['iris','The traveler helped me record the unpriced hour without claiming Mara’s life as evidence of their heroism.']
+ };
+ if(threadMemory[action]){
+   const [person,detail]=threadMemory[action];remember(c[person],detail,5,'curious');
+   if(action==='story-witness')remember(c.warden,'The traveler knows the promise I guarded before I became armor.',2,'curious');
+ }
+
  if(action.startsWith('seal-'))remember(c.elder,`The traveler chose the ${action.slice(5)} ending.`,3,'hopeful');
  return title;
 }
@@ -127,6 +140,18 @@ export function roleplayReply(state,id,question){
  const actor=CAST[id],memory=state.cast?.[id];
  if(!actor||!memory||actor.world!==state.world)return null;
  const q=String(question||'').trim().slice(0,240);if(!q)return null;
+ const secret=/\b(mara|vey|platform nine|platform 9|photograph|photo|black box|blackbox|first (promise|oath)|secret clause)\b/i.test(q);
+ if(secret){
+  const revealed={
+   iris:state.flags?.['story-platform']?'“Mara Vey left a diary. I will protect its private pages. The public record can show what happened without taking her voice away.”':'“There is a ninth platform. I have not opened the manifest yet. If you want to know more, come with me and witness what it contains.”',
+   ada:state.flags?.['story-contract']?'“Vey wrote a clause claiming hours from people who hadn’t consented. His fear for Mara was real. That does not make the clause fair.”':'“Vey’s contract is still in my biscuit tin. A good signature is not a good reason to stop reading.”',
+   witness:state.flags?.['story-witness']?'“The first oath forbade anyone to own another person’s unchosen hour. The Warden remembers the lock, not why it was made.”':'“The Warden once made a promise without a blade. There is a slate beneath the throne, if you wish to read it.”',
+   warden:state.flags?.['story-witness']?'“I remember the oath. I forgot that keeping a person safe may require letting them go. I am still learning that difference.”':'“I am the consequence of a promise kept too tightly. You may read its beginning before drawing your weapon.”',
+   sol:state.flags?.['story-blackbox']?'“The first targeting order treated people without contracts as expendable. We kept the evidence so nobody could call this accident.”':'“The black box has one order I cannot bear to erase. If you’re ready, we can listen.”',
+   elder:state.flags?.['story-photograph']?'“We saw two shadows and an empty space in the photograph. I don’t own the answer. I can sit with you while we look for it.”':'“There is a photograph facedown on the table. I have been avoiding it. Shall we look together?”'
+  };
+  return revealed[id]||null;
+ }
  const subject=intent(q);let reply=LINES[id][subject];
  if(memory.mood==='angry')reply+=' “Do not ask me to forget the last thing you did.”';
  else if(memory.mood==='grateful')reply+=' “I remember that you helped us.”';

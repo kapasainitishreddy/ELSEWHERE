@@ -1,28 +1,41 @@
 /** Original Syrava story bible. The story follows the state machine, not vice versa.
  * All chapters are fictional. Neither possible futures nor time debts predict life.
  */
+import {INVESTIGATION_CHAPTERS} from './story-scenes.js';
+import {storyAfterimage} from './story-thread.js';
+
 export const STORY=[
- {id:'prologue',title:'The Museum of Unlived Days',era:'Outside the clock',world:'future',open:()=>true,body:`The last museum in Neo Elysium had no doors, only a turnstile shaped like the number eight.
+ {id:'prologue',title:'The Museum of Unlived Days',era:'Outside the clock',world:'future',open:()=>true,body:`On the morning you arrive in Neo Elysium, the station has eight platforms. Your ticket is for the ninth.
 
-Above it, one sentence glowed in a language no one admitted to knowing: EVERY HOUR BELONGS TO SOMEONE.
+The paper is warm. Its departure date reads 1889. Its arrival reads 2046. On the reverse is a message in handwriting so close to yours that looking at it makes you uneasy:
 
-You woke beneath the turnstile with a brass ticket in your hand. It was stamped for a railway station that would not exist for another sixty years. The city around you rose in shining terraces, over a sea kept black by artificial night. In one tower, flowers opened in the rain. In another, a thousand machines recited the names of people no longer living.
+DON'T SIGN AWAY TOMORROW BEFORE YOU MEET ME.
 
-A woman behind an archive desk watched you study the ticket. Her name was Iris Vale. She offered neither welcome nor explanation, only a glass of water and a question.
+Beyond the station windows, the year is 2087. Suspended trains drift between gardens bolted to towers. A delivery robot waits patiently while a little boy argues with a vending machine. High above the streets, the Chronal Exchange announces its latest offer: THREE HOURS TODAY. THE LIFE YOU WANT TOMORROW.
 
-“What would you do if you could buy yesterday?”
+You have no idea what the offer means. You only know that nobody in the crowd seems surprised by it.
 
-“Undo something,” you said.
+At the Museum of Unlived Days, you meet Iris Vale. She has ink on her fingers and a scar on her thumb from opening too many envelopes with a kitchen knife. Before asking your name, she gives you water. Then she notices the ticket and puts down her pen.
 
-“Everybody says that. The market depends on it.”
+“Where did you get that?”
 
-She explained that in her city, an hour was both an amount of time and a claim upon a life. It could be earned for work, lent against tomorrow, lost in the past, or stolen from someone who could never prove the theft. None of the hours were literal years of life. They were opportunities, attention, labor, promises. That distinction had once protected people. Then the banks learned to write contracts about feelings.
+You cannot explain. Iris is quiet for a moment, then pulls a book from beneath the desk. It contains a photograph of the station. Eight platforms. A black margin where the ninth should be.
 
-Iris placed five star-shaped pieces of glass on the desk. Only one was illuminated. “These are transit memories,” she said. “An ordinary door opens into a place. These open into a consequence.”
+“Every century has a place where its mistakes are filed,” she says. “Ours is the Exchange. We trade hours here. Not years of life. Hours people could have spent working, resting, waiting, meeting someone. The traders say opportunity can be owned.”
 
-The floor trembled. Somewhere beneath the museum, a giant clock began counting backward.
+She draws five glass stars from a drawer and arranges them in a circle. One glows when you bring the ticket near it.
 
-“You have no right to the future,” Iris told you. “That is why you are free to make one.”`},
+“These aren't rewards. They're witnesses. A memory from each place the clock touches.”
+
+Something beneath the floor gives a long mechanical sigh. The station clock, which should be thirteen minutes ahead, begins to tick backward.
+
+Iris looks toward the sound, and for the first time you see fear interrupt her careful composure.
+
+“Before you decide what kind of future you want,” she says, “there's somebody you should meet. They sent that ticket.”
+
+A doorway appears in the wall behind the exhibits. Rain falls on the other side. From somewhere beyond it comes the soft clink of two cups placed on a table.
+
+You have not chosen a future. You have been invited to witness one.`},
  {id:'city',title:'The City of Second Chances',era:'2087',world:'future',open:()=>true,body:`The morning traffic moved above your head in silent ribbons of light. Pedestrians crossed bridges planted with silver moss. Shop windows displayed objects that had never existed in the history you remembered: paper birds powered by sunlight, pocket oracles, rails curved like ribbons across the sky.
 
 On the far side of the river stood the Chronal Exchange. Its advertisement said, SELL THREE HOURS. BUY THE LIFE YOU DESERVE. A line of tired workers extended around the building. People sold an evening of freedom to pay for food. Investors bought the evenings and called the transaction efficient.
@@ -38,29 +51,39 @@ Then a messenger arrived carrying a letter addressed to you. Its wax seal bore y
 Iris turned pale. “That is impossible,” she said. “The Other You has never written first.”
 
 The letter contained a single line: DO NOT SIGN FOR TOMORROW UNTIL YOU HAVE MET ME.`},
- {id:'elder',title:'The Apartment Beyond Tomorrow',era:'2046',world:'self',open:s=>s.worldVisits.self>0,body:`The portal opened into the smell of tea, rain, and a room that had been lived in carefully. A lamp stood by the window. Beside it was a chair with a worn cushion and a photograph turned facedown.
+ {id:'elder',title:'The Apartment Beyond Tomorrow',era:'2046',world:'self',open:s=>s.worldVisits.self>0,body:`The apartment does not resemble a prophecy. It resembles a place somebody was too busy living in to keep tidy.
 
-The person sitting opposite you was older, but not by any reliable arithmetic. Some lines around their eyes belonged to years you might never have. A tiny scar crossed their hand. They hid it when they noticed you looking.
+A blue coat dries on the back of a chair. A book lies face down beside a half-peeled orange. Through the window, rain traces bright lines across a city that is both familiar and entirely different.
 
-“You must be me,” you said.
+The person at the kitchen counter turns when you enter. Their face holds several versions of your expression. They look older, though age isn't the part that unsettles you. It's the way they make room for another chair before you ask.
 
-“No,” the stranger replied. “I am what one of your choices allowed.”
+“You found the ticket,” they say.
 
-You expected answers about who you would love, whether you would become wealthy, and who would leave. Instead they asked what you had eaten, whether you had slept, and whether you had spoken to a friend without needing anything.
+There is a kettle on the stove. The person pours two cups of tea, notices that one mug is chipped, and keeps it for themselves. Their smile is small and unexpectedly funny.
 
-“When I was young, I imagined success as a room in which nobody could tell me no,” the stranger said. “Then I built that room. It took years to notice I was alone in it.”
+“Does that mean I become you?” you ask.
 
-They showed you three photographs. In one, you stood on the roof of a building bearing your name. In another, you were one face among hundreds at the opening of a free library. In the third, there was only an empty road disappearing into the mountains.
+“Not unless you make every choice I made. Please don't. Some of them were remarkably silly.”
 
-“Which one is true?” you asked.
+They are not the future delivered as fact. They are a possible self, shaped by this world's history and the choices you may still change. You can ask about fame, love, friendship, work, the people you've missed, or nothing at all. They cannot know who you will really become.
 
-“They all contain something true. None of them is certain.”
+“I thought you'd tell me how to win,” you say.
 
-A clock on the wall missed a beat. Your older self flinched.
+“I can tell you what I wished someone had asked me.” They take a sip and wince because the tea is too hot. “What do you actually want to do with a good day, once you have one?”
 
-“Someone borrowed an hour from me,” they whispered. “Perhaps it was you. Perhaps it was the version of you that never arrived.”
+On the wall hang three photographs: a tower with your name on it, a workshop crowded with people, and a train disappearing toward open country. One image will become clearer if you change an invention in 1889. Another may fade. The pictures are possibilities, not predictions.
 
-Before leaving, you noticed the facedown photograph had no image on its back, only a message: THE PAST CAN OWE YOU. YOU CAN OWE IT BACK.`},
+Beneath them sits a fourth photograph, turned face down. A station bench. An open umbrella. Somebody waiting.
+
+“There's a reason I didn't put that one on the wall,” your older self says. “I don't know whose hour went missing. But I know somebody tried to buy it.”
+
+Outside, a train whistle passes through a street that has no rails. The kettle begins to sing again.
+
+“You don't have to solve the whole life tonight,” the stranger tells you. “We can start with a question. Or finish the tea. Both are allowed.”
+
+They pull out the empty chair.
+
+For once, the world waits for you.`},
  {id:'ada',title:'The Girl Who Fixed Tomorrow',era:'1889',world:'past',open:s=>s.worldVisits.past>0,body:`Ada Voss repaired watches in a city that believed clocks belonged to men who could afford them. Her workshop smelled of hot copper, candle wax, and bread from the bakery downstairs.
 
 When you arrived carrying a schematic from the future, she did not call you a magician. She asked whether you had stolen it.
@@ -361,6 +384,7 @@ The clock on the wall reached the next hour. Your future self did not hurry you 
 “Only if you make my choices. I hope you make some better ones.”
 
 You stepped through the portal carrying no secret about tomorrow. For the first time, that felt like getting something valuable back.`},
+ ...INVESTIGATION_CHAPTERS,
  {id:'epilogue',title:'What the Last Hour Bought',era:'The Unwritten End',world:'future',open:s=>!!s.ending,body:`The last gate stood where the first museum had stood, but its sign had changed. Now it read: YOU ARE NOT THE SUM OF YOUR PURCHASES.
 
 Iris met you beneath the turnstile. She asked whether you had done everything you wanted to do. You thought of Ada watching a machine come alive, the Witness keeping a kingdom's difficult memories, Commander Sol waiting for the evacuation lights, and a stranger in an apartment who might someday resemble you.
@@ -378,9 +402,9 @@ Somewhere a clock stopped borrowing from tomorrow. Somewhere another began.
 On the other side of the gate, the sky was full of stars you had not yet named.`}
 ];
 export function availableChapters(state){return STORY.map((chapter,index)=>({id:chapter.id,title:chapter.title,era:chapter.era,world:chapter.world,open:!!chapter.open(state),number:index+1}));}
-export function chapterById(state,id){const found=STORY.find(c=>c.id===id);if(!found||!found.open(state))return null;return {...found,number:STORY.indexOf(found)+1};}
+export function chapterById(state,id){const found=STORY.find(c=>c.id===id);if(!found||!found.open(state))return null;return {...found,open:true,body:found.body+storyAfterimage(state,id),number:STORY.indexOf(found)+1};}
 export function activeChapter(state){
- const priorities={self:['doubledebt','parallel','missing','letter','elder'],past:['clocktower','invention','ada'],dungeon:['warden','hollow'],mech:['titan'],future:['epilogue','restoration','exchangebreach','exchange','city']};
+ const priorities={self:['the-photograph','doubledebt','parallel','missing','letter','elder'],past:['vey-contract','clocktower','invention','ada'],dungeon:['first-promise','warden','hollow'],mech:['titan-blackbox','titan'],future:['epilogue','unpriced-hour','ninth-platform','restoration','exchangebreach','exchange','city']};
  return priorities[state.world].map(id=>chapterById(state,id)).find(Boolean)||chapterById(state,'prologue');
 }
 

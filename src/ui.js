@@ -2,6 +2,7 @@ import {FUTURE_STARTERS} from './future-dialogue.js';
 import {COMPASS_FOCI} from './compass.js';
 import { WORLDS, INVENTIONS, futureProfile, worldOptions, cityRipple, sealClue, echoMap, SHARD_NAMES, RUNES } from './game.js';
 import { availableChapters, chapterById, activeChapter } from './story.js';
+import {storyCluesFound} from './story-thread.js';
 import { worldDossier } from './characters.js';
 import {createStillwaterSession,progressStillwater} from './stillwater.js';
 import {renderStillwaterDialog} from './stillwater-ui.js';
@@ -30,7 +31,7 @@ export function createInterface(root, handlers){
     state=next;
     const w=WORLDS[state.world], p=worldPreview[state.world], future=futureProfile(state), ripple=cityRipple(state), activeStory=activeChapter(state);
     const chapters=availableChapters(state),chosenChapter=chapterById(state,selectedChapter)||activeStory;
-    const passage=firstCrossing(state),receipt=crossingReceipt(state);
+    const passage=firstCrossing(state),receipt=crossingReceipt(state),clues=storyCluesFound(state);
     root.dataset.world=state.world;
     root.dataset.storyOpen=storyOpen?'true':'false';
     root.dataset.focus=focus?'true':'false';
@@ -76,6 +77,7 @@ export function createInterface(root, handlers){
         <p class="chapter-copy">${esc(w.description)}</p>
         <div class="panel-meta"><span class="meta-glow"></span>${esc(w.atmosphere)}</div>
         <div class="future-box small" style="margin-top:16px"><span class="eyebrow">THE UNWRITTEN HOURS · CHAPTER ${activeStory.number}</span><strong>${esc(activeStory.title)}</strong><p>${esc(activeStory.body.slice(0,180))}...</p><button type="button" class="choice" data-cmd="story-open"><span class="choice-copy"><strong>READ THE STORY MANUSCRIPT</strong><small>Original branching science fantasy, unlocked by your choices.</small></span> ↗</button></div>
+        ${(state.worldVisits?.self>0||clues.length>0)?`<div class="ninth-mystery" aria-label="The Ninth Platform mystery"><div class="ninth-mystery-heading"><span>✦ THE NINTH PLATFORM</span><span>${clues.length} / 5 CLUES</span></div><p>${state.flags?.['story-unpriced']?'You found the unpriced hour. The other worlds remain open.':state.fate&&clues.length>=3?'The missing hour can now be examined in Neo Elysium.':'An empty seat, a borrowed promise, and five worlds that remember. Investigate at your own pace.'}</p><small>${state.flags?.['story-unpriced']?'THE STORY CONTINUES WHEN YOU CHOOSE':'THREE CLUES AND ONE INVENTION DECISION REVEAL THE FINAL CHAPTER'}</small></div>`:''}
         ${state.world==='self' ? `<div class="future-box"><span class="eyebrow">A GLIMPSE OF YOUR FUTURE</span><strong>${esc(future.headline)}</strong><p>“${esc(future.speech)}”</p><small>${esc(future.warning)}</small></div>` : ''}
         ${state.world==='future' ? `<div class="future-box small"><span class="eyebrow">CAUSAL WORLD STATUS</span><strong>${esc(ripple.label)}</strong><p>${state.fate? 'Your 1889 invention has changed the city and the person you may become.' : 'The city is waiting for a choice you have yet to make in the past.'}</p></div>` : ''}
         ${state.world==='past' ? `<div class="future-box small"><span class="eyebrow">ALTER HISTORY</span><strong>${state.invention ? esc(INVENTIONS[state.invention].name) : 'Knowledge is your power.'}</strong><p>${state.fate ? `You chose to ${state.fate==='patent'?'patent':state.fate==='gift'?'share':'auction'} the invention. Return to 2087 to see what changed.` : state.invention?'Your prototype works. Decide how to use your advantage.':'Build an impossible invention, then choose whether to profit, share or sell.'}</p></div>` : ''}
