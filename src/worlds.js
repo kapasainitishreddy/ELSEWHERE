@@ -10,6 +10,8 @@ import {characterPose, damp, angleTo, classifyMoment, interactionHint, chooseNea
 import {createKineticEffects} from './kinetic-effects.js';
 import {createFrameSampler,describeFrame} from './performance.js';
 import {createActor} from './actor-studio.js';
+import * as YUKA from 'yuka';
+import {createNpcNavigator} from './npc-navigation.js';
 import {futureKeepsakes,keepsakeReaction} from './keepsake-scenes.js';
 import {installAnimatedCompanion} from './animated-companion.js';
 import {installEnvironmentStage} from './environment-stage.js';
@@ -151,17 +153,16 @@ function buildLivingCharacters(group,state,targets,animated,getTraveler,nearbyPr
   const action={type:'choice',id:actor.action,label:`TALK TO ${actor.name}`};marker.userData.action=action;targets.push(marker);
   const touch=mesh(figure,new THREE.PlaneGeometry(1.6,3.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}),0,1.7,.43);
   touch.userData.action=action;targets.push(touch);
-  nearbyProps.push({x:actor.x,z:actor.z,action});
+  const npcHint={x:actor.x,z:actor.z,action};nearbyProps.push(npcHint);
+  const npcNav=createNpcNavigator(YUKA,{id:actor.id,x:actor.x,z:actor.z,
+    rects:collisionRects(state.world),radius:memory.mood==='angry'?.65:1.05});
   animated.push((t,moving,dt)=>{
     const traveler=getTraveler?.();
-    const close=traveler && Math.hypot(traveler.x-figure.position.x,traveler.z-figure.position.z)<4.5;
-    const desiredX=actor.x+(close?0:Math.sin(t*.38+actor.x)*.62);
-    const desiredZ=actor.z+(close?0:Math.sin(t*.27+actor.z)*.32);
     const step=Math.max(0,dt||0);
-    const priorX=figure.position.x,priorZ=figure.position.z;
-    figure.position.x=damp(priorX,desiredX,2.6,step);figure.position.z=damp(priorZ,desiredZ,2.6,step);
-    const strolling=!close && Math.hypot(figure.position.x-priorX,figure.position.z-priorZ)>.002;
-    model.setMode(strolling?'walking':close?'listening':affinity>20?'delighted':'idle');
+    const pose=npcNav.step(step,traveler,step===0);
+    figure.position.x=pose.x;figure.position.z=pose.z;
+    npcHint.x=figure.position.x;npcHint.z=figure.position.z;
+    model.setMode(pose.walking?'walking':pose.listening?'listening':affinity>20?'delighted':'idle');
     model.update(t,step,{target:traveler,reducedMotion:step===0});
     aura.rotation.z=t*.13;
   });

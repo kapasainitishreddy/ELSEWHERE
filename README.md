@@ -1,3 +1,5 @@
+**Living NPCs 1.9 (October 27, 2026):** Integrated MIT-licensed Yuka steering into the four in-world supporting characters. They follow local bounded routes, avoid existing collision rectangles, stop for conversations, and move their E interaction prompts with their body meshes. The source and isolated contract tests are available, but the full npm install, browser build and physical Quest QA still need verification. [Open-source ledger](docs/OPEN_SOURCE_INTEGRATION.md).
+
 # ELSEWHERE
 
 **Causal Replay 1.8 (October 27, 2026):** The 1889 workshop now offers three accurate, no-side-effect previews before committing an invention's fate. The Timeline journal shows five world-state observations, reproducible non-sensitive replay labels, and a side-by-side Prime/Echo comparison. The underlying game state machine remains authoritative; this is fictional, not future prediction. [Implementation and QA](docs/CAUSAL_REPLAY_V18.md). **Full npm test, Vite build, live Meta API and Quest testing remain unverified.**

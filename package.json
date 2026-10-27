@@ -1,7 +1,7 @@
 {
   "name": "syrava-elsewhere",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.9.0",
   "type": "module",
   "description": "ELSEWHERE locally encrypted parallel worlds with optional CC0 scene assets and immersive WebXR",
   "scripts": {
@@ -22,10 +22,12 @@
     "assets:animated": "node scripts/vendor-animated.mjs",
     "environment:check": "node --test tests/environment-motion.test.mjs tests/environment-integration.test.mjs",
     "animation:check": "node --test tests/actor-choreography.test.mjs tests/actor-integration.test.mjs tests/companion-integrity.test.mjs tests/performance-direction.test.mjs",
-    "submission:check": "node scripts/submission-check.mjs"
+    "submission:check": "node scripts/submission-check.mjs",
+    "npc:check": "node --test tests/npc-navigation.test.mjs"
   },
   "dependencies": {
-    "three": "^0.181.0"
+    "three": "^0.181.0",
+    "yuka": "^0.7.8"
   },
   "devDependencies": {
     "vite": "^7.1.0"
