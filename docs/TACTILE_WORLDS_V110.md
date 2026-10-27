@@ -30,3 +30,6 @@ Meta IWSDK is **not installed into the production Three runtime**; its official 
 
 ## Original 3D art polish
 The two physics galleries now have different original silhouettes: rune-cut dodecahedra in Hollow Crown and illuminated reactor cargo cells in Titan Foundry. Materials, color-coded edges, beveled-looking outlines and a 24-marker instanced platform improve readability without relying on a third-party CDN. Each physics body stays authoritative for object transform; ambient glyphs never drive gameplay. Reduced-motion keeps decorative ring and glyph animation still.
+
+## Browser Content Security Policy
+Rapier's embedded WebAssembly must compile in the browser. The game permits exactly `'wasm-unsafe-eval'` in `script-src`, alongside first-party scripts; it **does not** enable JavaScript `'unsafe-eval'`, CDN scripts or remote model loading. This source-level policy applies unless deployment adds a stricter HTTP CSP header. Verify the deployed response policy, real-world browser devtools, and a successful headset session. Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/script-src .

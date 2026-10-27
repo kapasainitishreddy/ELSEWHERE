@@ -71,3 +71,13 @@ test('scene interaction connects E, click and XR to transient physics',()=>{
  const simulation=readFileSync(new URL('../src/physics-playground.js',import.meta.url),'utf8');
  assert.doesNotMatch(simulation,/localStorage|XMLHttpRequest|sendBeacon|passphrase|fetch\(/);
 });
+
+test('CSP allows only first-party scripts and narrowly scoped WebAssembly compilation',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const directive=html.match(/script-src ([^;]+)/)?.[1];
+ assert.ok(directive);
+ assert.match(directive,/'self'/);
+ assert.match(directive,/'wasm-unsafe-eval'/);
+ assert.equal(directive.split(/\s+/).includes("'unsafe-eval'"),false);
+ assert.equal(directive.split(/\s+/).includes("'unsafe-inline'"),false);
+});
