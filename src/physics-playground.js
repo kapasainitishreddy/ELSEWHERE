@@ -20,8 +20,15 @@ export function createPhysicsSimulation(RAPIER,worldId){
  const bodies=new Map();
  for(let i=0;i<3;i++){
    const id=worldId+'-relic-'+(i+1);
-   const body=space.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation((i-1)*1.3,.86+(i%2)*.25,-.2+(i%2)*.5));
-   space.createCollider(RAPIER.ColliderDesc.cuboid(.37,.37,.37).setRestitution(.26).setFriction(.75),body);
+   // Low drop height, real damping and collider shape matched to the visible relic.
+   const rest=worldId==='dungeon'?.54:.46;
+   const desc=RAPIER.RigidBodyDesc.dynamic()
+     .setTranslation((i-1)*1.3,rest+i*.025,-.2+(i%2)*.5)
+     .setLinearDamping(1.15).setAngularDamping(1.9);
+   const body=space.createRigidBody(desc);
+   const collider=(worldId==='dungeon'?RAPIER.ColliderDesc.ball(.45):RAPIER.ColliderDesc.cuboid(.37,.37,.37))
+     .setRestitution(.06).setFriction(.92);
+   space.createCollider(collider,body);
    bodies.set(id,body);
  }
  let elapsed=0,remainder=0,disposed=false;
@@ -40,9 +47,9 @@ export function createPhysicsSimulation(RAPIER,worldId){
    const dx=Number.isFinite(traveler?.x)?PHYSICS_ORIGIN.x+p.x-traveler.x:p.x+.5;
    const dz=Number.isFinite(traveler?.z)?PHYSICS_ORIGIN.z+p.z-traveler.z:p.z+1;
    const len=Math.max(.01,Math.hypot(dx,dz));
-   const strength=reducedMotion?1.25:3.5;
-   body.applyImpulse({x:strength*dx/len,y:reducedMotion?1.15:2.7,z:strength*dz/len},true);
-   if(!reducedMotion)body.applyTorqueImpulse({x:.24,y:.46,z:-.18},true);
+   const strength=reducedMotion?.55:1.25;
+   body.applyImpulse({x:strength*dx/len,y:reducedMotion?.25:.55,z:strength*dz/len},true);
+   if(!reducedMotion)body.applyTorqueImpulse({x:.06,y:.11,z:-.045},true);
    lastImpulse.set(id,elapsed);return true;
  }
  function dispose(){if(disposed)return;disposed=true;lastImpulse.clear();bodies.clear();space.free();}
@@ -108,21 +115,25 @@ export function createPhysicsStage(THREE,RAPIER,parent,worldId,targets,nearby,op
    targets.push(crate);nearby.push(hint);visuals.push({body,crate,hint,ring,glyph,nth});
    nth++;
  }
- let ended=false;
+ let ended=false,initialized=false;
+ const posePosition=new THREE.Vector3(),poseRotation=new THREE.Quaternion();
  function step(delta){
    if(ended)return;
    simulation.step(delta);
    const dt=Number.isFinite(delta)?Math.max(0,Math.min(delta,.05)):0;
+   const blend=!initialized||options.reducedMotion?1:1-Math.exp(-24*dt);
    if(!options.reducedMotion)phase+=dt;
    for(const {body,crate,hint,ring,glyph,nth} of visuals){
      const p=body.translation(),q=body.rotation();
-     crate.position.set(p.x,p.y,p.z);crate.quaternion.set(q.x,q.y,q.z,q.w);
-     hint.x=PHYSICS_ORIGIN.x+p.x;hint.z=PHYSICS_ORIGIN.z+p.z;
+     posePosition.set(p.x,p.y,p.z);poseRotation.set(q.x,q.y,q.z,q.w);
+     crate.position.lerp(posePosition,blend);crate.quaternion.slerp(poseRotation,blend);
+     // Nearby prompt tracks the visible mesh rather than a physics pose ahead of its animation.
+     hint.x=PHYSICS_ORIGIN.x+crate.position.x;hint.z=PHYSICS_ORIGIN.z+crate.position.z;
      ring.rotation.z=options.reducedMotion?0:Math.sin(phase*.7+nth)*.16;
      glyph.scale.setScalar(options.reducedMotion?1:1+Math.sin(phase*1.1+nth)*.05);
    }
+   initialized=true;
  }
- step(0);
  function dispose(){
    if(ended)return;ended=true;simulation.dispose();
    for(const {crate,hint} of visuals){

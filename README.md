@@ -1,3 +1,5 @@
+**Physics Feel 1.11.2 (October 27, 2026):** Training relics have realistic damping, reduced bounce, visible object-to-collider alignment, shorter impulses and smoother rendered poses on high-refresh displays. [Physics QA notes](docs/TACTILE_WORLDS_V110.md).
+
 **Living Movement 1.11.1 (October 27, 2026):** The traveler now uses the existing skinned humanoid rig with cross-faded idle/walk clips, frame-rate-independent camera-relative movement, controlled acceleration and braking, smooth turns and a chase camera. Fixed cumulative head and shoulder drift in all actors. The guest preview now explains movement and nearby physics objects. [Design and QA](docs/MOVEMENT_POLISH_V111.md).
 
 # ELSEWHERE

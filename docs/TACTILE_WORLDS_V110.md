@@ -33,3 +33,6 @@ The two physics galleries now have different original silhouettes: rune-cut dode
 
 ## Browser Content Security Policy
 Rapier's embedded WebAssembly must compile in the browser. The game permits exactly `'wasm-unsafe-eval'` in `script-src`, alongside first-party scripts; it **does not** enable JavaScript `'unsafe-eval'`, CDN scripts or remote model loading. This source-level policy applies unless deployment adds a stricter HTTP CSP header. Verify the deployed response policy, real-world browser devtools, and a successful headset session. Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/script-src .
+
+## v1.11.2 motion-quality correction
+The original gallery was too floaty: impact impulses were exaggerated, body damping was missing, the shapes were mismatched, and render transforms followed 60 Hz physics steps without interpolation. We added linear/angular damping, low restitution and higher friction, reduced throw force, matched ball colliders to rounded runes, retained box colliders for cargo, lowered initial spawn height, and blended rendered poses across frame rates. This changes **feel**, not canonical battle outcomes. Performance and real visual fidelity still require browser/Quest QA. See [Rapier rigid-body damping](https://rapier.rs/docs/user_guides/javascript/rigid_bodies/).
