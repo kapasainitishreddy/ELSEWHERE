@@ -97,3 +97,16 @@ test('visual world uses damped rigid bodies with accurate rune and cargo collide
  assert.match(source,/crate\.position\.lerp\(posePosition,blend\)/);
  assert.match(source,/crate\.quaternion\.slerp\(poseRotation,blend\)/);
 });
+
+test('physics cage walls are visually represented, not invisible three-meter barriers',()=>{
+ const scene=readFileSync(new URL('../src/physics-playground.js',import.meta.url),'utf8');
+ const art=readFileSync(new URL('../src/arena-finish.js',import.meta.url),'utf8');
+ assert.match(scene,/cuboid\(\.18,\.43,2\.6\)\.setTranslation\(side\*3,\.43,0\)/);
+ assert.match(scene,/cuboid\(3,\.43,\.18\)\.setTranslation\(0,\.43,side\*2\.6\)/);
+ assert.match(scene,/createArenaFinish\(THREE,root,/);
+ assert.match(art,/new THREE\.BoxGeometry\(\.16,\.86,halfZ\*2\)/);
+ assert.match(art,/new THREE\.BoxGeometry\(halfX\*2,\.86,\.16\)/);
+ assert.match(scene,/RoundedBoxGeometry\(\.74,\.74,\.74,3,\.085\)/);
+ assert.match(scene,/pulseAge\+=dt/);
+ assert.doesNotMatch(art,/fetch\s*\(|localStorage|sendBeacon|XMLHttpRequest/);
+});

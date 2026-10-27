@@ -1,3 +1,5 @@
+import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
+import {createArenaFinish} from './arena-finish.js';
 /**
  * Tangible local physics gallery for the Hollow Crown and Titan Foundry.
  * Rapier is Apache-2.0. This simulation never changes canonical game state.
@@ -14,8 +16,8 @@ export function createPhysicsSimulation(RAPIER,worldId){
  const ground=space.createRigidBody(RAPIER.RigidBodyDesc.fixed());
  space.createCollider(RAPIER.ColliderDesc.cuboid(3,.22,2.6).setTranslation(0,-.22,0).setFriction(.85),ground);
  for(const side of [-1,1]){
-   space.createCollider(RAPIER.ColliderDesc.cuboid(.18,1.5,2.6).setTranslation(side*3,1.4,0),ground);
-   space.createCollider(RAPIER.ColliderDesc.cuboid(3,1.5,.18).setTranslation(0,1.4,side*2.6),ground);
+   space.createCollider(RAPIER.ColliderDesc.cuboid(.18,.43,2.6).setTranslation(side*3,.43,0),ground);
+   space.createCollider(RAPIER.ColliderDesc.cuboid(3,.43,.18).setTranslation(0,.43,side*2.6),ground);
  }
  const bodies=new Map();
  for(let i=0;i<3;i++){
@@ -64,7 +66,7 @@ export function createPhysicsStage(THREE,RAPIER,parent,worldId,targets,nearby,op
  root.position.set(PHYSICS_ORIGIN.x,0,PHYSICS_ORIGIN.z);
  root.name='Tactile physics gallery';parent.add(root);
  const isMech=worldId==='mech',accent=isMech?0x82e9ff:0xc3a1ff;
- const material=new THREE.MeshStandardMaterial({color:isMech?0x28627b:0x685386,emissive:accent,emissiveIntensity:.35,metalness:isMech?.65:.22,roughness:.32});
+ const material=new THREE.MeshStandardMaterial({color:isMech?0x41667b:0x715b96,emissive:accent,emissiveIntensity:.14,metalness:isMech?.31:.12,roughness:.42});
  const plinth=new THREE.Mesh(new THREE.CylinderGeometry(3.35,3.35,.20,48),new THREE.MeshStandardMaterial({color:0x17202c,metalness:.7,roughness:.28}));
  plinth.position.y=-.11;root.add(plinth);
  const rim=new THREE.Mesh(new THREE.TorusGeometry(2.95,.035,8,64),new THREE.MeshBasicMaterial({color:accent,transparent:true,opacity:.6}));
@@ -83,12 +85,13 @@ export function createPhysicsStage(THREE,RAPIER,parent,worldId,targets,nearby,op
  }
  ticks.instanceMatrix.needsUpdate=true;
  root.add(ticks);
+ createArenaFinish(THREE,root,{worldId,accent,halfX:3,halfZ:2.6});
  const visuals=[];
  let phase=0;
  let nth=0;
  for(const [id,body] of simulation.bodies){
    const color=isMech?[0x9befff,0xffd08d,0x9ef5df][nth]:[0xe8a9ff,0xb2c5ff,0xffcdac][nth];
-   const geometry=isMech?new THREE.BoxGeometry(.74,.74,.74):new THREE.DodecahedronGeometry(.45,0);
+   const geometry=isMech?new RoundedBoxGeometry(.74,.74,.74,3,.085):new THREE.DodecahedronGeometry(.45,1);
    const crate=new THREE.Mesh(geometry,material);
    crate.name=isMech?'Training energy cell':'Runic practice relic';
    crate.userData.action={type:'physics',id,label:isMech?'PUSH ENERGY CELL':'PUSH RUNIC RELIC'};
@@ -115,6 +118,10 @@ export function createPhysicsStage(THREE,RAPIER,parent,worldId,targets,nearby,op
    targets.push(crate);nearby.push(hint);visuals.push({body,crate,hint,ring,glyph,nth});
    nth++;
  }
+ const pulseMat=new THREE.MeshBasicMaterial({color:accent,transparent:true,opacity:0,depthWrite:false});
+ const pulse=new THREE.Mesh(new THREE.TorusGeometry(.40,.018,8,48),pulseMat);
+ pulse.rotation.x=Math.PI/2;pulse.visible=false;root.add(pulse);
+ let pulseAge=1;
  let ended=false,initialized=false;
  const posePosition=new THREE.Vector3(),poseRotation=new THREE.Quaternion();
  function step(delta){
@@ -123,6 +130,12 @@ export function createPhysicsStage(THREE,RAPIER,parent,worldId,targets,nearby,op
    const dt=Number.isFinite(delta)?Math.max(0,Math.min(delta,.05)):0;
    const blend=!initialized||options.reducedMotion?1:1-Math.exp(-24*dt);
    if(!options.reducedMotion)phase+=dt;
+   if(pulse.visible){
+     pulseAge+=dt;
+     pulseMat.opacity=options.reducedMotion?.2:Math.max(0,.52*(1-pulseAge/.5));
+     pulse.scale.setScalar(options.reducedMotion?1:.55+pulseAge*2.2);
+     if(pulseAge>=.5)pulse.visible=false;
+   }
    for(const {body,crate,hint,ring,glyph,nth} of visuals){
      const p=body.translation(),q=body.rotation();
      posePosition.set(p.x,p.y,p.z);poseRotation.set(q.x,q.y,q.z,q.w);
@@ -146,7 +159,17 @@ export function createPhysicsStage(THREE,RAPIER,parent,worldId,targets,nearby,op
    });
    material.dispose();root.parent?.remove(root);
  }
- return {step,dispose,impulse:(id,traveler)=>simulation.impulse(id,traveler,Boolean(options.reducedMotion)),root};
+ return {step,dispose,impulse:(id,traveler)=>{
+   const accepted=simulation.impulse(id,traveler,Boolean(options.reducedMotion));
+   if(accepted){
+     const item=visuals.find(v=>v.crate.userData.action.id===id);
+     if(item){
+       pulse.position.set(item.crate.position.x,.045,item.crate.position.z);
+       pulseAge=0;pulse.scale.setScalar(.55);pulse.visible=true;
+     }
+   }
+   return accepted;
+ },root};
 }
 
 /** Lazy WASM initialization; discarded immediately if a player changes worlds. */

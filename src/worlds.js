@@ -862,8 +862,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      rig.position.set(0,0,0);
      if(sameWorld){camera.position.copy(lastCamera);controls.target.copy(lastTarget);}
      else if(options.spawnNearPhysics&&state.world==='dungeon'){
-       camera.position.set(5.45,5.5,18);
-       controls.target.set(5.45,1.95,2.8);
+       camera.position.set(7.0,5.4,17.6);
+       controls.target.set(7.5,1.65,5.5);
      }else {camera.position.set(0,5.5,18);controls.target.set(0,2,0);}
    }else if(!sameWorld){
      // Crossing a portal is a deliberate scene change. Preserve WebXR's tracked camera.
@@ -884,12 +884,14 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      sprint:pressed.has('ShiftLeft'),dt,rects:collisionRects(state.world),
      collisions:!(state.world==='mech'&&state.mechDeployed)});
    moving=pose.moving;travelerSpeed=pose.speed;playerPos.set(pose.x,0,pose.z);
-   if(moving&&!hasExplored&&window.innerWidth>780){hasExplored=true;onExplore();}
+   if(moving&&!hasExplored){hasExplored=true;if(window.innerWidth>780)onExplore();}
    if(state.world==='mech'&&state.mechDeployed&&titan){
      titan.position.x=playerPos.x;titan.position.z=playerPos.z-13;titan.rotation.y=pose.heading;
    }else if(player){player.position.copy(playerPos);player.rotation.y=pose.heading;}
    // Chase the traveler without stealing orbit, zoom, or headset control.
-   const target=new THREE.Vector3(playerPos.x,state.world==='mech'&&state.mechDeployed?5:1.95,playerPos.z-3);
+   const showcase=options.spawnNearPhysics&&!hasExplored&&state.world==='dungeon';
+   const target=showcase?new THREE.Vector3(7.5,1.65,5.5)
+     :new THREE.Vector3(playerPos.x,state.world==='mech'&&state.mechDeployed?5:1.95,playerPos.z-3);
    const d=target.sub(controls.target).multiplyScalar(1-Math.exp(-7.5*dt));
    controls.target.add(d);camera.position.add(d);
  }
