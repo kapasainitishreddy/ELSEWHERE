@@ -818,7 +818,16 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      void installAnimatedCompanion(world,animated,()=>playerPos,reduceMotion).catch(()=>{});
    }
    // Async, same-origin only: optional verified CC0 meshes enrich the existing procedural scene.
-   void dressWithKenney(world,state.world?state:{world:'future'},animated).catch(()=>{});
+   // Optional, verified same-origin CC0 art becomes physically inspectable.
+   // BVH is dynamically imported only if a local GLB was successfully mounted.
+   const assetWorld=world,assetState=state,assetTargets=targets,assetNearby=nearbyProps;
+   void dressWithKenney(assetWorld,assetState,animated,null,(model,id,location)=>{
+     if(!assetWorld.parent || !model.parent)return;
+     void import('./asset-interactions.js').then(({registerAssetsWithBVH})=>{
+       if(!assetWorld.parent)return;
+       return registerAssetsWithBVH(model,{id,worldId:assetState.world,x:location.x,z:location.z,targets:assetTargets,nearby:assetNearby});
+     }).catch(()=>{});
+   }).catch(()=>{});
    // A small, disposable Rapier scene; await only after the main world is visible.
    if(['dungeon','mech'].includes(state.world)){
      const level=world,levelTargets=targets,levelNearby=nearbyProps;

@@ -17,3 +17,13 @@ This is an **optional interaction gallery**, not full-body VR grappling or true 
 Rapier source: https://github.com/dimforge/rapier (Apache-2.0).
 Yuka: https://github.com/Mugen87/yuka (MIT).
 Meta IWSDK is **not installed into the production Three runtime**; its official super-three alias requirement requires separate integration tests before replacing a functional XR renderer.
+
+## BVH asset inspection · 1.10.1
+
+- Every *developer-installed and verified* Kenney GLB can be examined by E, click, gamepad interaction or XR trigger. Each world has a distinct short fictional observation.
+- For static imported meshes with 120–100,000 triangles, `three-mesh-bvh` accelerates ray picking. Low-poly meshes, skinned animation and morph targets deliberately keep Three.js's normal raycaster. Registration is capped at 32 meshes per model.
+- The BVH JavaScript is lazily imported **only after** a local GLB has loaded. It is not activated for empty asset manifests; gameplay never requests off-origin art.
+- If the optional acceleration module fails to load, ordinary Three.js picking continues.
+- Kenney's CC0 model files are **not bundled by default**. Run `npm run assets:fetch` in a network-enabled developer checkout to vendor verified models and test them.
+- Attribution: https://github.com/gkjohnson/three-mesh-bvh (MIT); https://kenney.nl/assets (CC0).
+- Run `npm run world:check`, `npm test`, `npm run build`, then manually check keyboard/controller picking, repeated world travel, reduced motion, and frame rate.

@@ -6,6 +6,7 @@ This document separates running code from future proposals. Linking a repo never
 - Three.js (MIT): original worlds, WebXR, character skeletons, rendering, official glTF loader. https://github.com/mrdoob/three.js
 - Yuka v0.7.8 (MIT): autonomous steering for Iris, Ada, the Witness, and Commander Sol. Creates one local Vehicle and ArriveBehavior per active actor. Routes stay within 1.05 game units of home, avoid scene rectangles, pause to listen as the player approaches, and update the E-to-talk location. Source: https://github.com/Mugen87/yuka
 - Rapier 0.21.0 (Apache-2.0): physically simulated, capped training props in Hollow Crown and Titan Foundry, loaded only on those worlds. https://github.com/dimforge/rapier
+- three-mesh-bvh 0.9.16 (MIT): lazy BVH picking for static meshes inside developer-installed Kenney GLBs; ordinary picking remains a fallback. https://github.com/gkjohnson/three-mesh-bvh
 - Vite (MIT): build and development. https://github.com/vitejs/vite
 - Lucide (ISC, with bundled notices): locally bundled icons. https://github.com/lucide-icons/lucide
 
@@ -22,7 +23,7 @@ The isolated navigator tests use a minimal Yuka-compatible fake to exercise rout
 ## Future candidates: NOT INTEGRATED
 - Meta IWSDK 1.0 (MIT) https://github.com/facebook/immersive-web-sdk : Quest emulation, grabbing, locomotion and spatial UI. Test an isolated scene first; its required super-three alias may conflict with the current Three.js runtime.
 - Full game-wide Rapier collisions / combat: the current integration is a bounded interaction gallery, not physics-based enemy AI.
-- three-mesh-bvh (MIT) https://github.com/gkjohnson/three-mesh-bvh : accelerate complex imported mesh raycasts if a benchmark justifies its overhead.
+- Profile the GLB mesh-picking accelerator using an actual Quest with installed local art; this optimization is deliberately lazy, not a claimed measured speedup.
 - More Kenney CC0 environment kits https://kenney.nl/assets : install as pinned same-origin files and verify source provenance.
 
 Do not copy copyrighted manhwa worlds, Pacific Rim designs, or other franchise characters. Preserve open-source notices. No asset or library integration by itself certifies a complete VR game, live Meta model use, or hackathon submission readiness. Full npm tests, Vite build, browser visual QA, Quest testing, and Meta API demo remain separate gates.

@@ -25,7 +25,7 @@ async function getInstalledModels(){
 }
 
 /** The scene is a disposable world group. Stale async loads are discarded. */
-export async function dressWithKenney(world,state,animated,onAsset){
+export async function dressWithKenney(world,state,animated,onAsset,onModel){
  const available=await getInstalledModels();
  if(!world.parent || available.size===0)return 0;
  const placements=KENNEY_PLACEMENTS[state.world]||[];
@@ -61,6 +61,7 @@ export async function dressWithKenney(world,state,animated,onAsset){
      animated.push((t,moving,dt)=>{if(dt>0)mixer.update(Math.min(dt,.05));});
    }
    onAsset?.(id);
+   onModel?.(model,id,{x,z});
   }catch{
    // The game's procedural scenery still works if a local file is missing or corrupt.
    continue;
