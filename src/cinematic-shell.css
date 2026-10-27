@@ -1,0 +1,290 @@
+/*
+ * ELSEWHERE 1.1 / THE LIVING CANVAS
+ * A new presentation layer, not a replacement for the game state machine.
+ * World art is original SVG drawn in-repo and shown only without a WebGL canvas.
+ * Supports keyboard, touch, controller and WebXR gameplay beneath the overlay.
+ */
+#app-ui {
+  --accent: #92d9e2;
+  --accent-rgb: 146,217,226;
+  --canvas-ink: #dfe9ec;
+  --muted: #a6b3bd;
+  --display-face: Georgia, 'Times New Roman', serif;
+  --ui-face: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--ui-face);
+  color: var(--canvas-ink);
+}
+#app-ui[data-world='self'] { --accent:#f5cda7; --accent-rgb:245,205,167 }
+#app-ui[data-world='past'] { --accent:#f2ba78; --accent-rgb:242,186,120 }
+#app-ui[data-world='dungeon'] { --accent:#c6b1ff; --accent-rgb:198,177,255 }
+#app-ui[data-world='mech'] { --accent:#efb38f; --accent-rgb:239,179,143 }
+
+#app { background:#060d13; }
+#world-canvas { background:radial-gradient(ellipse at 75% 42%,#152936,#070e15 75%); }
+.world-vista { position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; opacity:1; transition:opacity .5s ease; }
+.world-vista img { display:block; width:100%; height:100%; object-fit:cover; object-position:72% center; animation:vista-arrive 1.35s cubic-bezier(.14,.48,.2,1) both; }
+.world-vista .vista-film { position:absolute; inset:0; background:linear-gradient(90deg,rgba(4,10,15,.92) 0%,rgba(4,10,15,.61) 34%,transparent 72%),linear-gradient(180deg,rgba(4,9,13,.42),transparent 37%,transparent 75%,rgba(2,8,13,.85)); }
+.world-vista .vista-bloom { position:absolute; left:52%; top:23%; width:45vw; height:62vh; border-radius:50%; background:radial-gradient(ellipse,rgba(var(--accent-rgb),.1),transparent 67%); mix-blend-mode:screen; animation:vista-breathe 12s ease-in-out infinite alternate; }
+/* The illustration deliberately disappears whenever the actual renderer mounts. */
+#app[data-scene-ready="true"] .world-vista { opacity:0; }
+@keyframes vista-arrive { from{opacity:.25;transform:scale(1.045)} to{opacity:1;transform:scale(1)} }
+@keyframes vista-breathe {to{transform:translate(2%, -4%) scale(1.08); opacity:.6} }
+.world-wash { opacity:.25; background:radial-gradient(ellipse at 72% 48%,var(--haze),transparent 63%); }
+.grain {opacity:.13;mix-blend-mode:soft-light}
+.edge-shade {background:linear-gradient(90deg,rgba(3,8,12,.27),transparent 47%),linear-gradient(0deg,rgba(2,7,11,.65),transparent 35%)}
+
+/* Floating navigation: the world, not the dashboard, is the main character. */
+.topbar {
+  position:absolute; top:19px; left:clamp(14px,2.8vw,52px); right:clamp(14px,2.8vw,52px);
+  height:69px; padding:0 14px 0 12px; z-index:11; border:1px solid rgba(220,237,243,.13);
+  border-radius:18px; box-shadow:0 14px 40px rgba(0,0,0,.13), inset 0 1px 0 rgba(255,255,255,.065);
+  background:linear-gradient(100deg,rgba(8,16,24,.84),rgba(13,23,33,.62));
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+}
+.brand {padding:0 10px; background:none; border:0; color:inherit; display:flex; align-items:center; gap:11px; cursor:pointer; text-align:left; border-radius:13px; min-width:200px;}
+.brand:hover {background:rgba(255,255,255,.05)}
+.brand-glyph { width:40px; height:40px; border:1px solid rgba(var(--accent-rgb),.37);background:rgba(var(--accent-rgb),.07); border-radius:12px;filter:none; }
+.brand-glyph .ui-glyph { width:22px;height:22px; filter:invert(88%) sepia(10%) saturate(525%) hue-rotate(145deg) }
+.brand-type { font:700 15px/1.05 var(--ui-face);letter-spacing:.255em;color:#f4f4ef; }
+.brand-caption {margin-top:7px;letter-spacing:.17em;font:600 7px/1.1 var(--ui-face);color:#9aadb8; }
+.top-center {font:600 10px var(--ui-face); letter-spacing:.12em;color:#c1d4db;}
+.top-center .server-status { display:none }
+.top-center .branch-tag {margin-left:12px;padding:7px 10px;border:1px solid rgba(var(--accent-rgb),.23);border-radius:10px;color:var(--accent);letter-spacing:.15em;}
+.live-pulse {width:7px;height:7px;background:var(--accent);box-shadow:0 0 11px var(--accent)}
+.header-actions {gap:8px}
+.icon-btn {width:35px;height:35px;border:1px solid rgba(225,243,248,.11);background:rgba(255,255,255,.027);border-radius:11px;transition:background .2s,transform .2s,border-color .2s}
+.icon-btn:hover { transform:translateY(-1px);background:rgba(var(--accent-rgb),.12);border-color:rgba(var(--accent-rgb),.35)}
+.stillwater-launch {border-radius:11px;min-height:35px;padding:8px 11px;letter-spacing:.07em;font-size:9px}
+.journal-button {height:37px;border-radius:11px;letter-spacing:.09em;font:700 9px var(--ui-face);padding:8px 11px;background:rgba(var(--accent-rgb),.09);border:1px solid rgba(var(--accent-rgb),.21)}
+.ui-glyph {filter:brightness(0) invert(1);opacity:.85}
+
+/* Essential navigation always stays within one click or one tap. */
+.left-rail {
+  width:310px; top:106px; bottom:auto;left:clamp(14px,2.8vw,52px);max-height:calc(100dvh - 155px);
+  overflow-y:auto;padding:26px 20px 19px;border:1px solid rgba(var(--accent-rgb),.28);
+  border-radius:18px;z-index:19;box-shadow:0 24px 88px rgba(0,0,0,.6);
+  background:linear-gradient(165deg,rgba(19,30,39,.97),rgba(7,16,23,.96));
+  transform:translateY(-8px) scale(.98);opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .23s ease,transform .23s ease,visibility .23s;
+}
+#app-ui[data-atlas-open='true'] .left-rail {opacity:1;visibility:visible;transform:none;pointer-events:auto}
+.rail-title{gap:12px}.rail-title .eyebrow{font-size:10px}.atlas-teaser{font:italic 16px/1.55 var(--display-face);color:#c2d1d6;margin:13px 0 6px}
+.rail-spacer{flex:0;min-height:9px}.world-list{margin-top:12px;gap:5px}.world-link{min-height:58px;border-radius:12px;padding:11px 8px;gap:10px}.world-link.is-active{background:rgba(var(--accent-rgb),.1);border-color:rgba(var(--accent-rgb),.31)}
+.world-link:before{display:none}.world-link-text{font:600 13px var(--ui-face)}.world-link-text small{font-size:8px;letter-spacing:.08em}.world-number{font-size:9px}.world-symbol{width:34px;height:34px;border-radius:10px}
+.identity-card{margin-top:15px;padding:13px 0}.stats{padding:14px 0}.time-ledger{margin:0 0 11px}.shard-indicator{padding:11px 0 14px}.rail-footer{padding-bottom:5px}
+.sheet-inline-close {display:grid;place-items:center;flex-shrink:0;width:35px;height:35px;border:1px solid rgba(255,255,255,.13);color:#e3edf1;background:rgba(255,255,255,.04);border-radius:10px;font-size:14px;transition:.2s}
+.sheet-inline-close:hover{background:rgba(var(--accent-rgb),.17);border-color:rgba(var(--accent-rgb),.42)}
+.world-sheet-scrim{position:absolute;inset:0;z-index:9;background:rgba(1,6,10,.35);border:0;pointer-events:auto;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
+
+/* Cinematic title overlay and one meaningful primary action. */
+.world-heading{left:clamp(35px,6.7vw,112px);top:clamp(155px,24.5vh,264px);max-width:min(570px,57vw);z-index:2;pointer-events:auto;text-shadow:none;}
+.section-kicker {font:700 11px/1.4 var(--ui-face);letter-spacing:.27em;color:var(--accent);text-shadow:0 2px 15px #010609}
+.thin-line{width:25px;background:var(--accent)}
+.world-heading h1{font:400 clamp(58px,6.8vw,111px)/.97 var(--display-face);letter-spacing:-.065em;margin:23px 0 11px;color:#f4eee9;text-wrap:balance;text-shadow:0 16px 52px rgba(0,0,0,.45);filter:none}
+.world-subtitle {font:650 10px var(--ui-face);letter-spacing:.34em;color:#d1d9d8;margin-top:17px}
+.world-quote {margin-top:19px;max-width:418px;color:#d7d5cf;font:italic 23px/1.46 var(--display-face);text-shadow:0 4px 22px rgba(0,0,0,.5)}
+.world-pill {margin-top:20px;border:0;background:rgba(11,20,24,.44);color:#e6e1d7;font:700 9px var(--ui-face);letter-spacing:.12em;border-radius:9px;padding:9px 11px}
+.world-pill .ui-glyph {width:14px;height:14px;opacity:.73}.world-pill span {color:var(--accent)}
+.world-serial {position:absolute;z-index:1;top:10%;left:47%;font:300 clamp(160px,23vw,360px)/1 var(--display-face);letter-spacing:-.09em;color:rgba(var(--accent-rgb),.08);text-shadow:0 20px 90px rgba(var(--accent-rgb),.08);pointer-events:none;user-select:none}
+.hero-actions {display:flex;align-items:center;gap:11px;margin-top:27px;pointer-events:auto;flex-wrap:wrap}
+.hero-enter,.hero-secondary {height:47px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:13px;text-align:center;cursor:pointer;transition:transform .2s,box-shadow .2s,background .2s;border:1px solid rgba(var(--accent-rgb),.45);font:700 11px var(--ui-face);letter-spacing:.012em}
+.hero-enter {background:var(--accent);color:#172022;padding:0 20px;box-shadow:0 10px 35px rgba(0,0,0,.18)}
+.hero-enter span {font-size:21px;line-height:1}
+.hero-enter:hover {transform:translateY(-3px);box-shadow:0 12px 35px rgba(var(--accent-rgb),.19)}
+.hero-secondary {background:rgba(9,17,22,.42);backdrop-filter:blur(7px);color:#f0e8df;padding:0 18px;border-color:rgba(234,239,244,.22)}
+.hero-secondary .ui-glyph{width:15px;height:15px}
+.hero-secondary:hover{background:rgba(var(--accent-rgb),.15);transform:translateY(-2px)}
+
+/* Always-visible world destinations; no tall, permanent navigation panel. */
+.portal-dock {position:absolute;left:50%;bottom:27px;transform:translateX(-50%);z-index:5;width:min(710px,58vw);min-height:81px;display:flex;align-items:center;gap:12px;pointer-events:auto;padding:11px 12px;border-radius:20px;border:1px solid rgba(227,245,248,.18);background:rgba(9,16,23,.75);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 16px 60px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.085)}
+.dock-label {flex:0 0 89px;color:#d6e2e4;font:750 9px/1.45 var(--ui-face);letter-spacing:.15em;padding-left:8px}
+.dock-label small {display:block;margin-top:5px;color:var(--accent);font-size:9px;letter-spacing:.07em}
+.portal-cards {display:flex;flex:1;gap:4px;min-width:0;justify-content:space-between}
+.portal-card {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;flex:1;min-width:0;border:1px solid transparent;background:transparent;color:#9fb2bf;position:relative;border-radius:12px;padding:5px 4px 4px;transition:transform .2s,background .2s,border-color .2s}
+.portal-card:hover{background:rgba(var(--accent-rgb),.07);color:#fff;transform:translateY(-4px)}
+.portal-card.is-current {background:rgba(var(--accent-rgb),.11);color:#f5eee8;border-color:rgba(var(--accent-rgb),.35)}
+.portal-art {display:grid;place-items:center;position:relative;width:34px;height:34px;border-radius:11px;border:1px solid rgba(255,255,255,.11);background:linear-gradient(135deg,rgba(var(--accent-rgb),.15),rgba(255,255,255,.025));}
+.portal-art .ui-glyph{width:19px;height:19px;opacity:.82;filter:brightness(0) invert(1)}
+.portal-card.is-current .portal-art{background:rgba(var(--accent-rgb),.22);border-color:rgba(var(--accent-rgb),.41);box-shadow:0 0 18px rgba(var(--accent-rgb),.08)}
+.portal-art-future{background:linear-gradient(135deg,#0d4754,#183045)}
+.portal-art-self{background:linear-gradient(135deg,#755139,#2b2b32)}
+.portal-art-past{background:linear-gradient(135deg,#78563a,#30252b)}
+.portal-art-dungeon{background:linear-gradient(135deg,#41377c,#1d193b)}
+.portal-art-mech{background:linear-gradient(135deg,#66362b,#343542)}
+.portal-name {font:700 9px/1.1 var(--ui-face);white-space:nowrap;letter-spacing:.025em}
+.portal-number {position:absolute;top:5px;right:6px;color:rgba(255,255,255,.36);font:700 7px var(--ui-face)}
+
+/* One contextual card rather than endless text. The full manuscript stays available. */
+.scene-postcard {position:absolute;right:clamp(22px,4vw,68px);bottom:134px;width:min(334px,26vw);z-index:4;padding:19px 21px 18px;border:1px solid rgba(235,245,250,.24);background:linear-gradient(135deg,rgba(17,26,36,.8),rgba(14,20,26,.63));border-radius:17px;backdrop-filter:blur(17px);-webkit-backdrop-filter:blur(17px);box-shadow:0 23px 60px rgba(0,0,0,.24);pointer-events:auto;}
+.postcard-kicker {display:flex;align-items:center;gap:9px;color:var(--accent);font:700 9px var(--ui-face);letter-spacing:.15em}
+.postcard-kicker small {margin-left:auto;color:#a4afba;font:650 8px var(--ui-face);letter-spacing:.08em}
+.postcard-chapter{margin-top:14px;color:#f4eadf;font:400 23px/1.15 var(--display-face);letter-spacing:-.02em}
+.scene-postcard p {color:#becbd0;font:400 12px/1.56 var(--ui-face);margin:11px 0 16px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.postcard-enter {width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 14px;background:rgba(var(--accent-rgb),.12);color:#f6ede4;border:1px solid rgba(var(--accent-rgb),.28);border-radius:10px;font:700 10px var(--ui-face);transition:.2s}
+.postcard-enter span{font-size:18px;color:var(--accent)}
+.postcard-enter:hover {background:rgba(var(--accent-rgb),.24);transform:translateY(-2px)}
+
+/* The long-form story and choices live in a pleasant, readable side sheet. */
+.story-panel {position:absolute;top:106px;right:clamp(14px,2.8vw,52px);bottom:21px;width:min(454px,calc(100vw - 28px));z-index:18;overflow-y:auto;overscroll-behavior:contain; padding:0 25px 27px;border:1px solid rgba(var(--accent-rgb),.31);border-radius:19px;background:linear-gradient(165deg,rgba(17,26,35,.97),rgba(9,17,26,.98));box-shadow:0 26px 100px rgba(0,0,0,.62);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);transform:translateX(35px) scale(.99);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease, transform .24s ease, visibility .24s;scrollbar-width:thin;scrollbar-color:rgba(var(--accent-rgb),.35) transparent;}
+#app-ui[data-story-open='true'] .story-panel {opacity:1;visibility:visible;transform:none;pointer-events:auto}
+.sheet-topbar {position:sticky;top:0;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:12px;background:rgba(18,27,36,.98);border-bottom:1px solid rgba(255,255,255,.12);margin:0 -25px 16px;padding:14px 19px 14px 25px;border-radius:18px 18px 0 0;backdrop-filter:blur(12px)}
+.sheet-topbar .eyebrow {font-size:9px;letter-spacing:.22em;color:var(--accent)}
+.story-panel .panel-edge{display:none}
+.story-panel .signal-line{margin:0 0 16px;font-size:9px}
+.story-panel .chapter-copy{font:400 23px/1.26 var(--display-face);letter-spacing:-.025em;margin:14px 0;color:#f4e8dc}
+.story-panel .future-box{border-radius:11px;border-color:rgba(var(--accent-rgb),.25);border-left-width:1px;background:rgba(228,236,237,.032);padding:19px}
+.story-panel .future-box strong{font-family:var(--display-face);font-weight:400;font-size:21px;line-height:1.25}
+.story-panel .future-box.small strong {font-size:18px}
+.story-panel .future-box p{font:400 12px/1.68 var(--ui-face)}
+.story-panel .choice {border-radius:11px;padding:16px 14px;background:rgba(233,240,242,.04);border:1px solid rgba(255,255,255,.11);}
+.story-panel .choice:not(:disabled):hover {border-color:rgba(var(--accent-rgb),.54);background:rgba(var(--accent-rgb),.11);transform:translateY(-1px)}
+.story-panel .choice-index{color:var(--accent)}
+.story-panel .choice-copy strong{font:700 12px/1.4 var(--ui-face)}
+.story-panel .choice-copy small{font:400 11px/1.55 var(--ui-face);color:#aebbc2}
+.story-panel .decision-title,.story-panel .chapter{align-items:center}
+.story-panel .chat-form input, .story-panel .chat-form select,.story-panel textarea {border-radius:9px;background:rgba(0,0,0,.28)}
+.story-panel .atlas-tabs {margin-top:12px}
+.story-panel .atlas-tabs button {font-family:var(--ui-face);letter-spacing:.08em}
+.story-panel .atlas-tabs button.selected {color:var(--accent);border-color:var(--accent)}
+.story-panel .chronal-hud {border-radius:9px}
+#app-ui[data-story-open='true'] .scene-postcard {pointer-events:none;opacity:0}
+
+/* Minimal private-time HUD. Leave the rest of the scene accessible. */
+.artifact-tracker {left:clamp(24px,3.8vw,68px);bottom:41px;z-index:5;display:flex;align-items:center;gap:11px;margin:0;border:1px solid rgba(var(--accent-rgb),.24);padding:10px 12px;border-radius:14px;background:rgba(10,18,24,.68);backdrop-filter:blur(14px);letter-spacing:.04em;font:700 9px/1.35 var(--ui-face);color:#dbebe9;pointer-events:auto}
+.artifact-tracker .artifact-icon {font-size:25px;color:var(--accent)}
+.artifact-tracker b{font-size:15px;color:#faf1e6}
+.artifact-tracker small{display:block;color:#9babaf;font:700 7px var(--ui-face);letter-spacing:.12em;margin-top:2px}
+.artifact-tracker button {margin-left:4px;border:0;border-left:1px solid rgba(255,255,255,.16);padding:8px 3px 8px 10px;background:none;color:var(--accent);font:700 9px var(--ui-face)}
+.artifact-tracker button:hover{text-decoration:underline}
+.privacy-sigil{left:clamp(24px,3.8vw,68px);bottom:111px;background:rgba(9,19,19,.59);border:1px solid rgba(138,204,181,.19);border-radius:10px;font:700 8px var(--ui-face);padding:8px 12px;letter-spacing:.09em}
+.bottom-hud {left:clamp(24px,3.8vw,68px);bottom:14px;width:auto;gap:6px;transform:none;font:600 8px var(--ui-face);letter-spacing:.08em;color:#adb9bd}
+.bottom-hud .bottom-line,.bottom-hud .hud-dot,.bottom-hud .hud-separator {display:none}
+.bottom-credit {right:clamp(24px,3.8vw,68px);bottom:13px;color:#91a2a8;font:700 7px var(--ui-face);letter-spacing:.16em}
+
+/* In combat keep the reticle over the actual game viewport. */
+.combat-reticle{left:50%;top:49%;}
+#app-ui[data-combat='active'] .world-heading {opacity:.08;transition:opacity .25s;pointer-events:none}
+#app-ui[data-combat='active'] .scene-postcard {display:none}
+#app-ui[data-combat='active'] .combat-reticle{opacity:.9}
+
+/* Existing story, private-vault dialogs, quiet experiences and VR controls remain. */
+.modal-shade,.stillwater-dialog {z-index:30}
+#app.cinematic .topbar {background:rgba(4,10,16,.15);border-color:transparent;box-shadow:none}
+#app.cinematic .hero-actions,#app.cinematic .scene-postcard,#app.cinematic .portal-dock,#app.cinematic .privacy-sigil {opacity:0;pointer-events:none;transition:opacity .2s}
+#app.cinematic .world-heading {left:6vw;top:27%}
+#app.cinematic .left-rail {opacity:0;pointer-events:none}
+
+@media (max-width:1360px) {
+ .top-center .branch-tag{display:none}
+ .world-heading{left:clamp(30px,4.6vw,80px);max-width:570px}
+ .world-heading h1{font-size:clamp(60px,6.4vw,86px)}
+ .scene-postcard{width:280px;right:24px}
+ .portal-dock{width:610px}
+ .artifact-tracker{left:28px}
+ .privacy-sigil{left:28px}
+}
+@media (max-width:1080px) {
+ .top-center{display:none}
+ .world-heading{top:23%;left:5vw;max-width:55vw}
+ .world-heading h1{font-size:clamp(55px,7vw,78px)}
+ .scene-postcard{right:20px;bottom:125px;width:262px;padding:16px}
+ .postcard-chapter{font-size:19px}
+ .portal-dock{left:47%;width:min(570px,62vw)}
+ .dock-label{display:none}
+ .world-serial{left:42%;font-size:200px}
+ .artifact-tracker{bottom:133px;left:18px}
+ .privacy-sigil{bottom:206px;left:18px}
+ .bottom-hud{display:none}
+}
+@media (max-width:780px) {
+ #app{min-height:0;}
+ .topbar{top:10px;left:10px;right:10px;height:59px;padding:0 8px;border-radius:14px}
+ .brand{min-width:0;padding:4px;gap:8px}.brand-glyph{width:32px;height:32px;border-radius:9px}.brand-type{font-size:13px;letter-spacing:.14em}.brand-caption{font-size:6px;letter-spacing:.09em;margin-top:5px}
+ .header-actions{gap:5px}.header-actions .stillwater-launch,.header-actions .sound-toggle,.header-actions .focus-toggle,.header-actions .icon-btn[title='Controls & accessibility']{display:none}
+ .journal-button {width:39px;height:36px;padding:0;justify-content:center}.journal-button>span{display:none}.journal-button .ui-glyph{display:block}
+ .topbar .icon-btn{width:34px;height:34px}
+ .world-vista img{object-position:70% center;}
+ .world-vista .vista-film {background:linear-gradient(90deg,rgba(4,9,14,.81),rgba(4,9,14,.18)),linear-gradient(0deg,rgba(3,8,12,.8),transparent 65%)}
+ .world-heading{top:18vh;left:22px;max-width:calc(100vw - 42px)}
+ .section-kicker{font-size:9px;letter-spacing:.17em}
+ .world-heading h1{font-size:clamp(47px,10.7vw,75px);max-width:calc(100vw - 44px);margin-top:14px;}
+ .world-subtitle{font-size:8px;margin-top:9px}
+ .world-quote{font-size:17px;max-width:280px;margin-top:13px}
+ .world-pill {margin-top:13px;padding:7px 10px;font-size:8px}
+ .hero-actions{margin-top:16px;gap:6px}.hero-enter,.hero-secondary{height:41px;font-size:10px;padding:0 13px}.hero-secondary{padding:0 10px}
+ .world-serial{top:19%;left:31%;font-size:125px}
+ .portal-dock{left:9px;right:9px;bottom:12px;width:auto;transform:none;padding:7px 6px;border-radius:15px;min-height:72px;gap:0}
+ .portal-card{gap:4px;padding:5px 2px;border-radius:9px}.portal-art{width:30px;height:30px;border-radius:9px}.portal-art .ui-glyph{width:17px;height:17px}.portal-name{font-size:8px;max-width:80px;overflow:hidden;text-overflow:ellipsis}.portal-number{font-size:6px}
+ .scene-postcard{right:12px;left:12px;bottom:97px;width:auto;padding:13px 16px 14px;border-radius:14px}
+ .postcard-kicker{font-size:8px}.postcard-chapter{font-size:18px;margin-top:8px}.scene-postcard p{font-size:10px;margin:6px 0 9px;max-height:33px}
+ .postcard-enter{padding:10px 11px;font-size:10px}
+ .artifact-tracker{left:14px;bottom:auto;top:85px;padding:7px 9px;gap:8px;font-size:8px}.artifact-tracker .artifact-icon{font-size:16px}.artifact-tracker b{font-size:11px}.artifact-tracker small{display:none}.artifact-tracker button{padding:5px 0 5px 7px;font-size:8px}
+ .privacy-sigil{top:86px;right:14px;left:auto;bottom:auto;font-size:7px;padding:6px 7px;max-width:150px}
+ .privacy-sigil .ui-glyph{display:none}
+ .bottom-credit,.bottom-hud{display:none}
+ .left-rail{top:78px;left:9px;right:9px;width:auto;max-height:calc(100dvh - 170px)}
+ .story-panel{top:79px;left:9px;right:9px;bottom:95px;width:auto;max-width:none;padding:0 18px 18px;border-radius:17px}
+ .sheet-topbar{margin:0 -18px 14px;padding:12px 15px 12px 18px}
+ .scene-postcard{display:block}
+ .combat-reticle{top:51%}
+ .mobile-dpad{display:none}
+}
+@media (max-width:460px) {
+ .world-heading{top:21vh}.world-heading h1{font-size:clamp(43px,10.2vw,54px)}
+ .world-quote{font-size:15px;margin-top:10px;max-width:260px}
+ .world-pill{display:none}
+ .hero-enter,.hero-secondary{height:39px;font-size:9px}
+ .portal-name{font-size:7px}
+ .scene-postcard p{display:none}
+ .postcard-kicker small{font-size:7px}
+ .world-serial{font-size:105px}
+}
+@media (max-height:720px) and (min-width:781px){
+ .world-heading{top:22%}.world-heading h1{font-size:clamp(48px,5.8vw,78px)}
+ .world-quote{font-size:18px;margin-top:12px}.hero-actions{margin-top:15px}.portal-dock{bottom:12px}
+ .scene-postcard{bottom:116px;padding:14px}.postcard-chapter{font-size:20px}.scene-postcard p{display:none}
+ .story-panel{top:95px;bottom:10px}
+}
+@media (prefers-reduced-motion:reduce) {
+ .world-vista img,.world-vista .vista-bloom{animation:none}
+ .hero-enter:hover,.hero-secondary:hover,.portal-card:hover,.postcard-enter:hover{transform:none}
+ .left-rail,.story-panel{transition:none}
+}
+
+/* Reachable touch movement without hiding the world when WebGL is available. */
+@media (max-width:780px) {
+  .story-panel {height:auto;max-height:none;}
+  .artifact-tracker {width:max-content;max-width:60vw;right:auto;}
+  .world-quote {display:block;}
+  #app[data-scene-ready="true"] .mobile-dpad {
+    display:flex;position:absolute;left:12px;top:auto;bottom:194px;
+    z-index:6;flex-direction:column;gap:3px;align-items:center;
+    opacity:.82;pointer-events:auto;
+  }
+  #app[data-scene-ready="true"] .mobile-dpad button {
+    width:36px;height:36px;min-width:36px;border-radius:10px;
+    background:rgba(10,20,26,.66);border:1px solid rgba(var(--accent-rgb),.42);
+    color:#f7eee7;backdrop-filter:blur(8px);touch-action:none;
+  }
+  #app[data-scene-ready="true"] .mobile-dpad button:active{background:rgba(var(--accent-rgb),.35)}
+}
+@media(max-width:460px) {
+  .world-quote {display:block;font-size:15px;max-width:260px}
+  .scene-postcard{bottom:98px}
+  .story-panel {bottom:95px;}
+}
+
+.atlas-utilities{display:flex;gap:8px;margin:6px 0 18px}
+.atlas-utilities button{flex:1;min-width:0;border:1px solid rgba(var(--accent-rgb),.22);border-radius:9px;background:rgba(var(--accent-rgb),.065);padding:10px 6px;color:#d9e9ea;font:700 8px var(--ui-face);letter-spacing:.045em;cursor:pointer}
+.atlas-utilities button:hover{background:rgba(var(--accent-rgb),.17)}
+@media(max-width:780px){
+ .privacy-sigil span{display:block;font-size:7px;white-space:nowrap}
+ .privacy-sigil .ui-glyph{display:block;width:12px;height:12px}
+}
+/* Make primary touch targets generous and keep non-numeric era titles quieter. */
+#app-ui[data-world='dungeon'] .world-serial {font-size:clamp(115px,18vw,270px);color:rgba(var(--accent-rgb),.045)}
+@media(max-width:780px){
+ .topbar .icon-btn,.topbar .journal-button{width:39px;height:39px}
+ .hero-enter,.hero-secondary{min-height:44px}
+ .portal-card{min-height:59px}
+}

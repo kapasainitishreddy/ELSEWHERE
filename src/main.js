@@ -3,6 +3,7 @@
  * Meta remote conversation is separately opt-in, visibly labeled and off every session.
  */
 import './style.css';
+import './cinematic-shell.css';
 import {initialState, travel, applyAction, addConversation, dialogueFallback, writeLetter, askCharacter, updateCompass} from './game.js';
 import {createExperience} from './worlds.js';
 import {createInterface} from './ui.js';
@@ -238,6 +239,7 @@ async function lock(){
  await vault.save(state);
  await vault.lock();ui.resetEphemeral();sessionEpoch++;for(const c of pendingLocalRequests)c.abort();cloudEnabled=false;localAiEnabled=false;soundscape.toggle(false);
  experience?.dispose?.();experience=null;started=false;
+ document.querySelector('#app').dataset.sceneReady='false';
  document.querySelector('#app-ui').replaceChildren();
  document.querySelector('#loading-screen')?.classList.remove('hidden');
  showGate('Your key has been cleared from this session. Your encrypted timeline remains on this device.');
@@ -253,10 +255,11 @@ function begin(next){
  state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{
   experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater(),message=>toast(message));
-  experience.mount(state);ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');
+  experience.mount(state);document.querySelector('#app').dataset.sceneReady='true';ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');
   document.querySelector('#loading-screen')?.classList.add('hidden');
  }catch(error){
   console.error('3D initialization failed:',error?.message);
+  document.querySelector('#app').dataset.sceneReady='false';
   experience={mount(){},dispose(){}};
   ui.render(state);ui.updateStatus('LOCAL · TEXT MODE');
   document.querySelector('#loading-screen').innerHTML='<div class="loading-error"><strong>3D unavailable</strong><p>Explore the entire story with the accessible story controls.</p></div>';
