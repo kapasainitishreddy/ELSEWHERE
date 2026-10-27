@@ -814,7 +814,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    const edge=new THREE.DirectionalLight(COLORS[state.world],.74);
    edge.position.set(-8,9,-11);world.add(edge);
    ground(world,p);stars(world,state.world==='dungeon'?0xd5bcff:0xb1dce8,state.world==='self'?180:280);
-   addAtmosphere(world,state.world,animated,atmosphereBudget({headset:renderer.xr.isPresenting,reducedMotion,smallScreen:window.innerWidth<900}));
+   addAtmosphere(world,state.world,animated,atmosphereBudget({headset:renderer.xr.isPresenting,reducedMotion:reduceMotion,smallScreen:window.innerWidth<900}));
    if(state.world==='future')buildFuture(world,state,animated);
    else if(state.world==='self'){elderPresence=buildSelf(world,state,animated,()=>renderer.xr.isPresenting?rig.position:playerPos);stillwaterTerrace=buildStillwaterTerrace(world,animated,targets);}
    else if(state.world==='past')buildPast(world,state,animated);
@@ -822,7 +822,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    else if(state.world==='mech')titan=buildMech(world,state,animated);
    addScenery(world,state,animated);
    buildLivingBackdrop(world,state,animated);
-   ambientStage=installEnvironmentStage(world,state.world,animated,{xr:renderer.xr.isPresenting,reducedMotion,mobile:window.innerWidth<900});
+   ambientStage=installEnvironmentStage(world,state.world,animated,{xr:renderer.xr.isPresenting,reducedMotion:reduceMotion,mobile:window.innerWidth<900});
    buildTouchableArtifacts(world,state,targets,animated,nearbyProps);
    if(state.world==='self'){
      buildFutureKeepsakes(world,state,targets,animated,nearbyProps);
@@ -842,7 +842,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    // A small, disposable Rapier scene; await only after the main world is visible.
    if(['dungeon','mech'].includes(state.world)){
      const level=world,levelTargets=targets,levelNearby=nearbyProps;
-     void installPhysicsStage(THREE,level,state.world,levelTargets,levelNearby,{reducedMotion}).then(stage=>{
+     void installPhysicsStage(THREE,level,state.world,levelTargets,levelNearby,{reducedMotion:reduceMotion}).then(stage=>{
        if(!stage)return;
        if(!level.parent){stage.dispose();return;}
        physicsStage=stage;

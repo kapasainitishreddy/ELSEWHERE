@@ -15,7 +15,7 @@ test('anonymous inference has an independent per-client budget and concurrency c
 test('API rejects calls beyond demo capacity before contacting Meta',async()=>{
  let calls=0;
  const limiter=createInferenceLimiter({calls:1,concurrent:1});
- const handler=createCharacterHandler({key:()=> 'example-key',limiter,call:async()=>{calls++;return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({reply:'It is peaceful today.',cue:'quiet'})}}]})}}});
+ const handler=createCharacterHandler({key:()=> 'example-key',limiter,call:async()=>{calls++;return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({reply:'It is peaceful today.',cue:'quiet',focus:'people'})}}]})}}});
  const r1=mockResponse();await handler(request,r1);assert.equal(r1.statusCode,200);assert.equal(r1.body.cue,'quiet');
  const r2=mockResponse();await handler(request,r2);assert.equal(r2.statusCode,429);assert.equal(calls,1);
 });

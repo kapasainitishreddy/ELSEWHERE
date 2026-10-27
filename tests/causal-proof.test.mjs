@@ -56,3 +56,14 @@ test('UI exposes causal evidence and what-if actions without 3D',()=>{
  assert.match(root.innerHTML,/CAUSAL REPLAY/);
  assert.match(root.innerHTML,/CW-[A-F0-9]{8}/);
 });
+test('the 2087 arrival panel names each distinct fate and its selected invention',()=>{
+ const expected={gift:'A city of open workshops',patent:'A licensed skyline',auction:'A city of hidden owners'};
+ for(const [fate,headline] of Object.entries(expected)){
+  const root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(){},querySelector(){return null}};
+  const ui=createInterface(root,{});
+  let state=travel(initialState(),'past').state;
+  state=act(state,'invent-cell');state=act(state,fate);state=travel(state,'future').state;ui.render(state);
+  assert.match(root.innerHTML,new RegExp(headline));
+  assert.match(root.innerHTML,/Aether Cell/);
+ }
+});

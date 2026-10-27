@@ -68,6 +68,9 @@ export function sanitizeGeneratedDialogue(raw,limit=600) {
   const text=value.trim().slice(0,Math.max(20,Math.min(1200,limit)));
   if(!text)return null;
   const forbidden=[
+    /<\/?[a-z][^>]*>/i,
+    /\bignore\s+(?:all\s+)?(?:previous|prior|system|developer)\s+(?:instructions?|rules?)\b/i,
+    /\b(?:award|grant|mint|give|add)\s+(?:the\s+player\s+|you\s+)?\d+\s+(?:credits?|stars?|hours?|items?)\b/i,
     /\b(?:guarantee|promise)\s+(?:that\s+)?(?:your|you|the)\s+(?:future|depression|life|recovery)\b/i,
     /\b(?:cure|cures|cured|treats|treat)\s+(?:your\s+|all\s+)?(?:depression|mental illness|anxiety)\b/i,
     /\b(?:boost|boosts|raise|raises|increase|increases|optimize|optimizes)\s+(?:your\s+|the\s+)?(?:dopamine|serotonin)\b/i,
