@@ -5,7 +5,7 @@
  * The user must opt in for each browser session before the client calls it.
  */
 import {validRequest,getMessages} from '../server.mjs';
-import {parseDirectedResponse} from '../src/scene-director.js';
+import {parseDirectedResponse,parseDirectedFocus} from '../src/scene-director.js';
 import {createInferenceLimiter} from './rate-limit.js';
 const sharedLimiter=createInferenceLimiter();
 const JSON_HEADERS={
@@ -51,7 +51,7 @@ export function createCharacterHandler({key=()=>process.env.MODEL_API_KEY,model=
    if(!response.ok)return reply(res,502,{error:'Model is temporarily unavailable'});
    const raw=await response.json();const safe=parseDirectedResponse(raw?.choices?.[0]?.message?.content);
    if(!safe)return reply(res,502,{error:'Response did not meet story safety requirements'});
-   return reply(res,200,{reply:safe.reply,cue:safe.cue,provider:'Meta Model API'});
+   return reply(res,200,{reply:safe.reply,cue:safe.cue,focus:parseDirectedFocus(raw?.choices?.[0]?.message?.content),provider:'Meta Model API'});
   }catch{return reply(res,502,{error:'Model request failed. Continue with local authored dialogue.'});}
   finally{clearTimeout(timer);release();}
  };

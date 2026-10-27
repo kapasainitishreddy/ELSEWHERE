@@ -1,7 +1,7 @@
 {
   "name": "syrava-elsewhere",
   "private": true,
-  "version": "1.12.3",
+  "version": "1.13.0",
   "type": "module",
   "description": "ELSEWHERE locally encrypted parallel worlds with optional CC0 scene assets and immersive WebXR",
   "scripts": {
@@ -31,7 +31,8 @@
     "arena:check": "node --test tests/physics-playground.test.mjs tests/scene-art-runtime.test.mjs",
     "review:agents": "node tools/review/run.mjs",
     "review:source": "node tools/review/run.mjs --source-only",
-    "meta:probe": "node tools/review/meta-live-probe.mjs"
+    "meta:probe": "node tools/review/meta-live-probe.mjs",
+    "meta:check": "node --test tests/meta-causal-exhibit.test.mjs tests/serverless-meta.test.mjs tests/scene-director.test.mjs"
   },
   "dependencies": {
     "three": "^0.181.0",

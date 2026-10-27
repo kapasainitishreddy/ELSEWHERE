@@ -32,3 +32,14 @@ export function parseDirectedResponse(content){
 export function safeSceneCue(candidate,fallback='warmth'){
  return SCENE_CUES.includes(candidate)?candidate:SCENE_CUES.includes(fallback)?fallback:'quiet';
 }
+
+/** A model can select one *presentation* dimension, never gameplay authority. */
+export const SCENE_FOCI=Object.freeze(['people','infrastructure','memory']);
+export function parseDirectedFocus(input){
+ if(typeof input!=='string'||input.length>5000)return null;
+ let value;try{value=JSON.parse(input);}catch{return null;}
+ if(!value||typeof value!=='object'||Array.isArray(value))return null;
+ if(!sanitizeGeneratedDialogue(value.reply,600))return null;
+ return SCENE_FOCI.includes(value.focus)?value.focus:null;
+}
+export function safeSceneFocus(value){return SCENE_FOCI.includes(value)?value:null;}

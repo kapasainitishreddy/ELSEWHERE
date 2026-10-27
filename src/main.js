@@ -15,7 +15,7 @@ import {createLocalVault} from './vault.js';
 import {isUrgentSafetyMessage,sanitizeGeneratedDialogue} from './future-dialogue.js';
 import {createPrivateSpeech,openPrivateDictation} from './local-voice.js';
 import {isLoopbackHostname,localCharacterRequest,sanitizeLocalReply,LOCAL_AI_PATH} from './local-ai.js';
-import {storyCueFor,safeSceneCue} from './scene-director.js';
+import {storyCueFor,safeSceneCue,safeSceneFocus} from './scene-director.js';
 import {reviewGeneratedCharacterReply} from './conversation-coherence.js';
 import {updateMemoryCards} from './memory-cards.js';
 
@@ -149,7 +149,7 @@ async function ask(question){
  // Local authored dialogue by default. Consent never survives a reload or vault lock.
  privateSpeech.stop();stopDictation();experience?.setDialogueActivity?.('listening');
  let reply=dialogueFallback(state,question), mode='LOCAL · ENCRYPTED';
- let visualCue=storyCueFor(question,state.world);
+ let visualCue=storyCueFor(question,state.world),visualFocus=null;
  const before=state, epoch=sessionEpoch;
  if(isUrgentSafetyMessage(question)){
   mode='PRIVATE · SUPPORT INFORMATION';
@@ -173,7 +173,7 @@ async function ask(question){
     if(!res.ok)throw new Error('Provider unavailable');
     const data=await res.json();if(typeof data?.reply!=='string'||!data.reply.trim())throw new Error('No AI dialogue');
     const safe=reviewGeneratedCharacterReply(before,'elder',data.reply);if(!safe.ok)throw new Error('Unreliable or repetitive generated claim');
-    reply=safe.reply;visualCue=safeSceneCue(data.cue,visualCue);mode='META · CLOUD RESPONSE';
+    reply=safe.reply;visualCue=safeSceneCue(data.cue,visualCue);visualFocus=safeSceneFocus(data.focus);mode='META · CLOUD RESPONSE';
    }finally{clearTimeout(timer);}
   }catch{
    mode='META ATTEMPTED · LOCAL FALLBACK';
@@ -183,12 +183,12 @@ async function ask(question){
  if(!started||sessionEpoch!==epoch||state!==before){experience?.setDialogueActivity?.('idle');return;}
  state=addConversation(state,question,reply);
  void persist();ui.render(state);ui.updateStatus(mode);
- experience?.reactToDialogue?.(visualCue);
+ experience?.reactToDialogue?.(visualCue,visualFocus);
  if(!privateSpeech.speak(reply))experience?.setDialogueActivity?.('speaking',Math.min(5,1.6+reply.length/80));
 }
 function toggleCloud(){
  if(cloudEnabled){cloudEnabled=false;ui.render(state);ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');
-  if(physicsPreview)ui.enterSandbox();toast('Remote conversations disabled.');return;}
+  toast('Remote conversations disabled.');return;}
  if(!window.confirm('Optional CLOUD MODE: Each submitted question and a small fictional game summary will be sent to Meta Model API. This is NOT completely local. Your passphrase, future letter, encrypted save, other timeline, and NPC memories will NOT be sent. Enable until you lock or reload?'))return;
  cloudEnabled=true;localAiEnabled=false;ui.render(state);ui.updateStatus('META OPT-IN · CLOUD');toast('Cloud conversation is now enabled. Type only what you want to send.');
 }
@@ -279,7 +279,8 @@ function begin(next,{guest=false,physicsPreview=false}={}){
  state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{
   experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater(),message=>toast(message),()=>ui.enterWorld(),{spawnNearPhysics:physicsPreview});
-  experience.mount(state);document.querySelector('#app').dataset.sceneReady='true';ui.render(state);ui.updateStatus('LOCAL · ENCRYPTED');
+  experience.mount(state);document.querySelector('#app').dataset.sceneReady='true';ui.render(state);ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');
+  if(physicsPreview)ui.enterSandbox();
   document.querySelector('#loading-screen')?.classList.add('hidden');
  }catch(error){
   console.error('3D initialization failed:',error?.message);
