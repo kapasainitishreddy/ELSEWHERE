@@ -12,6 +12,7 @@ import {createFrameSampler,describeFrame} from './performance.js';
 import {createActor} from './actor-studio.js';
 import {futureKeepsakes,keepsakeReaction} from './keepsake-scenes.js';
 import {installAnimatedCompanion} from './animated-companion.js';
+import {installEnvironmentStage} from './environment-stage.js';
 import {COMFORT_PRESETS,DEFAULT_COMFORT,comfortPreset,comfortTurn,walkableLanding} from './xr-comfort.js';
 import {createSessionCare} from './session-care.js';
 import {safeSceneCue} from './scene-director.js';
@@ -606,7 +607,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  container.append(renderer.domElement);
  const rig=new THREE.Group();scene.add(rig);const camera=new THREE.PerspectiveCamera(63,1,.08,200);rig.add(camera);camera.position.set(0,5,17);
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.055;controls.enablePan=false;controls.maxPolarAngle=Math.PI*.47;controls.minDistance=5;controls.maxDistance=28;controls.target.set(0,2,0);
- const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],nearbyProps=[],player=null,titan=null,moving=false,stillwaterTerrace=null,elderPresence=null,dialogueUntil=0,fx=null;
+ const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],nearbyProps=[],player=null,titan=null,moving=false,stillwaterTerrace=null,elderPresence=null,dialogueUntil=0,fx=null,ambientStage=null;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  const hover=document.querySelector('#interaction-hint');let pointerDown=null;
  const proximityCue=document.createElement('div');proximityCue.className='world-proximity-cue';proximityCue.setAttribute('aria-live','off');container.append(proximityCue);
@@ -715,6 +716,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      showXRNote(action.text||action.label);
      const at=Array.isArray(action.at)&&action.at.length===3?action.at:[0,2,-3];
      fx?.emit('memory',new THREE.Vector3(...at));
+     ambientStage?.react('memory');
      if(action.kind==='keepsake' && state?.world==='self')setDialogueActivity(keepsakeReaction(action.id),2.2);
    }else if(action.type==='stillwater'){
      if(renderer.xr.isPresenting)stillwaterTerrace?.show();else onOpenStillwater();
@@ -791,6 +793,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    else if(state.world==='mech')titan=buildMech(world,state,animated);
    addScenery(world,state,animated);
    buildLivingBackdrop(world,state,animated);
+   ambientStage=installEnvironmentStage(world,state.world,animated,{xr:renderer.xr.isPresenting,reducedMotion,mobile:window.innerWidth<900});
    buildTouchableArtifacts(world,state,targets,animated,nearbyProps);
    if(state.world==='self'){
      buildFutureKeepsakes(world,state,targets,animated,nearbyProps);
@@ -830,7 +833,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    player.position.copy(playerPos);
    if(titan && state.mechDeployed){titan.position.x=playerPos.x;titan.position.z=playerPos.z-13;}
    if(!renderer.xr.isPresenting)controls.update();updateXRWatch();
-   if(!sameWorld)fx.emit('arrival',new THREE.Vector3(0,2,4));
+   if(!sameWorld){fx.emit('arrival',new THREE.Vector3(0,2,4));ambientStage?.react('arrival');}
    if(state.world==='self')light(world,0xf9c98c,2,4,8,-5,17);
  }
  function move(dt){
@@ -944,11 +947,13 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    const kind=classifyMoment(event,state.world);
    const at={future:[0,3,-8],self:[0,3,-5],past:[0,3,-7],dungeon:[0,4,-10],mech:[0,6,-17]}[state.world];
    fx.emit(kind,new THREE.Vector3(...at));
+   ambientStage?.react(kind);
    if(kind==='plasma'&&titan?.userData.combatMotion)titan.userData.combatMotion.recoil=1;
  }
  function setDialogueActivity(mode,durationSeconds=0){
    if(state?.world!=='self'||!elderPresence)return;
    elderPresence.setMode(mode);
+   if(mode==='speaking'||mode==='delighted')ambientStage?.react('memory');
    dialogueUntil=durationSeconds>0?clock.elapsedTime+Math.min(durationSeconds,9):0;
  }
  return {mount,resize,effect,interact,setDialogueActivity,reactToDialogue,setMove(code,on){if(on)pressed.add(code);else pressed.delete(code);},setComfort,vrSupported:()=>Boolean(navigator.xr),

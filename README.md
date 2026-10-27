@@ -1,5 +1,8 @@
 # ELSEWHERE
 
+
+**Living Atmosphere 1.7:** Five distinct procedural environmental performances, with one instanced draw call per world, bounded event reactions, Quest/mobile particle caps, and no continuous effect under Reduced Motion. See [the animation and VR QA guide](docs/LIVING_ATMOSPHERE_V17.md). Code-level release only: real headset rendering remains unverified.
+
 ## Living Motion 1.6: performance-directed animation
 
 The new **Presence Director** builds on the existing local skeletal rigs and authored clips rather than pulling external video or AI-generated motions. The future self and NPCs have individual acting rhythms, conversation-sensitive gaze and hand gestures, breathing, subtler blinks, and a more readable speaking mouth. Each character's acting remains deterministic, does not examine a user's face, and doesn't store or send biometric information. This is deliberately **stylized acting, not voice-to-phoneme lip sync**.
