@@ -1,5 +1,7 @@
 # ELSEWHERE
 
+**Causal Replay 1.8 (October 27, 2026):** The 1889 workshop now offers three accurate, no-side-effect previews before committing an invention's fate. The Timeline journal shows five world-state observations, reproducible non-sensitive replay labels, and a side-by-side Prime/Echo comparison. The underlying game state machine remains authoritative; this is fictional, not future prediction. [Implementation and QA](docs/CAUSAL_REPLAY_V18.md). **Full npm test, Vite build, live Meta API and Quest testing remain unverified.**
+
 
 **Living Atmosphere 1.7:** Five distinct procedural environmental performances, with one instanced draw call per world, bounded event reactions, Quest/mobile particle caps, and no continuous effect under Reduced Motion. See [the animation and VR QA guide](docs/LIVING_ATMOSPHERE_V17.md). Code-level release only: real headset rendering remains unverified.
 

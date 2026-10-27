@@ -26,3 +26,11 @@ npm run submission:check
 \`\`\`
 
 Source-based tests do not establish FPS, accessibility on a physical Quest, live Meta API inference or successful public deployment. No changes in this iteration grant extra currency, powers or inventory outside the original validated game state machine. Proof labels are **demonstration IDs**, not security features. Test observed visuals in a browser with both normal and reduced motion.
+
+## Local verification performed for this iteration
+
+- Passed six unit tests on a standalone equivalent causal simulation module.
+- Parsed the committed JavaScript modules for syntax, then evaluated the current `src/game.js`, `src/ui.js`, and `src/causal-proof.js` in an isolated test harness with **18 live repository modules**.
+- Validated all three `applyAction` preview deltas against the authoritative state machine: patent (+12,700 credits, +62 fame), share (+1,400 credits, +37 fame), auction (+8,890 credits, +22 fame) for the Aether Cell; inspected non-mutating previews and stable Prime/Echo receipts across a branch switch.
+
+**Not verified:** complete `npm test` execution in a full checkout, production Vite build, browser graphics, actual Quest headset comfort, hosted Meta Model API calls or a deployed URL. Those remain mandatory release gates. No test result here establishes award eligibility or an outcome.

@@ -43,12 +43,16 @@ test('parallel receipts separate Prime and Echo and survive a branch swap',()=>{
  assert.equal(after.echoReceipt,before.echoReceipt);
 });
 test('UI exposes causal evidence and what-if actions without 3D',()=>{
- const root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(){},querySelector(){return null}};
+ const clickHandlers=[];
+ const root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},
+  addEventListener(type,handler){if(type==='click')clickHandlers.push(handler);},querySelector(){return null}};
  const ui=createInterface(root,{});
  let state=travel(initialState(),'past').state;state=act(state,'invent-cell');ui.render(state);
- assert.match(root.innerHTML,/PREVIEW THREE POSSIBLE FUTURES/);
+ assert.match(root.innerHTML,/Preview three possible futures/);
  assert.match(root.innerHTML,/data-action="gift"/);
  assert.match(root.innerHTML,/data-cmd="receipt-open"/);
+ const openReceipt={target:{closest(selector){return selector==='[data-cmd]'?{dataset:{cmd:'receipt-open'}}:null;}}};
+ for(const listener of clickHandlers)listener(openReceipt);
  assert.match(root.innerHTML,/CAUSAL REPLAY/);
  assert.match(root.innerHTML,/CW-[A-F0-9]{8}/);
 });
