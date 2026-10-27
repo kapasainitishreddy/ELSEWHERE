@@ -19,3 +19,5 @@ A useful, zero-credential in-repo review is available right away:
 The latter executes available local tests and Vite build if node_modules exists. Findings are written under ignored review-output; it never reads secrets. Reviewer instructions are under agents/review/. 
 
 Other Google Research repositories such as CLASHarness and PLE are **benchmarks**, not production AI code-review agents. They were reviewed as references only, not installed.
+
+One explicitly billable synthetic handler probe (not automatic): npm run meta:probe -- --live. It writes a redacted evidence record and cannot prove a deployed app.\n
