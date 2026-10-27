@@ -7,7 +7,7 @@ import { readdirSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 const cwd=resolve(import.meta.dirname,'..');
-const sources=['src/future-dialogue.js','src/local-voice.js','src/compass.js','src/local-ai.js','src/game.js','src/branches.js','src/ui.js','src/main.js','server.mjs','local-server.mjs','src/motion-language.js','src/kinetic-effects.js','src/performance.js','src/worlds.js','src/actor-studio.js','src/actor-choreography.js','src/animated-companion.js','src/animated-companion-manifest.js','src/keepsake-scenes.js','scripts/vendor-animated.mjs','public/sw.js'];
+const sources=['src/memory-cards.js','src/conversation-coherence.js','src/session-care.js','src/future-dialogue.js','src/local-voice.js','src/compass.js','src/local-ai.js','src/game.js','src/branches.js','src/ui.js','src/main.js','server.mjs','local-server.mjs','src/motion-language.js','src/kinetic-effects.js','src/performance.js','src/worlds.js','src/actor-studio.js','src/actor-choreography.js','src/animated-companion.js','src/animated-companion-manifest.js','src/keepsake-scenes.js','scripts/vendor-animated.mjs','public/sw.js'];
 const checks=[];
 for(const file of sources){
  const r=spawnSync(process.execPath,['--check',file],{cwd,encoding:'utf8'});

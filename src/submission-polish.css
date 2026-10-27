@@ -35,3 +35,17 @@
 }
 @media(max-width:420px) and (max-height:750px){.first-crossing{bottom:126px;padding:13px 15px}.first-crossing h2{font-size:20px}.first-crossing p{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.first-crossing button,.first-crossing-progress i{transition:none!important}}
+/* Private, player-selected memories: a small library, not a social feed. */
+.memory-cards{margin:22px 0;border:1px solid rgba(241,203,166,.23);border-radius:15px;padding:17px;background:linear-gradient(145deg,rgba(34,45,52,.77),rgba(14,24,33,.86));color:#ece8e0}
+.memory-card-header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:11px}
+.memory-card-header strong{font-size:11px;letter-spacing:.11em;color:#f2d5b6}
+.memory-card-header small,.memory-cards>small,.memory-empty{color:#aebdc4;font-size:11px;line-height:1.55}
+.memory-card-list{display:grid;gap:7px;max-height:230px;overflow:auto;overscroll-behavior:contain;margin-bottom:11px}
+.memory-card{display:flex;align-items:center;gap:12px;padding:11px;border:1px solid rgba(225,220,208,.15);border-radius:10px;background:rgba(235,236,221,.035)}
+.memory-card p{margin:0;flex:1;font-size:12px;line-height:1.55;min-width:0;overflow-wrap:anywhere}
+.memory-card button{flex:none;background:none;border:1px solid rgba(248,213,183,.28);color:#ead4bf;border-radius:8px;padding:8px;font-size:9px;letter-spacing:.07em;cursor:pointer}
+.memory-pin-form{display:flex;gap:8px;margin:12px 0 8px}
+.memory-pin-form input{flex:1;min-width:0;border:1px solid #4a5d64;border-radius:9px;padding:11px;color:#fff;background:#111e27;font-size:12px}
+.memory-pin-form button{border:1px solid #daba99;border-radius:9px;background:#e6c5a1;color:#212a32;padding:9px 12px;font-size:10px;font-weight:750;cursor:pointer}
+.memory-pin-form :focus-visible,.memory-card button:focus-visible{outline:2px solid #ffdfae;outline-offset:3px}
+@media(max-width:490px){.memory-pin-form{flex-direction:column}.memory-pin-form button{min-height:42px}}

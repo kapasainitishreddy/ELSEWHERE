@@ -1,6 +1,7 @@
 /** Session-only VR comfort. No headset measurements or settings leave the device. */
 export const COMFORT_PRESETS = Object.freeze({
  gentle:Object.freeze({label:'Gentle · 30° snap',snapDegrees:30,teleportDistance:11,rayDistance:11}),
+ seated:Object.freeze({label:'Seated · reach farther',snapDegrees:30,teleportDistance:16,rayDistance:16}),
  standard:Object.freeze({label:'Standard · 45° snap',snapDegrees:45,teleportDistance:14,rayDistance:14})
 });
 export const DEFAULT_COMFORT='gentle';

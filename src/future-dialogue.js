@@ -3,6 +3,7 @@
  * Runs without a network, diagnosis, reward manipulation, or model download.
  * The player's encrypted timeline is authoritative. Model text never changes it.
  */
+import {pinnedRecall} from './memory-cards.js';
 const normalized = value => String(value ?? '').trim().slice(0, 350);
 
 export const FUTURE_STARTERS = Object.freeze([
@@ -103,7 +104,8 @@ export function futureConversationReply(state, message) {
   const prior = pastUserLine(state, q);
   const goal = userGoal(state);
   const compass=compassHint(state);
-  const remembered = goal ? `I remember you were trying to ${goal.slice(0, 90)}.` : prior ? `Last time you told me, “${prior.slice(0, 100)}.”` : 'You can tell me what matters to you; there is no questionnaire to pass.';
+  const pinned=pinnedRecall(state);
+  const remembered = pinned.length ? `You specifically asked me to keep this memory: “${pinned.at(-1).slice(0, 150)}.”` : goal ? `I remember you were trying to ${goal.slice(0, 90)}.` : prior ? `Last time you told me, “${prior.slice(0, 100)}.”` : 'You can tell me what matters to you; there is no questionnaire to pass.';
   if (isUrgentSafetyMessage(q)) return 'I’m glad you said that out loud. I am an imagined character, not someone who can keep you safe in an emergency. Please reach out to a real person with you now. If you might act on these thoughts, call emergency services; in the U.S. or Canada, you can call or text 988. You deserve human support right now.';
   if (/\b(are you (really|actually) me|are you real|is this (real|true)|predict|guarantee|will this happen)\b/.test(lower))
     return 'I am one invented possibility, not a prediction or a replacement for people in your life. The city around me is a story shaped by your choices. What part of this possible future feels worth exploring?';

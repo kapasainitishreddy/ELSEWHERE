@@ -1,28 +1,44 @@
-/* Offline shell. Only first-party static GET responses are cached; never API, secrets or saves. */
-const CACHE='elsewhere-static-v6';
+/* First-party offline assets. Navigations are network-first to avoid trapping
+ * players on old versions; remote AI, private saves and dynamic APIs are never cached.
+ */
+const CACHE='elsewhere-static-v7';
 const SHELL=['/','/index.html'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
 });
 self.addEventListener('activate',event=>{
- event.waitUntil(Promise.all([caches.keys().then(names=>Promise.all(names.filter(n=>n!==CACHE).map(n=>caches.delete(n)))),self.clients.claim()]));
+ event.waitUntil(Promise.all([
+  caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('elsewhere-static-')&&key!==CACHE).map(key=>caches.delete(key)))),
+  self.clients.claim()
+ ]));
 });
 self.addEventListener('fetch',event=>{
- const request=event.request,url=new URL(request.url);
- if(request.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/')||url.pathname.startsWith('/private/'))return;
+ const request=event.request;
+ if(request.method!=='GET')return;
+ const url=new URL(request.url);
+ if(url.origin!==self.location.origin||url.pathname.startsWith('/api/')||url.pathname.startsWith('/private/'))return;
+ if(request.mode==='navigate'||url.pathname==='/'||url.pathname==='/index.html'){
+  event.respondWith((async()=>{
+   const cache=await caches.open(CACHE);
+   try{
+    const fresh=await fetch(request,{cache:'no-store'});
+    if(fresh.ok&&fresh.type==='basic')await cache.put(url.pathname==='/'?'/index.html':url.pathname,fresh.clone());
+    return fresh;
+   }catch{return await cache.match(url.pathname==='/'?'/index.html':url.pathname)||Response.error();}
+  })());
+  return;
+ }
+ // Cache only known, static files. No private URLs, no arbitrary same-origin GET.
+ if(!/^\/(assets\/|glasses\/|favicon\.ico$)/.test(url.pathname))return;
+ const isManifest=/^\/assets\/(?:kenney|companions)\/index\.json$/.test(url.pathname);
  event.respondWith((async()=>{
   const cache=await caches.open(CACHE);
-  // Asset manifests must be refreshed after a developer installs optional GLBs.
-  // Network-first is SAME ORIGIN ONLY and falls back to a verified cached copy offline.
-  const isAssetManifest=/^\/assets\/(?:kenney|companions)\/index\.json$/.test(url.pathname);
-  const stored=await cache.match(request);
-  if(stored && !isAssetManifest)return stored;
+  const cached=await cache.match(request);
+  if(cached&&!isManifest)return cached;
   try{
-   const response=await fetch(request);
-   if(response.ok&&response.type==='basic'&&(/^(text\/|application\/javascript|image\/|font\/|application\/wasm)/.test(response.headers.get('content-type')||'')||url.pathname.startsWith('/assets/kenney/')||url.pathname.startsWith('/assets/companions/')||isAssetManifest)){
-    await cache.put(request,response.clone());
-   }
-   return response;
-  }catch{if(stored)return stored;return url.pathname==='/'||url.pathname==='/index.html'?(await caches.match('/index.html')||Response.error()):Response.error();}
+   const fresh=await fetch(request);
+   if(fresh.ok&&fresh.type==='basic')await cache.put(request,fresh.clone());
+   return fresh;
+  }catch{return cached||Response.error();}
  })());
 });

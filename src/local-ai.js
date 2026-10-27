@@ -4,6 +4,7 @@
  * is included. The receiving service is loopback-only and does not persist prompts.
  */
 import { CAST } from './characters.js';
+import {pinnedRecall} from './memory-cards.js';
 import { isUrgentSafetyMessage, sanitizeGeneratedDialogue } from './future-dialogue.js';
 
 export const LOCAL_AI_PATH = '/api/local-dialogue';
@@ -32,7 +33,7 @@ export function localCharacterRequest(state, id, question) {
         question: boundedText(x?.question, 180), reply: boundedText(x?.reply, 380)
       })) : [],
       // Present only to an explicitly enabled, same-device model. Never shared with Meta.
-      ...(id==='elder'?{recentFutureConversation:(state.conversation||[]).slice(-6).map(x=>({role:x.role==='user'?'user':'assistant',text:boundedText(x.text,240)})),compass:{focus:boundedText(state.compass?.focus,20),step:boundedText(state.compass?.step,160),status:boundedText(state.compass?.status,16)}}:{}),
+      ...(id==='elder'?{pinnedMemories:pinnedRecall(state).slice(-6),recentFutureConversation:(state.conversation||[]).slice(-6).map(x=>({role:x.role==='user'?'user':'assistant',text:boundedText(x.text,240)})),compass:{focus:boundedText(state.compass?.focus,20),step:boundedText(state.compass?.step,160),status:boundedText(state.compass?.status,16)}}:{}),
       fiction: {
         invention: boundedText(state.invention, 20), fate: boundedText(state.fate, 20),
         power: boundedText(state.power, 20), ending: boundedText(state.ending, 20),

@@ -8,12 +8,12 @@ const required=[
  'src/premiere.js','src/xr-comfort.js','src/scene-director.js',
  'src/submission-polish.css','api/character.js','api/health.js',
  'docs/RESEARCH_PATTERNS_AND_RESPONSES.md','docs/SUBMISSION_CHECKLIST.md',
- 'docs/DEMO_3MIN.md','tests/submission-journey.test.mjs',
+ 'docs/DEMO_3MIN.md','docs/RESEARCH_TO_RELEASE_2026-10-27.md','tests/research-polish.test.mjs','tests/submission-journey.test.mjs',
  'tests/xr-release.test.mjs','tests/serverless-meta.test.mjs'
 ];
 const reports=[];
 for(const path of required){reports.push({area:path,status:existsSync(resolve(cwd,path))?'PASS':'FAIL'});}
-const tested=spawnSync(process.execPath,['--test','tests/submission-journey.test.mjs','tests/xr-release.test.mjs','tests/serverless-meta.test.mjs','tests/scene-director.test.mjs'],{cwd,encoding:'utf8',timeout:60000});
+const tested=spawnSync(process.execPath,['--test','tests/submission-journey.test.mjs','tests/xr-release.test.mjs','tests/serverless-meta.test.mjs','tests/scene-director.test.mjs','tests/research-polish.test.mjs'],{cwd,encoding:'utf8',timeout:60000});
 const match=tested.stdout.match(/# tests (\d+)[\s\S]*?# pass (\d+)[\s\S]*?# fail (\d+)/);
 reports.push({area:`Featured journey/XR/Meta tests ${match?match[2]+'/'+match[1]:'not completed'}`,status:tested.status===0?'PASS':'FAIL'});
 const vite=existsSync(resolve(cwd,'node_modules','vite','bin','vite.js'));

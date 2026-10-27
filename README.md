@@ -1,4 +1,14 @@
-# ELSEWHERE · First Crossing 1.3
+# ELSEWHERE
+## Trust & Comfort 1.4 — research-informed update (Oct 27, 2026)
+
+- **Memory Cards:** While visiting The Other You, *you* choose up to six memories for your possible older self to retain. These are encrypted with your existing local passphrase vault, are separated between Prime and Echo realities, and can be forgotten individually. Only an explicitly enabled loopback/on-device model can read them; Meta Cloud does not receive them.
+- **Conversation reliability:** A deterministic reviewer rejects some unsupported backstories, chronology contradictions, and repeated generated replies; the authored, private character provides a fallback. No heuristic can guarantee a perfect AI conversation.
+- **Quest comfort:** Gentle, Seated and Standard teleport/snap options; voluntary session-only break reminders; no forced headset movement or health measurements.
+- **Offline updates:** Network-first HTML with same-origin offline fallback, strictly bounded static caching and no private/API response caching.
+- **Evidence:** [Research → pain points → test plan](docs/RESEARCH_TO_RELEASE_2026-10-27.md) and [device QA protocol](docs/COMFORT_AND_MEMORY_QA.md).
+
+This is not a medical device, therapy, or a way to manipulate serotonin/dopamine. Test with `npm test` and `npm run submission:check`; **a working browser bundle, real headset comfort, and live Meta model call are mandatory before claiming submission readiness**.
+ · First Crossing 1.3
 
 > One life is never enough.
 

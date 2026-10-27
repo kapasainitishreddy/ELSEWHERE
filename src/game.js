@@ -1,5 +1,6 @@
 import { futureConversationReply } from './future-dialogue.js';
 import { initialCompass, sanitizeCompass, updateCompass } from './compass.js';
+import {sanitizeMemoryCards} from './memory-cards.js';
 import { initialChronal, sanitizeChronal, timeOptions, performTimeTrade } from './chronal.js';
 import { initialCast, sanitizeCast, rememberWorldEvent, speakAs, CAST, roleplayReply } from './characters.js';
 import { initialParallel, branchOptions, forkIntoEcho, switchBranch, branchSnapshot } from './branches.js';
@@ -47,7 +48,7 @@ export function initialState() {
     invention: null, fate: null, power: null, dungeonOutcome: null,
     pilotTrained: false, mechDeployed: false, owned: [], flags: {},
     history: [{ at: 1, title: 'The first crossing', detail: 'You arrived in Neo Elysium with only your choices.', world: 'future' }],
-    conversation: [], compass: initialCompass(), revision: 0,
+    conversation: [], memoryCards: [], compass: initialCompass(), revision: 0,
     echoShards: [], runeProgress: 0, runeMistakes: 0,
     mechBattle: DEFAULT_BATTLE(), encounters: {future:0,past:0,dungeon:0,mech:0}, lastEncounter: null,
     letter: '', ending: null, worldVisits: { future:1, self:0, past:0, dungeon:0, mech:0 },
@@ -422,6 +423,7 @@ export function loadState(storage) {
     s.history = Array.isArray(value.history) ? value.history.slice(0,32).filter(x => x && WORLDS[x.world] && typeof x.title === 'string').map(x=>({at:Number.isFinite(x.at)?x.at:1, world:x.world, title:x.title.slice(0,120),detail:String(x.detail||'').slice(0,300)})) : s.history;
     s.compass=sanitizeCompass(value.compass);
     s.conversation = Array.isArray(value.conversation) ? value.conversation.slice(-16).filter(x=>x && ['user','assistant'].includes(x.role) && typeof x.text==='string').map(x=>({role:x.role,text:x.text.slice(0,1200)})) : [];
+    s.memoryCards=sanitizeMemoryCards(value.memoryCards);
     s.echoShards=Array.isArray(value.echoShards)?[...new Set(value.echoShards.filter(w=>WORLDS[w]))].slice(0,5):[];
     s.runeProgress=s.power ? clamp(Number.isInteger(value.runeProgress)?value.runeProgress:0,0,3):0;
     s.runeMistakes=clamp(Number.isInteger(value.runeMistakes)?value.runeMistakes:0,0,999);

@@ -15,6 +15,8 @@ import {isUrgentSafetyMessage,sanitizeGeneratedDialogue} from './future-dialogue
 import {createPrivateSpeech,openPrivateDictation} from './local-voice.js';
 import {isLoopbackHostname,localCharacterRequest,sanitizeLocalReply,LOCAL_AI_PATH} from './local-ai.js';
 import {storyCueFor,safeSceneCue} from './scene-director.js';
+import {reviewGeneratedCharacterReply} from './conversation-coherence.js';
+import {updateMemoryCards} from './memory-cards.js';
 
 const storage=window.localStorage;
 const vault=createLocalVault(storage);
@@ -119,8 +121,9 @@ async function localNpcReply(snapshot,id,question){
   });
   if(!response.ok)throw new Error('On-device inference not ready');
   const reply=sanitizeLocalReply(await response.json());
-  if(!reply)throw new Error('Local response was empty');
-  return reply;
+  const assessment=reviewGeneratedCharacterReply(snapshot,id,reply);
+  if(!assessment.ok)throw new Error('Local response failed grounding');
+  return assessment.reply;
  }catch{
   toast('On-device model unavailable. Using the private authored character instead.',false);
   return null;
@@ -165,8 +168,8 @@ async function ask(question){
     const res=await fetch('/api/character',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal,credentials:'same-origin',cache:'no-store'});
     if(!res.ok)throw new Error('Provider unavailable');
     const data=await res.json();if(typeof data?.reply!=='string'||!data.reply.trim())throw new Error('No AI dialogue');
-    const safe=sanitizeGeneratedDialogue(data.reply,600);if(!safe)throw new Error('Unsafe generated claim');
-    reply=safe;visualCue=safeSceneCue(data.cue,visualCue);mode='META · CLOUD RESPONSE';
+    const safe=reviewGeneratedCharacterReply(before,'elder',data.reply);if(!safe.ok)throw new Error('Unreliable or repetitive generated claim');
+    reply=safe.reply;visualCue=safeSceneCue(data.cue,visualCue);mode='META · CLOUD RESPONSE';
    }finally{clearTimeout(timer);}
   }catch{
    mode='META ATTEMPTED · LOCAL FALLBACK';
@@ -203,6 +206,12 @@ function compassAction(type,data={}){
  const result=updateCompass(state,type,data);
  if(!result.ok){toast(result.error,false);return;}
  publish(result.state,result.event);
+}
+function memoryAction(action,value){
+ const outcome=updateMemoryCards(state,action,value);
+ if(!outcome.ok){toast(outcome.error,false);return;}
+ state=outcome.state;void persist();ui.render(state);
+ toast(action==='pin'?'Memory saved inside this private reality.':'Memory removed from this reality.');
 }
 function compassSave(focus,step){compassAction('plan',{focus,step});}
 function compassTried(){compassAction('tried');}
@@ -251,7 +260,7 @@ async function lock(){
 }
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,
- sound:toggleSound,forgetConversation,compassSave,compassTried,compassClear,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
+ sound:toggleSound,forgetConversation,pinMemory:text=>memoryAction('pin',text),forgetMemory:index=>memoryAction('forget',index),compassSave,compassTried,compassClear,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
  privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
  voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus,comfort:id=>experience?.setComfort?.(id)
 });

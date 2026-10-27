@@ -13,6 +13,7 @@ import {createActor} from './actor-studio.js';
 import {futureKeepsakes,keepsakeReaction} from './keepsake-scenes.js';
 import {installAnimatedCompanion} from './animated-companion.js';
 import {COMFORT_PRESETS,DEFAULT_COMFORT,comfortPreset,comfortTurn,walkableLanding} from './xr-comfort.js';
+import {createSessionCare} from './session-care.js';
 import {safeSceneCue} from './scene-director.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
@@ -552,7 +553,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  focusReticle.visible=false;focusReticle.renderOrder=12;scene.add(focusReticle);
  let lastCue='',focusedPoint=null,activeChoice=null;
  const worldNames=Object.fromEntries(Object.entries(WORLDS).map(([key,w])=>[key,w.name]));
- const clock=new THREE.Clock();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();let comfortId=DEFAULT_COMFORT;
+ const clock=new THREE.Clock();const care=createSessionCare();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();let comfortId=DEFAULT_COMFORT;
  let hasExplored=false;let previousGamepadButtons=new Set(),gamepadAxes={x:0,z:0};
  function desktopGamepad(){
    if(renderer.xr.isPresenting || !state || !document.querySelector('#vault-gate')?.hidden || document.querySelector('.modal-shade')){
@@ -786,7 +787,11 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    const d=target.clone().sub(controls.target);controls.target.add(d);camera.position.add(d);
  }
  let snapReady=true;
- function tick(){const frameTime=clock.getDelta();const dt=Math.min(frameTime,.05);if(document.hidden)return;const t=reduceMotion?0:clock.elapsedTime;desktopGamepad();move(dt);
+ function tick(){const frameTime=clock.getDelta();const dt=Math.min(frameTime,.05);if(document.hidden)return;
+   if(care.sample(dt,{xr:renderer.xr.isPresenting,visible:!document.hidden})){
+     showXRNote('A natural stopping point. Take a headset break whenever you need one. Your choices are saved.');
+   }
+   const t=reduceMotion?0:clock.elapsedTime;desktopGamepad();move(dt);
    if(dialogueUntil&&clock.elapsedTime>=dialogueUntil){dialogueUntil=0;elderPresence?.setMode('idle');}
    if(xrNote.visible && clock.elapsedTime>=xrNoteUntil)xrNote.visible=false;
    if(renderer.xr.isPresenting){
@@ -837,7 +842,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  }
  renderer.setAnimationLoop(tick);
  renderer.xr.addEventListener('sessionstart',()=>{controls.enabled=false;rig.position.set(0,0,5);camera.position.set(0,0,0);xrWatch.visible=true;xrNote.visible=false;updateXRWatch();if(player)player.visible=false;});
- renderer.xr.addEventListener('sessionend',()=>{controls.enabled=true;rig.position.set(0,0,0);rig.rotation.y=0;xrWatch.visible=false;xrNote.visible=false;camera.position.set(0,5.5,18);if(player)player.visible=!(state.world==='mech'&&state.mechDeployed);});
+ renderer.xr.addEventListener('sessionend',()=>{care.reset();controls.enabled=true;rig.position.set(0,0,0);rig.rotation.y=0;xrWatch.visible=false;xrNote.visible=false;camera.position.set(0,5.5,18);if(player)player.visible=!(state.world==='mech'&&state.mechDeployed);});
  function reactToDialogue(rawCue){
    if(state?.world!=='self'||!fx)return;
    const cue=safeSceneCue(rawCue);
