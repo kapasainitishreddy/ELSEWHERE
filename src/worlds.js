@@ -859,7 +859,10 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    if(!renderer.xr.isPresenting){
      rig.position.set(0,0,0);
      if(sameWorld){camera.position.copy(lastCamera);controls.target.copy(lastTarget);}
-     else {camera.position.set(0,5.5,18);controls.target.set(0,2,0);}
+     else if(options.spawnNearPhysics&&state.world==='dungeon'){
+       camera.position.set(5.45,5.5,18);
+       controls.target.set(5.45,1.95,2.8);
+     }else {camera.position.set(0,5.5,18);controls.target.set(0,2,0);}
    }else if(!sameWorld){
      // Crossing a portal is a deliberate scene change. Preserve WebXR's tracked camera.
      rig.position.set(0,0,5);playerPos.set(0,0,5);

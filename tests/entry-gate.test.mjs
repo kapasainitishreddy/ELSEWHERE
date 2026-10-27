@@ -27,3 +27,10 @@ test('one-click WebContainer launch does not expose the default local server',()
  assert.equal(JSON.parse(read('.stackblitzrc')).startCommand,'npm run play');
  assert.match(read('README.md'),/stackblitz\.com\/fork\/github\/kapasainitishreddy\/ELSEWHERE/);
 });
+
+test('the direct physics practice starts in cinematic mode without finishing story chapters',()=>{
+ const main=read('src/main.js'),ui=read('src/ui.js'),world=read('src/worlds.js');
+ assert.match(main,/if\(physicsPreview\)ui\.enterSandbox\(\)/);
+ assert.match(ui,/enterSandbox\(\)\{journeyVisible=false;storyOpen=false;atlasOpen=false;focus=true;/);
+ assert.match(world,/options\.spawnNearPhysics&&state\.world==='dungeon'/);
+});
