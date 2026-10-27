@@ -6,6 +6,7 @@ import './style.css';
 import './cinematic-shell.css';
 import './director-cut.css';
 import './submission-polish.css';
+import './causal-proof.css';
 import {initialState, travel, applyAction, addConversation, dialogueFallback, writeLetter, askCharacter, updateCompass} from './game.js';
 import {createExperience} from './worlds.js';
 import {createInterface} from './ui.js';
