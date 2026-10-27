@@ -12,6 +12,8 @@ import {createFrameSampler,describeFrame} from './performance.js';
 import {createActor} from './actor-studio.js';
 import {futureKeepsakes,keepsakeReaction} from './keepsake-scenes.js';
 import {installAnimatedCompanion} from './animated-companion.js';
+import {COMFORT_PRESETS,DEFAULT_COMFORT,comfortPreset,comfortTurn,walkableLanding} from './xr-comfort.js';
+import {safeSceneCue} from './scene-director.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
 const palettes = {
@@ -527,9 +529,9 @@ function buildLivingBackdrop(group,state,animated){
 }
 
 /** Create a self-contained Three.js renderer with WebXR controller support. */
-export function createExperience(container, onWorld, onAction, onOpenStillwater=()=>{}, onInspect=()=>{}){
+export function createExperience(container, onWorld, onAction, onOpenStillwater=()=>{}, onInspect=()=>{}, onExplore=()=>{}){
  const scene=new THREE.Scene();const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5)); // Bound desktop fill rate; XR chooses its own framebuffer.
+ // Bound desktop fill rate; XR selects its own framebuffer.
  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,window.innerWidth<800?1.1:1.5));renderer.setSize(container.clientWidth||window.innerWidth,container.clientHeight||window.innerHeight);
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;
  renderer.shadowMap.enabled=false;renderer.xr.enabled=true;
@@ -550,8 +552,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  focusReticle.visible=false;focusReticle.renderOrder=12;scene.add(focusReticle);
  let lastCue='',focusedPoint=null,activeChoice=null;
  const worldNames=Object.fromEntries(Object.entries(WORLDS).map(([key,w])=>[key,w.name]));
- const clock=new THREE.Clock();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();
- let previousGamepadButtons=new Set(),gamepadAxes={x:0,z:0};
+ const clock=new THREE.Clock();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();let comfortId=DEFAULT_COMFORT;
+ let hasExplored=false;let previousGamepadButtons=new Set(),gamepadAxes={x:0,z:0};
  function desktopGamepad(){
    if(renderer.xr.isPresenting || !state || !document.querySelector('#vault-gate')?.hidden || document.querySelector('.modal-shade')){
      previousGamepadButtons.clear();gamepadAxes={x:0,z:0};return;
@@ -571,7 +573,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  vrButton.id='enter-vr-button';vrButton.setAttribute('aria-label','Enter VR headset mode');container.append(vrButton);
  const vrControllers=[renderer.xr.getController(0),renderer.xr.getController(1)];
  for(const vrController of vrControllers){
-   scene.add(vrController);
+   // Tracked hands MUST share the player's movable/rotatable XR origin.
+   rig.add(vrController);
    vrController.addEventListener('connected',event=>{vrController.userData.handedness=event.data?.handedness;});
    const gripLight=new THREE.Group();vrController.add(gripLight);
    orb(gripLight,.065,emissive(0xb1faff,.9),0,0,0);
@@ -590,12 +593,13 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      // Comfortable controller teleportation to a walkable floor (rather than forced smooth movement).
      const point=new THREE.Vector3();const floor=new THREE.Plane(new THREE.Vector3(0,1,0),0);
      const rayToFloor=new THREE.Ray(origin,dir);
-     if(rayToFloor.intersectPlane(floor,point)&&point.distanceTo(origin)<15){
-       const x=THREE.MathUtils.clamp(point.x,-18,18),z=THREE.MathUtils.clamp(point.z,-18,17);
-       // XR locomotion shares the desktop collision proxies. Do not drop a player inside a wall.
-       const blocked=collisionRects(state.world).some(([x0,x1,z0,z1])=>x>=x0-.5&&x<=x1+.5&&z>=z0-.5&&z<=z1+.5);
-       if(!blocked && Number.isFinite(x) && Number.isFinite(z)){
-         rig.position.x=x;rig.position.z=z;pulseXR(vrController,35);
+     if(rayToFloor.intersectPlane(floor,point)){
+       const x=point.x,z=point.z;
+       if(walkableLanding({x,z,source:origin,distance:point.distanceTo(origin),rects:collisionRects(state.world),limit:comfortPreset(comfortId).teleportDistance})){
+         // Teleport was explicitly selected. Move the same rig that owns both hands.
+         rig.position.x=x;rig.position.z=z;
+         playerPos.x=x;playerPos.z=z;
+         pulseXR(vrController,35);
        }
      }
    });
@@ -613,7 +617,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  const watchCanvas=document.createElement('canvas');watchCanvas.width=512;watchCanvas.height=160;
  const watchTexture=new THREE.CanvasTexture(watchCanvas);watchTexture.colorSpace=THREE.SRGBColorSpace;
  const xrWatch=new THREE.Mesh(new THREE.PlaneGeometry(.9,.28),new THREE.MeshBasicMaterial({map:watchTexture,transparent:true,depthTest:false}));
- xrWatch.position.set(-.34,-.33,-1.0);camera.add(xrWatch);xrWatch.visible=false;
+ xrWatch.position.set(-.12,.10,-.25);xrWatch.rotation.x=-.35;vrControllers[0].add(xrWatch);xrWatch.visible=false;
  const noteCanvas=document.createElement('canvas');noteCanvas.width=1024;noteCanvas.height=420;
  const noteTexture=new THREE.CanvasTexture(noteCanvas);noteTexture.colorSpace=THREE.SRGBColorSpace;
  const xrNote=new THREE.Mesh(new THREE.PlaneGeometry(1.3,.53),new THREE.MeshBasicMaterial({map:noteTexture,transparent:true,depthTest:false,depthWrite:false}));
@@ -636,6 +640,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  function intersect(objects,origin,dir){raycaster.set(origin,dir);const hits=raycaster.intersectObjects(objects,false);return hits[0]?.object.userData.action || null;}
  function trigger(action){
    if(!action)return;
+   if(action.type==='comfort'){setComfort(action.mode);return;}
    if(action.type==='world')onWorld(action.world);
    else if(action.type==='choice')onAction(action.id);
    else if(action.type==='inspect'){
@@ -678,12 +683,17 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    if(!e.repeat && e.code==='KeyQ' && state?.world==='mech' && state.mechBattle.active){onAction('raise-shield');e.preventDefault();return;}
    if(!e.repeat && e.code==='KeyQ' && state?.world==='dungeon'&&state.wardenBattle?.active){onAction('warden-guard');e.preventDefault();return;}
    if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft'].includes(e.code)){pressed.add(e.code);e.preventDefault();}}
- function keyup(e){pressed.delete(e.code);}window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',()=>pressed.clear());
+ function keyup(e){pressed.delete(e.code);}window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);const onBlur=()=>pressed.clear();window.addEventListener('blur',onBlur);
  function xrChoicePanels(worldId){
    const options = worldOptionsForXR(state).slice(0,4);
    if(!options.length)return;
    const panel=new THREE.Group();world.add(panel);panel.position.set(4.8,2.5,3.2);panel.rotation.y=-.3;
    options.forEach((o,i)=>{const plane=mesh(panel,new THREE.PlaneGeometry(2.55,.74),new THREE.MeshBasicMaterial({map:labelTexture(o.title.slice(0,25).toUpperCase(),worldId==='self'?'ASK YOURSELF':'MAKE YOUR CHOICE'),side:THREE.DoubleSide}),0,(1.5-i)*.97,0);plane.userData.action={type:'choice',id:o.id};targets.push(plane);});
+   // Real 3D comfort buttons, not a flat HUD which disappears inside the headset.
+   Object.entries(COMFORT_PRESETS).forEach(([mode,preset],i)=>{
+     const plate=mesh(panel,new THREE.PlaneGeometry(2.55,.45),new THREE.MeshBasicMaterial({map:labelTexture(preset.label.toUpperCase(),'VR COMFORT · TRIGGER TO CHANGE'),side:THREE.DoubleSide}),0,-2.45-i*.55,0);
+     plate.userData.action={type:'comfort',mode};targets.push(plate);
+   });
  }
  function worldOptionsForXR(s){
    // Mirror enabled HUD choices as physical clickable panels for controller users.
@@ -691,7 +701,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    return choices.filter(c=>!c.disabled);
  }
  function mount(next){
-   const sameWorld=state?.world===next.world;
+   const sameWorld=state?.world===next.world;if(!sameWorld)hasExplored=false;
    const lastPos=playerPos.clone();const lastCamera=camera.position.clone(),lastTarget=controls.target.clone();
    state=next;updateXRWatch();fx?.dispose();scene.remove(world);world.traverse(o=>{
      o.geometry?.dispose();
@@ -742,12 +752,17 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    xrChoicePanels(state.world);
    player=makePlayer(world);player.visible=!renderer.xr.isPresenting && !(state.world==='mech'&&state.mechDeployed);
    playerPos.copy(sameWorld?lastPos:new THREE.Vector3(0,0,6));
-   if(!renderer.xr.isPresenting)rig.position.set(0,0,0);
-   if(sameWorld){camera.position.copy(lastCamera);controls.target.copy(lastTarget);}
-   else {camera.position.set(0,5.5,18);controls.target.set(0,2,0);}
+   if(!renderer.xr.isPresenting){
+     rig.position.set(0,0,0);
+     if(sameWorld){camera.position.copy(lastCamera);controls.target.copy(lastTarget);}
+     else {camera.position.set(0,5.5,18);controls.target.set(0,2,0);}
+   }else if(!sameWorld){
+     // Crossing a portal is a deliberate scene change. Preserve WebXR's tracked camera.
+     rig.position.set(0,0,5);playerPos.set(0,0,5);
+   }
    player.position.copy(playerPos);
    if(titan && state.mechDeployed){titan.position.x=playerPos.x;titan.position.z=playerPos.z-13;}
-   controls.update();updateXRWatch();
+   if(!renderer.xr.isPresenting)controls.update();updateXRWatch();
    if(!sameWorld)fx.emit('arrival',new THREE.Vector3(0,2,4));
    if(state.world==='self')light(world,0xf9c98c,2,4,8,-5,17);
  }
@@ -758,6 +773,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    const mz=(pressed.has('KeyS')||pressed.has('ArrowDown')?1:0)-(pressed.has('KeyW')||pressed.has('ArrowUp')?1:0)+gamepadAxes.z;
    moving=Boolean(mx||mz);
    if(!moving)return;
+   if(!hasExplored && window.innerWidth>780 && !renderer.xr.isPresenting){hasExplored=true;onExplore();}
    const norm=Math.max(1,Math.hypot(mx,mz));const dx=mx/norm*speed,dz=mz/norm*speed;
    const collisions=collisionRects(state.world);
    const tryX=THREE.MathUtils.clamp(playerPos.x+dx,-22,22),tryZ=THREE.MathUtils.clamp(playerPos.z+dz,-22,18);
@@ -777,8 +793,9 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      // Optional snap turn with right thumbstick. No forced smooth locomotion.
      const source=[...(renderer.xr.getSession()?.inputSources||[])].find(s=>s.handedness==='right'&&s.gamepad);
      const axes=source?.gamepad?.axes||[];const horizontal=Math.abs(axes[2]||0)>Math.abs(axes[0]||0)?axes[2]||0:axes[0]||0;
-     if(Math.abs(horizontal)<.35)snapReady=true;
-     else if(snapReady&&Math.abs(horizontal)>.8){rig.rotation.y-=Math.sign(horizontal)*Math.PI/6;snapReady=false;}
+     const turn=comfortTurn(horizontal,snapReady,comfortId);
+     snapReady=turn.armed;
+     if(turn.radians)rig.rotation.y+=turn.radians;
    }
    if(player && player.visible){
      const pose=characterPose(t,moving?'walking':'idle',2.3);
@@ -821,6 +838,21 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  renderer.setAnimationLoop(tick);
  renderer.xr.addEventListener('sessionstart',()=>{controls.enabled=false;rig.position.set(0,0,5);camera.position.set(0,0,0);xrWatch.visible=true;xrNote.visible=false;updateXRWatch();if(player)player.visible=false;});
  renderer.xr.addEventListener('sessionend',()=>{controls.enabled=true;rig.position.set(0,0,0);rig.rotation.y=0;xrWatch.visible=false;xrNote.visible=false;camera.position.set(0,5.5,18);if(player)player.visible=!(state.world==='mech'&&state.mechDeployed);});
+ function reactToDialogue(rawCue){
+   if(state?.world!=='self'||!fx)return;
+   const cue=safeSceneCue(rawCue);
+   const kind={rain:'arrival',warmth:'memory',wonder:'magic',quiet:'choice',resolve:'invention'}[cue];
+   // A transient, pooled visual response, never an environmental gameplay mutation.
+   const offset={rain:[-3,3,-8],warmth:[0,2.5,-5],wonder:[2,4,-9],quiet:[0,1.5,-6],resolve:[0,3,-7]}[cue];
+   fx.emit(kind,new THREE.Vector3(...offset));
+   if(cue==='wonder'||cue==='resolve')setDialogueActivity('delight',2);
+ }
+ function setComfort(id){
+   comfortId=(id in COMFORT_PRESETS)?id:DEFAULT_COMFORT;
+   snapReady=true;
+   showXRNote(`Comfort: ${comfortPreset(comfortId).label}. Trigger to teleport. Right stick snap turns. Remove the headset whenever you need a break.`);
+   return comfortId;
+ }
  function resize(){const w=container.clientWidth||window.innerWidth;const h=container.clientHeight||window.innerHeight;camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h);}
  window.addEventListener('resize',resize);
  resize();
@@ -841,8 +873,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    elderPresence.setMode(mode);
    dialogueUntil=durationSeconds>0?clock.elapsedTime+Math.min(durationSeconds,9):0;
  }
- return {mount,resize,effect,interact,setDialogueActivity,setMove(code,on){if(on)pressed.add(code);else pressed.delete(code);},vrSupported:()=>Boolean(navigator.xr),
+ return {mount,resize,effect,interact,setDialogueActivity,reactToDialogue,setMove(code,on){if(on)pressed.add(code);else pressed.delete(code);},setComfort,vrSupported:()=>Boolean(navigator.xr),
    enterVR(){vrButton.click();},
-   dispose(){renderer.setAnimationLoop(null);fx?.dispose();xrNote.geometry.dispose();xrNote.material.dispose();noteTexture.dispose();xrWatch.geometry.dispose();xrWatch.material.dispose();watchTexture.dispose();scene.remove(focusReticle);focusReticle.geometry.dispose();focusReticle.material.dispose();renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);controls.dispose();renderer.dispose();container.replaceChildren();}
+   dispose(){renderer.setAnimationLoop(null);fx?.dispose();xrNote.geometry.dispose();xrNote.material.dispose();noteTexture.dispose();xrWatch.geometry.dispose();xrWatch.material.dispose();watchTexture.dispose();scene.remove(focusReticle);focusReticle.geometry.dispose();focusReticle.material.dispose();renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);window.removeEventListener('blur',onBlur);controls.dispose();renderer.dispose();container.replaceChildren();}
  };
 }

@@ -40,6 +40,12 @@ Meta model use in a demo is not the same as privacy-preserving local inference. 
 
 Static source review and automated tests do **not** constitute an independent security audit. Required before collecting real user content: dependency/advisory scan, browser networking inspection, service-worker update testing, CSP verification, export/import size/fuzz checks, DOM injection audit, key/secret leakage check, and physical device/OS threat-model review. Never enter actual account passwords or financial details into fictional prompts.
 
+## Research-inspired Stillwater and Pocket glass page
 
-## Stillwater and Meta glasses Pocket demo
-Stillwater holds only the selected fictional story and choice in volatile memory, clears that session on close and vault lock, never changes fictional wealth/hours, and does not generate health scores or send its choices to AI. The standalone /glasses/ page stores nothing, requests no camera, microphone or sensors, and blocks all network APIs via Content Security Policy. It does not access the encrypted VR vault and is untested on real glasses.
+The Stillwater story dialog deliberately holds only the current path and story choice in transient in-memory UI variables. Closing the dialog discards that variable. No symptoms, mood score, biometric measurements, health classifications or interactions are added to the encrypted game record. The separate `public/glasses/` Pocket page makes no outgoing API calls, requests no camera/microphone/sensor permissions, and writes nothing to local/session storage. It does **not** automatically transfer or access VR vault data. Neither feature can measure or assert neurotransmitter changes.
+
+## Hosted Meta demo route, version 1.3 (off by default)
+
+A serverless `api/character.js` endpoint may be deployed as a backend for a **separately opted-in cloud demonstration**. It is not local inference. It requires `MODEL_API_KEY` set as a secret on the server; never set it as `VITE_MODEL_API_KEY` or expose it in client code. The payload is limited to a question (350 characters), a boolean consent flag and a small fictional timeline allowlist. It explicitly rejects private letters, stored NPC transcripts, keys and extra JSON properties. It does not store prompts or cookies; serverless host and Meta may nevertheless log network/service metadata under their own policies, so do not promise complete external privacy. For everyday private play, leave cloud mode off.
+
+The endpoint includes **best-effort per-instance** rate limiting, a finite timeout, same-origin request checks and response filtering. Multiple function instances do not share counters and therefore the limiter is **not** an adequate spend/abuse guarantee for an open public deployment. Add managed edge rate limiting, budget alarms and provider spending limits before configuring the live key on a public site. Never treat this demo bridge as a clinical service or a place to upload personal health information.

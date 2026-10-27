@@ -1,0 +1,37 @@
+/* ELSEWHERE Release: story guidance remains a part of the world, not another dashboard. */
+#app-ui[data-journey="true"] .scene-postcard{display:none}
+.first-crossing{position:absolute;right:clamp(22px,3.7vw,68px);bottom:clamp(128px,16vh,184px);width:min(355px,calc(100vw - 48px));z-index:5;pointer-events:auto;padding:24px 25px 23px;border-radius:18px;border:1px solid rgba(236,217,191,.20);background:linear-gradient(136deg,rgba(20,32,42,.96),rgba(8,16,23,.92));box-shadow:0 24px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,244,221,.08);color:#f5eddd;backdrop-filter:blur(18px)}
+.first-crossing::before{content:'';position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,#deb992,transparent);opacity:.65}
+.first-crossing-top{display:flex;align-items:center;gap:8px;color:#eac5a0;font-size:9px;letter-spacing:.18em;font-weight:750}
+.first-crossing-top span:nth-child(2){color:#b9cbd0;letter-spacing:.09em;margin-left:auto}
+.first-crossing-top button{background:none;border:0;color:#c4c3bf;font-size:15px;padding:2px 4px;cursor:pointer}
+.first-crossing-progress{display:flex;gap:5px;margin:18px 0 19px}
+.first-crossing-progress i{display:block;flex:1;height:3px;border-radius:4px;background:#2d4350}
+.first-crossing-progress i.lit{background:linear-gradient(90deg,#f0bd8a,#eadfd1)}
+.first-crossing h2{font-size:clamp(23px,1.9vw,31px);font-family:Georgia,'Times New Roman',serif;font-weight:400;line-height:1.15;letter-spacing:-.025em;margin:0 0 12px}
+.first-crossing p{line-height:1.55;font-size:13px;color:#b8c9ca;margin:0 0 21px}
+.first-crossing-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.first-crossing-actions button:first-child{border:1px solid #e6bd96;color:#19212b;background:#ecc39e;padding:12px 15px;font-size:10px;letter-spacing:.08em;font-weight:750;border-radius:8px;cursor:pointer;transition:background .18s ease,transform .18s ease}
+.first-crossing-actions button:first-child:hover{background:#f9dcc0;transform:translateY(-1px)}
+.first-crossing-actions .receipt-link{border:0;color:#e8d0b5;background:transparent;padding:8px;font-size:10px;letter-spacing:.06em;cursor:pointer}
+.journey-restore{position:absolute;right:clamp(22px,3.7vw,68px);bottom:calc(clamp(128px,16vh,184px) + 14px);pointer-events:auto;z-index:5;border:1px solid rgba(225,197,163,.35);color:#f4d7b9;background:#11232d;border-radius:10px;padding:11px 18px;font-size:10px;font-weight:750;letter-spacing:.12em}
+.causal-letter{padding:22px;border-radius:13px;background:linear-gradient(145deg,rgba(31,51,61,.86),rgba(25,33,40,.92));border:1px solid rgba(241,204,165,.32);margin:10px 0 22px}
+.causal-letter>span{font-size:10px;letter-spacing:.14em;color:#e8b88a;text-transform:uppercase}
+.causal-letter h3{font-size:27px;font-family:Georgia,'Times New Roman',serif;line-height:1.2;margin:11px 0;font-weight:400;color:#fff2dd}
+.causal-letter p{line-height:1.62;font-size:13px;color:#d5d6d2}
+.causal-letter small{display:block;color:#f6d6af;margin:14px 0}
+.comfort-dialog{max-width:560px}
+.comfort-modes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}
+.comfort-modes button{background:#15232c;color:#ebe8e0;border:1px solid #364852;border-radius:12px;text-align:left;display:flex;flex-direction:column;gap:9px;padding:17px;cursor:pointer}
+.comfort-modes button[aria-pressed="true"]{border-color:#e8bd91;background:#26303a;box-shadow:inset 0 0 0 1px #e8bd91}
+.comfort-modes button span{color:#b6c0c1;line-height:1.5;font-size:12px}
+#app-ui[data-journey="true"] .first-crossing:focus-within{outline:2px solid #fae0bb;outline-offset:5px}
+#app-ui[data-focus="true"] .first-crossing{opacity:0;pointer-events:none}
+@media(max-width:850px){
+ .first-crossing{right:14px;left:14px;width:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 120px);padding:17px 18px;backdrop-filter:blur(12px)}
+ .first-crossing h2{font-size:23px}.first-crossing p{font-size:12px;margin-bottom:15px}.first-crossing-progress{margin:12px 0}
+ .journey-restore{right:16px;bottom:145px}
+ .comfort-modes{grid-template-columns:1fr}
+}
+@media(max-width:420px) and (max-height:750px){.first-crossing{bottom:126px;padding:13px 15px}.first-crossing h2{font-size:20px}.first-crossing p{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.first-crossing button,.first-crossing-progress i{transition:none!important}}

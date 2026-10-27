@@ -1,0 +1,177 @@
+/* ELSEWHERE 1.2 · DIRECTOR'S CUT
+ * On-device, cinematic world presentation. No remote fonts, imagery or trackers.
+ * World illustration is a fallback; the real interactive Three.js world takes precedence.
+ */
+#app {
+  --lens-x:0px;
+  --lens-y:0px;
+  --director-ink:#f5f0e9;
+}
+#app-ui {font-synthesis:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+/* Graceful scene art: separate luminosity and atmospheric depth, never camera movement. */
+.world-vista {background:#060e16;isolation:isolate;}
+.world-vista img {
+  width:calc(100% + 36px);height:calc(100% + 26px);
+  max-width:none;object-fit:cover;object-position:74% 50%;
+  transform:translate3d(calc(var(--lens-x) - 18px),calc(var(--lens-y) - 13px),0) scale(1.04);
+  transition:transform .24s ease-out, filter .7s ease;
+  animation:vista-arrive-deluxe .95s cubic-bezier(.12,.48,.19,1) both;
+  filter:saturate(1.14) contrast(1.09);
+  will-change:transform;
+}
+@keyframes vista-arrive-deluxe {
+  from{opacity:.2;filter:saturate(.65) contrast(1.02) blur(9px)}
+  to{opacity:1;filter:saturate(1.14) contrast(1.09) blur(0)}
+}
+.world-vista .vista-film {
+  background:
+    linear-gradient(90deg,rgba(2,7,12,.9) 0%,rgba(3,8,14,.79) 15%,rgba(3,8,14,.64) 30%,rgba(3,8,14,.32) 44%,rgba(3,8,14,.045) 65%,rgba(3,8,14,.13) 100%),
+    linear-gradient(180deg,rgba(1,6,12,.39) 0%,transparent 27%,transparent 71%,rgba(2,6,11,.74) 100%);
+}
+.world-vista .vista-bloom {left:54%;top:9%;width:54%;height:72%;opacity:.85;background:radial-gradient(ellipse,rgba(var(--accent-rgb),.12),transparent 65%)}
+.world-vista::after {
+  content:'';position:absolute;inset:-20%;z-index:2;pointer-events:none;
+  opacity:.19;mix-blend-mode:screen;
+  animation:director-weather 17s linear infinite;
+  mask-image:linear-gradient(90deg,transparent 23%,black 63%,black 92%);
+}
+#app-ui[data-world='self'] .world-vista::after,
+#app-ui[data-world='future'] .world-vista::after {
+  background-image:repeating-linear-gradient(103deg,transparent 0 36px,rgba(219,242,252,.12) 37px,transparent 39px,transparent 87px);
+}
+#app-ui[data-world='past'] .world-vista::after,
+#app-ui[data-world='mech'] .world-vista::after {
+  background-image:radial-gradient(circle at 66% 56%,rgba(251,183,95,.15),transparent 28%),repeating-linear-gradient(-43deg,transparent 0 72px,rgba(250,191,118,.11) 73px,transparent 74px);
+}
+#app-ui[data-world='dungeon'] .world-vista::after {
+  background-image:radial-gradient(circle at 76% 48%,rgba(212,181,255,.24),transparent 27%),repeating-linear-gradient(64deg,transparent 0 90px,rgba(206,171,255,.08) 91px,transparent 93px);
+}
+@keyframes director-weather {from{transform:translate3d(0,-1%,0)}to{transform:translate3d(-2%,1%,0)}}
+#app[data-scene-ready='true'] .world-vista{opacity:0;visibility:hidden;transition:opacity .7s,visibility .7s}
+#app[data-scene-ready='true'] .world-vista::after{animation:none}
+
+/* Studio typography. The world is readable, with hierarchy rather than dashboard density. */
+.world-heading {max-width:min(610px,56vw);top:clamp(178px,23.6vh,276px)}
+.world-heading h1{font-size:clamp(65px,7.3vw,116px);letter-spacing:-.071em;line-height:.92;font-weight:400;text-shadow:0 8px 55px rgba(1,4,7,.53)}
+.world-quote{max-width:368px;line-height:1.55;color:#e5dfd9;text-wrap:balance}
+.section-kicker{color:var(--accent)}
+.section-kicker .thin-line{box-shadow:0 0 16px rgba(var(--accent-rgb),.4)}
+.world-serial{font-size:clamp(165px,23vw,355px);color:rgba(var(--accent-rgb),.055);letter-spacing:-.095em;transform:translateX(5%);mix-blend-mode:screen}
+.hero-enter{border:0;border-radius:12px;min-height:51px;padding:0 24px;letter-spacing:.025em;box-shadow:0 7px 30px rgba(var(--accent-rgb),.15),inset 0 1px rgba(255,255,255,.26)}
+.hero-enter:hover{box-shadow:0 15px 45px rgba(var(--accent-rgb),.28)}
+.hero-enter:active,.hero-secondary:active,.portal-card:active{transform:scale(.97)}
+.hero-secondary{min-height:51px;border-color:rgba(224,234,236,.3);background:rgba(9,18,27,.6)}
+.world-pill{color:#dce6e9;background:rgba(7,16,22,.52);border:1px solid rgba(218,236,238,.085)}
+
+/* Each portal is a miniature window into another place rather than a generic icon. */
+.portal-dock {
+  width:min(778px,61vw);min-height:99px;bottom:19px;padding:9px 10px;
+  border-radius:23px;border-color:rgba(231,240,239,.21);
+  background:linear-gradient(160deg,rgba(13,20,29,.82),rgba(6,13,22,.87));
+  box-shadow:0 24px 85px rgba(0,0,0,.52),inset 0 1px rgba(255,255,255,.1);
+}
+.dock-label{flex-basis:86px;line-height:1.7;color:#dee6e4}
+.portal-cards{gap:7px}
+.portal-card{gap:6px;padding:8px 4px;min-height:78px;border-radius:15px;isolation:isolate;overflow:visible;}
+.portal-card.is-current{background:rgba(var(--accent-rgb),.07)}
+.portal-art {
+  width:48px;height:43px;border-radius:13px;overflow:hidden;
+  border:1px solid rgba(232,246,245,.18);
+  background-size:cover;background-position:70% 45%;
+  box-shadow:inset 0 0 18px rgba(0,0,0,.18),0 9px 20px rgba(0,0,0,.13);
+  transform:perspective(180px) rotateX(0);
+  transition:transform .22s ease,border-color .22s,box-shadow .22s;
+}
+.portal-art::before {content:'';position:absolute;inset:0;background:linear-gradient(170deg,rgba(255,255,255,.13),transparent 42%,rgba(2,8,12,.59));pointer-events:none}
+.portal-art::after {content:'';position:absolute;inset:3px;border:1px solid rgba(255,255,255,.17);border-radius:10px;pointer-events:none}
+.portal-art-future {background-image:url("/assets/vistas/future.svg")}
+.portal-art-self {background-image:url("/assets/vistas/self.svg")}
+.portal-art-past {background-image:url("/assets/vistas/past.svg")}
+.portal-art-dungeon {background-image:url("/assets/vistas/dungeon.svg")}
+.portal-art-mech {background-image:url("/assets/vistas/mech.svg")}
+.portal-art .ui-glyph {position:relative;z-index:1;opacity:.91;filter:drop-shadow(0 1px 5px #000) brightness(0) invert(1);width:17px;height:17px;}
+.portal-card:hover .portal-art,.portal-card:focus-visible .portal-art {transform:perspective(180px) rotateX(6deg) translateY(-3px);box-shadow:0 8px 28px rgba(var(--accent-rgb),.19);border-color:rgba(var(--accent-rgb),.56)}
+.portal-card.is-current .portal-art {border-color:rgba(var(--accent-rgb),.79);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.23),0 10px 28px rgba(var(--accent-rgb),.17)}
+.portal-name{font-size:9px;color:#d4e2e4;font-weight:650}
+.portal-number{color:#d7d4cb;right:4px;top:3px;text-shadow:0 1px 4px #000}
+.portal-card::after {content:attr(data-preview);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translate(-50%,4px);width:max-content;max-width:240px;font:700 8px/1.3 var(--ui-face);letter-spacing:.13em;color:#ebf4ef;padding:8px 10px;border:1px solid rgba(var(--accent-rgb),.4);border-radius:8px;background:#0b161f;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;white-space:nowrap}
+.portal-card:hover::after,.portal-card:focus-visible::after{opacity:1;transform:translate(-50%,0)}
+.portal-card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.scene-postcard{
+  right:clamp(18px,3.4vw,60px);bottom:144px;width:min(321px,26vw);
+  border-color:rgba(var(--accent-rgb),.35);
+  background:linear-gradient(150deg,rgba(17,25,35,.88),rgba(8,15,23,.75));
+  box-shadow:0 25px 80px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.11);
+}
+.postcard-chapter{font-size:24px;line-height:1.17}
+.scene-postcard p{line-height:1.62;color:#c0ccce}
+.postcard-enter{min-height:46px;background:rgba(var(--accent-rgb),.11)}
+
+/* Cinematic focus must leave a safe, clear way back. */
+#app.cinematic .world-heading{opacity:0;pointer-events:none;transform:translateY(8px)}
+#app.cinematic .world-serial{opacity:0}
+#app.cinematic .scene-postcard{opacity:0;pointer-events:none}
+#app.cinematic .privacy-sigil{opacity:.72;pointer-events:none}
+#app.cinematic .portal-dock{opacity:.34;pointer-events:auto;transform:translateX(-50%) translateY(7px) scale(.91)}
+#app.cinematic .portal-dock:hover,#app.cinematic .portal-dock:focus-within{opacity:1;transform:translateX(-50%) scale(1)}
+#app.cinematic .topbar .brand,#app.cinematic .top-center{opacity:.25;transition:opacity .2s}
+#app.cinematic .topbar:hover .brand,#app.cinematic .topbar:hover .top-center,#app.cinematic .topbar:focus-within .brand{opacity:1}
+.cinematic-exit{display:none;position:absolute;right:clamp(15px,3vw,52px);top:102px;z-index:8;pointer-events:auto;align-items:center;gap:8px;padding:11px 15px;border:1px solid rgba(var(--accent-rgb),.52);border-radius:12px;background:rgba(5,14,22,.82);color:#e8f0ec;font:700 10px var(--ui-face);letter-spacing:.09em;backdrop-filter:blur(14px)}
+.cinematic-exit:hover{background:rgba(var(--accent-rgb),.14)}
+#app.cinematic .cinematic-exit{display:flex}
+#app.cinematic .topbar{background:rgba(7,14,22,.48);border-color:rgba(255,255,255,.08)}
+
+/* Data stays legible, but never becomes the main subject. */
+.topbar{box-shadow:0 8px 52px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.065)}
+.top-center{letter-spacing:.13em}
+.brand-type{letter-spacing:.28em}
+.privacy-sigil{border-color:rgba(var(--accent-rgb),.22)}
+.story-panel{scrollbar-width:thin}
+.story-panel .choice{transition:transform .16s,background .16s,border-color .16s}
+.story-panel .choice:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+@media(max-width:1080px) {
+ .portal-dock{width:min(655px,68vw)}
+ .world-heading h1{font-size:clamp(58px,6.5vw,84px)}
+ .scene-postcard{width:270px}
+}
+@media(max-width:780px){
+ .world-heading{top:clamp(168px,21vh,235px);max-width:calc(100vw - 42px)}
+ .world-heading h1{font-size:clamp(51px,11.4vw,74px);line-height:.96}
+ .world-quote{font-size:17px;max-width:min(320px,80vw)}
+ .world-serial{font-size:132px;left:31%;top:20%}
+ .portal-dock{width:auto;min-height:84px;bottom:10px;padding:5px 5px;gap:0;border-radius:17px;left:8px;right:8px;transform:none}
+ .portal-cards{gap:2px}
+ .portal-card{min-height:71px;gap:4px;border-radius:11px;padding:4px 2px}
+ .portal-art{width:36px;height:35px;border-radius:10px}
+ .portal-art::after{inset:2px;border-radius:7px}
+ .portal-name{font-size:7.5px;max-width:calc((100vw - 45px) / 5);overflow:hidden;text-overflow:ellipsis}
+ .portal-card::after{display:none}
+ .scene-postcard{bottom:105px;right:12px;left:12px;width:auto;padding:12px 15px}
+ .postcard-chapter{font-size:19px}
+ .privacy-sigil{top:86px}
+ .world-vista img{object-position:76% center}
+ #app.cinematic .portal-dock{opacity:.7;transform:none}
+ #app.cinematic .portal-dock:hover,#app.cinematic .portal-dock:focus-within{transform:none}
+ .cinematic-exit{top:79px;right:12px;font-size:9px}
+}
+@media(max-width:480px){
+ .world-heading{top:clamp(170px,22vh,225px)}
+ .world-heading h1{font-size:clamp(45px,10.2vw,56px)}
+ .world-quote{max-width:260px;font-size:15px}
+ .world-vista .vista-film{background:linear-gradient(90deg,rgba(4,9,14,.88),rgba(4,9,14,.28)),linear-gradient(0deg,rgba(2,7,11,.85),transparent 64%)}
+ .scene-postcard{bottom:99px}
+ .portal-art{width:34px;height:33px}
+ .portal-name{font-size:7px}
+ .cinematic-exit{max-width:180px}
+}
+@media(prefers-reduced-motion:reduce){
+ .world-vista img{animation:none;transform:none;transition:none;will-change:auto}
+ .world-vista::after{animation:none}
+ .portal-art,.portal-card::after{transition:none}
+ .portal-card:hover .portal-art{transform:none}
+ #app.cinematic .portal-dock{transform:translateX(-50%)}
+}
+@media(forced-colors:active){.portal-card:focus-visible,.cinematic-exit:focus-visible{outline:2px solid Highlight}}

@@ -1,0 +1,13 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ELSEWHERE · UI-only QA</title><link rel="stylesheet" href="/src/style.css"><link rel="stylesheet" href="/src/cinematic-shell.css"><link rel="stylesheet" href="/src/director-cut.css"><link rel="stylesheet" href="/src/submission-polish.css"><style>#app{position:relative}#qa-label{position:fixed;z-index:999;right:10px;top:94px;color:#fff;background:#243a45;border:1px solid #6c8190;padding:8px;border-radius:8px;font-size:11px}</style></head><body><main id="app" data-scene-ready="false"><div id="world-canvas"></div><div id="app-ui"></div><div id="interaction-hint"></div></main><div id="qa-label">QA PREVIEW ONLY · 3D NOT RENDERED</div><script type="module">
+import {initialState,travel,applyAction,addConversation} from '/src/game.js';
+import {createInterface} from '/src/ui.js';
+let state=initialState();const ui=createInterface(document.querySelector('#app-ui'),{
+ travel:world=>{const r=travel(state,world);if(r.ok){state=r.state;ui.render(state)}},
+ action:id=>{const r=applyAction(state,id);if(r.ok){state=r.state;ui.render(state)}},
+ ask:async question=>{state=addConversation(state,question,'I remember a small detail: the rain on the workshop window. What matters most to you about that choice?');ui.render(state)},
+ reset:()=>{state=initialState();ui.render(state)},sound(){},interact(){},listen(){},
+ cloudEnabled:()=>false,localAiEnabled:()=>false,voiceEnabled:()=>false,privacyStatus:()=>true,
+ comfort(){},npcAsk:async()=>{},letter(){},exportTimeline(){},importTimeline(){},lock(){},rekey(){}
+});ui.render(state);
+window.__qa={get state(){return state},ui, action:id=>{const r=applyAction(state,id);if(r.ok){state=r.state;ui.render(state)};return r},travel:world=>{const r=travel(state,world);if(r.ok){state=r.state;ui.render(state)};return r}};
+</script></body></html>

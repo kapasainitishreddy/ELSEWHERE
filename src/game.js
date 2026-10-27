@@ -352,6 +352,7 @@ export function applyAction(state, id) {
     s.conversation.push({role:'user', text: id === 'confess' ? 'What is your biggest regret?' : id === 'purpose' ? 'What mattered most?' : 'What could have changed?' });
     s.conversation.push({role:'assistant', text:answers[id]});
     s.conversation = s.conversation.slice(-16);
+    if(s.fate)s.flags['premiere-return-chat']=true;
     event = {title:'A conversation across time', detail:'Your future self answered your question.'};
   }
   return {ok:true, state:write(s,id,event.title,event.detail),event};
@@ -366,6 +367,7 @@ export function addConversation(state, question, answer) {
   if (!safeQuestion || !safeAnswer) return state;
   s.conversation.push({role:'user',text:safeQuestion}, {role:'assistant',text:safeAnswer});
   s.conversation = s.conversation.slice(-16);
+  if(s.world==='self' && s.fate)s.flags['premiere-return-chat']=true;
   s.revision++;
   return s;
 }

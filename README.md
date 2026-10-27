@@ -1,10 +1,24 @@
-# ELSEWHERE · Living Presence 1.0.1
+# ELSEWHERE · First Crossing 1.3
 
 > One life is never enough.
 
 **ELSEWHERE** is a privacy-first, browser-based 3D speculative world prototype by Syrava. Enter portals to another century, meet a fictional older version of yourself, invent technology before its era, trade and steal fictional hours, negotiate with a Warden who remembers your fighting style, and defend a futuristic city from inside a giant original mech.
 
 This is an original experimental game and potential **Meta Global AI Developer Hackathon 2026 Startup-track** submission. It is **not** yet a polished shipped VR game, an MMO, or a verified Meta AI submission. In-world hour balances, fame, wealth and life paths are fictional, never real predictions or financial assets.
+
+## v1.3 First Crossing / submission preview (October 26, 2026)
+
+ELSEWHERE now presents a **guided, skippable seven-stage playable introduction**: meet a fictional older self, ask a question, travel through a portal to alternative 1889, invent technology, choose who owns it, return to talk again, and witness the changed future. The World Atlas adds a deterministic cause-and-effect receipt, with separate authored witness perspectives. Story state remains encrypted in the local vault. This is a game consequence, not a prediction about the player or a real-world financial opportunity.
+
+The VR rig has been corrected so controller rays move with the tracked player; XR camera position is not reset by arbitrary scene updates. Teleport targets are bounded and checked for props, with gentle 30° or standard 45° snap-turn options, explicitly accessible in both desktop UI and headset. **Hardware comfort and frame rates are unverified** until tested on a real Quest.
+
+For a hackathon Meta-model demonstration, an optional **same-origin `/api/character` serverless handler** accepts consented fictional dialogue only; it requests an allowlisted atmospheric cue with each character reply and never lets model output change wealth, inventories or achievements. A conservative per-process request limit reduces accidental costs, but **deployment-level spending limits and edge abuse defenses are required before public use**. The default on-device authored dialogue works without this service.
+
+The hackathon entry is **interactive, causally consistent storytelling**, not an AI mental-health advisor and not a medical treatment. See [player-pain-point research](docs/RESEARCH_PATTERNS_AND_RESPONSES.md), [three-minute demo shot list](docs/DEMO_3MIN.md) and [manual submission gate](docs/SUBMISSION_CHECKLIST.md). Run `npm run submission:check` to identify source checks versus manual blockers. Earlier source versions predate the official build period, so identify all *new work* truthfully.
+
+## Director's Cut 1.2
+
+An improved world-first presentation with local illustrated portal thumbnails, enhanced environment grading, an explicit focus-mode exit, and a more immersive experience when desktop movement begins. These are actual user-interface changes, not just a separate concept rendering. Five-world navigation, gameplay state and private saves remain intact. For QA, read [Director's Cut](docs/DIRECTORS_CUT.md). This release does not claim that production Vite, Quest or live Meta inference has been verified.
 
 ## Living Presence 1.0.1: animated people and meaningful details
 

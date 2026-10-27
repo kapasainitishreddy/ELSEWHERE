@@ -37,5 +37,5 @@ test('the interactive future apartment is wired to actor gestures and near-world
  assert.match(world,/buildLivingCharacters\(world,state,targets,animated,\(\)=>playerPos,nearbyProps\)/);
  assert.match(world,/fx\?\.emit\('memory',new THREE\.Vector3\(\.\.\.at\)\)/);
  assert.match(world,/renderer\.xr\.getController/);
- assert.match(world,/renderer\.setPixelRatio\(Math\.min\(window\.devicePixelRatio\|\|1,1\.5\)\)/);
+ assert.match(world,/renderer\.setPixelRatio\(Math\.min\(window\.devicePixelRatio\s*\|\|\s*1,window\.innerWidth<800\?1\.1:1\.5\)\)/);
 });
