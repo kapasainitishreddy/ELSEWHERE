@@ -7,3 +7,6 @@ dist/
 coverage/
 .vite/
 *.log
+
+# Local review/harness evidence; never commit private traces or run files.
+review-output/

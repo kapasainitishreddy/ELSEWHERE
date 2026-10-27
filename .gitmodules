@@ -1,0 +1,6 @@
+[submodule "tools/research/harness2"]
+	path = tools/research/harness2
+	url = https://github.com/google-research/harness2.git
+[submodule "tools/research/rrsi"]
+	path = tools/research/rrsi
+	url = https://github.com/google-research/rrsi.git
