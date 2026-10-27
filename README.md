@@ -1,3 +1,5 @@
+**Living Movement 1.11.1 (October 27, 2026):** The traveler now uses the existing skinned humanoid rig with cross-faded idle/walk clips, frame-rate-independent camera-relative movement, controlled acceleration and braking, smooth turns and a chase camera. Fixed cumulative head and shoulder drift in all actors. The guest preview now explains movement and nearby physics objects. [Design and QA](docs/MOVEMENT_POLISH_V111.md).
+
 # ELSEWHERE
 
 **PLAY WITHOUT INSTALLING ANYTHING:** [Open ELSEWHERE in StackBlitz](https://stackblitz.com/fork/github/kapasainitishreddy/ELSEWHERE?startScript=play&view=preview). StackBlitz imports the current public GitHub branch, installs packages and runs Vite in your browser. Click **PLAY GUEST DEMO** for an unsaved session. Browser-based Rapier/WebXR compatibility has not been certified; use Chrome/Brave on a computer first. [Local setup instructions](docs/HOW_TO_PLAY.md).

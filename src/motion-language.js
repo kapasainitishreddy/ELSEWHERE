@@ -49,6 +49,7 @@ export function interactionHint(action, names={}) {
   if (action.type === 'inspect') return `EXAMINE ${String(action.label||'ARTIFACT').toUpperCase()}`;
   if (action.type === 'stillwater') return 'ENTER THE QUIET GARDEN';
   if (action.type === 'choice') return String(action.label||'MAKE YOUR CHOICE').toUpperCase();
+  if (action.type === 'physics') return String(action.label||'PUSH THE OBJECT').toUpperCase();
   return '';
 }
 export function chooseNearby(items, x, z, maxDistance=3.8) {

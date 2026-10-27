@@ -114,7 +114,8 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
   mouthInterior.scale.y=.08+acting.mouth*2.5;
   head.rotation.y=acting.headYaw;
   head.rotation.z=acting.headRoll;
-  head.rotation.x=reducedMotion?acting.headNod:head.rotation.x+acting.headNod;
+  // AnimationMixer computes each clip pose; secondary acting must never accumulate forever.
+  head.rotation.x=reducedMotion?acting.headNod:THREE.MathUtils.clamp((step?head.rotation.x:0)+acting.headNod,-.45,.45);
   head.position.y=.67+acting.chest;
   arms[0].wrist.rotation.z=acting.wristL;
   arms[1].wrist.rotation.z=acting.wristR;
@@ -125,7 +126,8 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
   indicator.position.y=2.83+(reducedMotion?0:Math.sin(time*.8)*.045);
   indicator.material.color.setHex(activeMode==='speaking'?0xf3c7a7:activeMode==='listening'?0x8ccef8:accent);
   // Animated gestures never drive locomotion or camera pose.
-  if(!reducedMotion){spine.rotation.z+=acting.shoulder*.17;}
+  if(reducedMotion)spine.rotation.z=0;
+  else spine.rotation.z=THREE.MathUtils.clamp((step?spine.rotation.z:0)+acting.shoulder*.17,-.22,.22);
 
  }
  return {root,visual,robe,mixer,setMode,update,get mode(){return activeMode;},bones:{lower,spine,head,arms,leftHip,rightHip},features:{mouth,mouthInterior,eyes,scalp,contactShadow}};

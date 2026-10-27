@@ -1,7 +1,7 @@
 {
   "name": "syrava-elsewhere",
   "private": true,
-  "version": "1.11.0",
+  "version": "1.11.1",
   "type": "module",
   "description": "ELSEWHERE locally encrypted parallel worlds with optional CC0 scene assets and immersive WebXR",
   "scripts": {
@@ -25,7 +25,8 @@
     "submission:check": "node scripts/submission-check.mjs",
     "npc:check": "node --test tests/npc-navigation.test.mjs",
     "world:check": "node --test tests/physics-playground.test.mjs tests/asset-interactions.test.mjs tests/npc-navigation.test.mjs",
-    "play": "vite --host 0.0.0.0 --port 5173"
+    "play": "vite --host 0.0.0.0 --port 5173",
+    "movement:check": "node --test tests/player-motion.test.mjs tests/actor-integration.test.mjs"
   },
   "dependencies": {
     "three": "^0.181.0",

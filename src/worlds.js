@@ -10,6 +10,7 @@ import {characterPose, damp, angleTo, classifyMoment, interactionHint, chooseNea
 import {createKineticEffects} from './kinetic-effects.js';
 import {createFrameSampler,describeFrame} from './performance.js';
 import {createActor} from './actor-studio.js';
+import {createPlayerMotion} from './player-motion.js';
 import {installPhysicsStage} from './physics-playground.js';
 import * as YUKA from 'yuka';
 import {createNpcNavigator} from './npc-navigation.js';
@@ -505,22 +506,12 @@ function buildCombatTargets(g,state,animated,targets){
  }
 }
 function makePlayer(root){
- // Readable original third-person traveler with a jointed walk cycle.
- const group=new THREE.Group();root.add(group);
- const coat=mat(0x8b9ba8,.65,.28),highlight=emissive(0xe5fbff,.5),boot=mat(0x202d3b,.5,.5);
- const chest=new THREE.Group();group.add(chest);
- mesh(chest,new THREE.CapsuleGeometry(.31,.9,4,8),coat,0,1.15,0);
- const head=orb(chest,.28,mat(0xc6c3b5,.18,.6),0,2.02,0);
- box(chest,.39,.09,.08,highlight,0,2.04,.27);
- const arms=[],legs=[];
- for(const dir of [-1,1]){
-   const arm=new THREE.Group();arm.position.set(dir*.38,1.54,0);chest.add(arm);
-   box(arm,.17,.57,.21,coat,0,-.30,0);arms.push(arm);
-   const leg=new THREE.Group();leg.position.set(dir*.23,.74,0);group.add(leg);
-   box(leg,.21,.66,.23,boot,0,-.33,0);legs.push(leg);
- }
- group.userData.motion={chest,head,arms,legs};
- group.position.set(0,0,6);group.name='Traveler';return group;
+ // The traveler shares the original skeletal rig and cross-faded clips with the NPC cast.
+ const actor=createActor({skin:0xc6b49d,coat:0x304c5c,hair:0x15242e,accent:0x9debe8,
+   mood:'curious',identity:'traveler'});
+ const group=actor.root;group.name='Traveler';
+ group.userData.actor=actor;
+ group.position.set(0,0,6);root.add(group);return group;
 }
 /** Artifacts invite players to touch, examine and connect the five worlds.
  * Inspections are ephemeral and deliberately do not write new personal data to the vault.
@@ -620,6 +611,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  const hover=document.querySelector('#interaction-hint');let pointerDown=null;
  const proximityCue=document.createElement('div');proximityCue.className='world-proximity-cue';proximityCue.setAttribute('aria-live','off');container.append(proximityCue);
+ const firstPlay=document.createElement('div');firstPlay.className='world-first-play';
+ firstPlay.textContent='WASD MOVE · MOUSE LOOK · SHIFT SPRINT · E INTERACT';container.append(firstPlay);
  // Explicit ?perf=1 opt-in only. No metrics ever leave this browser or enter the save.
  const showPerf=new URLSearchParams(window.location.search).get('perf')==='1';
  const frameSample=createFrameSampler();let nextPerfUpdate=0;
@@ -629,8 +622,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  focusReticle.visible=false;focusReticle.renderOrder=12;scene.add(focusReticle);
  let lastCue='',focusedPoint=null,activeChoice=null;
  const worldNames=Object.fromEntries(Object.entries(WORLDS).map(([key,w])=>[key,w.name]));
- const clock=new THREE.Clock();const care=createSessionCare();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();let comfortId=DEFAULT_COMFORT;
- let hasExplored=false;let previousGamepadButtons=new Set(),gamepadAxes={x:0,z:0};
+ const clock=new THREE.Clock();const care=createSessionCare();const locomotion=createPlayerMotion();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();let comfortId=DEFAULT_COMFORT;
+ let hasExplored=false,travelerSpeed=0;let previousGamepadButtons=new Set(),gamepadAxes={x:0,z:0};
  function desktopGamepad(){
    if(renderer.xr.isPresenting || !state || !document.querySelector('#vault-gate')?.hidden || document.querySelector('.modal-shade')){
      previousGamepadButtons.clear();gamepadAxes={x:0,z:0};return;
@@ -859,6 +852,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    xrChoicePanels(state.world);
    player=makePlayer(world);player.visible=!renderer.xr.isPresenting && !(state.world==='mech'&&state.mechDeployed);
    playerPos.copy(sameWorld?lastPos:new THREE.Vector3(0,0,6));
+   if(!sameWorld)locomotion.reset(Math.PI);
+   player.rotation.y=locomotion.heading;
    if(!renderer.xr.isPresenting){
      rig.position.set(0,0,0);
      if(sameWorld){camera.position.copy(lastCamera);controls.target.copy(lastTarget);}
@@ -875,22 +870,21 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  }
  function move(dt){
    if(!state || renderer.xr.isPresenting)return;
-   const speed=(pressed.has('ShiftLeft')?10:5.5)*dt;
-   const mx=(pressed.has('KeyD')||pressed.has('ArrowRight')?1:0)-(pressed.has('KeyA')||pressed.has('ArrowLeft')?1:0)+gamepadAxes.x;
-   const mz=(pressed.has('KeyS')||pressed.has('ArrowDown')?1:0)-(pressed.has('KeyW')||pressed.has('ArrowUp')?1:0)+gamepadAxes.z;
-   moving=Boolean(mx||mz);
-   if(!moving)return;
-   if(!hasExplored && window.innerWidth>780 && !renderer.xr.isPresenting){hasExplored=true;onExplore();}
-   const norm=Math.max(1,Math.hypot(mx,mz));const dx=mx/norm*speed,dz=mz/norm*speed;
-   const collisions=collisionRects(state.world);
-   const tryX=THREE.MathUtils.clamp(playerPos.x+dx,-22,22),tryZ=THREE.MathUtils.clamp(playerPos.z+dz,-22,18);
-   const blocked=(x,z)=>!(state.world==='mech'&&state.mechDeployed)&&collisions.some(([a,b,c,d])=>x>a-.45&&x<b+.45&&z>c-.45&&z<d+.45);
-   if(!blocked(tryX,playerPos.z))playerPos.x=tryX;
-   if(!blocked(playerPos.x,tryZ))playerPos.z=tryZ;
-   if(state.world==='mech'&&state.mechDeployed&&titan){titan.position.x=playerPos.x;titan.position.z=playerPos.z-13;titan.rotation.y=Math.atan2(dx,dz)+Math.PI;}
-   else {player.position.copy(playerPos);player.rotation.y=Math.atan2(dx,dz)+Math.PI;}
-   const target=new THREE.Vector3(playerPos.x,state.world==='mech'&&state.mechDeployed?5:2,playerPos.z-3);
-   const d=target.clone().sub(controls.target);controls.target.add(d);camera.position.add(d);
+   const ix=(pressed.has('KeyD')||pressed.has('ArrowRight')?1:0)-(pressed.has('KeyA')||pressed.has('ArrowLeft')?1:0)+gamepadAxes.x;
+   const iz=(pressed.has('KeyS')||pressed.has('ArrowDown')?1:0)-(pressed.has('KeyW')||pressed.has('ArrowUp')?1:0)+gamepadAxes.z;
+   const cameraYaw=Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z);
+   const pose=locomotion.step({x:playerPos.x,z:playerPos.z,inputX:ix,inputZ:iz,cameraYaw,
+     sprint:pressed.has('ShiftLeft'),dt,rects:collisionRects(state.world),
+     collisions:!(state.world==='mech'&&state.mechDeployed)});
+   moving=pose.moving;travelerSpeed=pose.speed;playerPos.set(pose.x,0,pose.z);
+   if(moving&&!hasExplored&&window.innerWidth>780){hasExplored=true;onExplore();}
+   if(state.world==='mech'&&state.mechDeployed&&titan){
+     titan.position.x=playerPos.x;titan.position.z=playerPos.z-13;titan.rotation.y=pose.heading;
+   }else if(player){player.position.copy(playerPos);player.rotation.y=pose.heading;}
+   // Chase the traveler without stealing orbit, zoom, or headset control.
+   const target=new THREE.Vector3(playerPos.x,state.world==='mech'&&state.mechDeployed?5:1.95,playerPos.z-3);
+   const d=target.sub(controls.target).multiplyScalar(1-Math.exp(-7.5*dt));
+   controls.target.add(d);camera.position.add(d);
  }
  let snapReady=true;
  function tick(){const frameTime=clock.getDelta();const dt=Math.min(frameTime,.05);if(document.hidden)return;
@@ -909,20 +903,17 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      if(turn.radians)rig.rotation.y+=turn.radians;
    }
    if(player && player.visible){
-     const pose=characterPose(t,moving?'walking':'idle',2.3);
-     player.position.y=reduceMotion?0:pose.bob;
-     const motion=player.userData.motion;
-     if(motion){motion.chest.rotation.z=reduceMotion?0:pose.sway;
-       motion.head.rotation.x=reduceMotion?0:pose.headTilt;
-       motion.arms[0].rotation.x=reduceMotion?0:pose.stride*.72;
-       motion.arms[1].rotation.x=reduceMotion?0:-pose.stride*.72;
-       motion.legs[0].rotation.x=reduceMotion?0:-pose.stride;
-       motion.legs[1].rotation.x=reduceMotion?0:pose.stride;
+     const actor=player.userData.actor;
+     if(actor){
+       actor.setMode(moving?'walking':'idle');
+       actor.mixer.timeScale=moving?THREE.MathUtils.clamp(travelerSpeed/4.1,.65,1.4):1;
+       actor.update(t,dt,{reducedMotion:reduceMotion});
      }
    }
    const nearby=chooseNearby([...nearbyProps,...portalLocations],playerPos.x,playerPos.z);
    const nextCue=!renderer.xr.isPresenting&&nearby ? `E · ${interactionHint(nearby.action,worldNames)}` : '';
    if(nextCue!==lastCue){proximityCue.textContent=nextCue;proximityCue.classList.toggle('visible',!!nextCue);lastCue=nextCue;}
+   firstPlay.hidden=hasExplored||renderer.xr.isPresenting;
    if(renderer.xr.isPresenting){
      const origin=new THREE.Vector3(),q=new THREE.Quaternion(),direction=new THREE.Vector3();
      for(const controller of vrControllers){
