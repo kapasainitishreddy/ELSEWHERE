@@ -15,6 +15,7 @@ import {installAnimatedCompanion} from './animated-companion.js';
 import {COMFORT_PRESETS,DEFAULT_COMFORT,comfortPreset,comfortTurn,walkableLanding} from './xr-comfort.js';
 import {createSessionCare} from './session-care.js';
 import {safeSceneCue} from './scene-director.js';
+import {portalFrame,combatFrame} from './performance-direction.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
 const palettes = {
@@ -45,21 +46,21 @@ function labelTexture(title,subtitle='',fg='#c6faff',accent='#60e8e8'){
 function sign(parent,title,subtitle,x,y,z,w=3.8){const t=labelTexture(title,subtitle);const plane=mesh(parent,new THREE.PlaneGeometry(w,w/3),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,side:THREE.DoubleSide}),x,y,z);return plane;}
 function ground(g,p){mesh(g,new THREE.PlaneGeometry(170,170),mat(p.ground,.1,.9),0,-.12,0,-Math.PI/2);const grid=new THREE.GridHelper(170,80,p.light,0x31414e);grid.material.transparent=true;grid.material.opacity=.12;grid.position.y=-.097;g.add(grid);}
 function stars(group,color=0xc2edff,count=300){const vertices=[];for(let i=0;i<count;i++){const a=seeded(i*2)*Math.PI*2;const r=20+seeded(i*3+17)*65;vertices.push(Math.sin(a)*r,3+seeded(i*11+9)*30,Math.cos(a)*r);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));const p=new THREE.Points(g,new THREE.PointsMaterial({color,size:.14,transparent:true,opacity:.5,sizeAttenuation:true,depthWrite:false}));group.add(p);}
-function buildPortal(group,world,x,z,interactables,animated){
+function buildPortal(group,world,x,z,interactables,animated,getTraveler,reduceMotion=false){
  const base=new THREE.Group();base.position.set(x,0,z);group.add(base);
  addPortalCorona(base,world,animated,x);
  const frame=emissive(COLORS[world],1.4);const frameRing=ring(base,1.5,.105,frame,0,2.1,0);
  ring(base,1.68,.025,emissive(0xffffff,.55),0,2.1,0);
  const membraneMaterial=new THREE.ShaderMaterial({
-  uniforms:{uTime:{value:0},uColor:{value:new THREE.Color(COLORS[world])}},transparent:true,depthWrite:false,side:THREE.DoubleSide,
+  uniforms:{uTime:{value:0},uProximity:{value:0},uAlpha:{value:.5},uColor:{value:new THREE.Color(COLORS[world])}},transparent:true,depthWrite:false,side:THREE.DoubleSide,
   vertexShader:`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-  fragmentShader:`varying vec2 vUv; uniform float uTime; uniform vec3 uColor;
+  fragmentShader:`varying vec2 vUv; uniform float uTime; uniform float uProximity; uniform float uAlpha; uniform vec3 uColor;
     void main(){vec2 p=vUv*2.0-1.0;float r=length(p);if(r>1.0)discard;
     float a=atan(p.y,p.x);float swirl=sin(12.0*r-2.9*uTime+sin(a*5.0+uTime)*1.6);
     float swirl2=sin(18.0*r+sin(a*8.0-uTime)*1.3+uTime*3.2);
     float central=1.0-smoothstep(0.2,1.0,r);float edge=smoothstep(.74,.97,r);
-    vec3 col=uColor*(.23+.32*central+.2*swirl+.16*swirl2)+vec3(.17,.21,.3)*central;
-    gl_FragColor=vec4(col,.32+.27*central+.2*edge);}`
+    vec3 col=uColor*(.24+.32*central+.13*swirl+.11*swirl2+uProximity*.16)+vec3(.17,.21,.3)*central;
+    gl_FragColor=vec4(col,(.22+.25*central+.18*edge)*uAlpha*1.5);}`
  });
  const membrane=mesh(base,new THREE.CircleGeometry(1.4,64),membraneMaterial,0,2.1,-.03);
  membrane.userData.action={type:'world',world};interactables.push(membrane);
@@ -67,22 +68,34 @@ function buildPortal(group,world,x,z,interactables,animated){
  hit.userData.action={type:'world',world};interactables.push(hit);
  cylinder(base,1.48,1.63,.18,mat(0x111e29,.8,.2),0,.03,0);
  sign(base,WORLDS[world].name.toUpperCase(),'ENTER WORLD',0,4.4,.08,3.2);
- light(base,COLORS[world],1.8,0,2.2,0,10);
+ const portalLight=light(base,COLORS[world],1.4,0,2.2,0,10);
  // Floating shards share one instanced draw call; no global post-effects or strobing.
  const shardCount=14;
  const shards=new THREE.InstancedMesh(new THREE.TetrahedronGeometry(.12,0),emissive(COLORS[world],1.25),shardCount);
  shards.frustumCulled=false;base.add(shards);
  const shardPose=new THREE.Object3D();
+ let lastShards=-Infinity;
  animated.push((time)=>{
-   frame.emissiveIntensity=1.3+Math.sin(time*1.25+x)*.35;
-   frameRing.rotation.z=Math.sin(time*.21+x)*.1;
-   membraneMaterial.uniforms.uTime.value=time;
+   const traveler=getTraveler?.();
+   const distance=traveler?Math.hypot(traveler.x-x,traveler.z-z):20;
+   const frame=portalFrame(time,distance,{seed:x+z, reducedMotion:reduceMotion});
+   frameRing.scale.setScalar(frame.radius);
+   frameRing.rotation.z=frame.twist;
+   membraneMaterial.uniforms.uTime.value=reduceMotion?0:time;
+   membraneMaterial.uniforms.uProximity.value=frame.proximity;
+   membraneMaterial.uniforms.uAlpha.value=frame.opacity;
+   portalLight.intensity=1.35 + frame.proximity*.4;
+   // Intensity is slow and bounded: no flashing, bloom, or forced camera motion.
+   frameRing.material.emissiveIntensity=frame.glow;
+   // Far-away shards use a lower update frequency to protect Quest's CPU budget.
+   if(distance>11 && time-lastShards<.09)return;
+   lastShards=time;
    for(let i=0;i<shardCount;i++){
-     const a=(i/shardCount)*Math.PI*2+time*.31*(i%2?-1:1);
-     const r=1.7+Math.sin(time*.47+i*1.9)*.16;
-     shardPose.position.set(Math.cos(a)*r,2.1+Math.sin(a)*r,Math.sin(time*.62+i)*.22);
-     shardPose.rotation.set(a,time*.51+i,a*.25);
-     shardPose.scale.setScalar(.38+.2*Math.sin(time*.73+i)**2);
+     const a=(i/shardCount)*Math.PI*2+(reduceMotion?0:time*.25*(i%2?-1:1));
+     const r=1.72+(reduceMotion?0:Math.sin(time*.42+i*1.9)*frame.shardMotion*.65);
+     shardPose.position.set(Math.cos(a)*r,2.1+Math.sin(a)*r,reduceMotion?0:Math.sin(time*.58+i)*frame.shardMotion);
+     shardPose.rotation.set(a,reduceMotion?0:time*.4+i,a*.25);
+     shardPose.scale.setScalar(.31 + frame.proximity*.1 + (reduceMotion?0:.1*Math.sin(time*.7+i)**2));
      shardPose.updateMatrix();shards.setMatrixAt(i,shardPose.matrix);
    }
    shards.instanceMatrix.needsUpdate=true;
@@ -102,8 +115,23 @@ function buildChronalOrrey(group,state,animated){
  mesh(hourglass,new THREE.ConeGeometry(.42,.75,18),glass(0xaceaea,.42),0,.44,0,Math.PI);
  mesh(hourglass,new THREE.ConeGeometry(.42,.75,18),glass(0xaceaea,.42),0,-.44,0);
  orb(hourglass,.14,emissive(0xcffcf2,1.7),0,0,0);
+ // A small animated cascade of fictional seconds. Purely decorative, never spends hours.
+ const secondGeometry=new THREE.IcosahedronGeometry(.033,0);
+ const seconds=new THREE.InstancedMesh(secondGeometry,emissive(0xe3f8e4,.45),10);
+ const secondPose=new THREE.Object3D();hourglass.add(seconds);
  sign(clock,'THE HOURS BANK',`${state.chronal.hours} STORED · ${state.chronal.futureDebt+state.chronal.pastDebt} OWED`,0,5.25,0,3.9);
- animated.push(t=>{rings.forEach((r,i)=>{r.rotation.y=t*(i%2?-.28:.22);r.rotation.z=Math.sin(t*.21+i)*.3;});hourglass.rotation.y=t*.13;core.position.y=2.8+Math.sin(t*.9)*.06;});
+ animated.push((t,moving,dt)=>{
+   rings.forEach((r,i)=>{r.rotation.y=t*(i%2?-.2:.18);r.rotation.z=dt===0?0:Math.sin(t*.21+i)*.23;});
+   hourglass.rotation.y=dt===0?0:t*.10;
+   core.position.y=2.8+(dt===0?0:Math.sin(t*.7)*.05);
+   for(let i=0;i<seconds.count;i++){
+     const f=(i/seconds.count+(dt===0?0:t*.12))%1;
+     const spread=(1-Math.abs(f*2-1))*.12;
+     secondPose.position.set(Math.cos(i*2.399)*spread, .54-f*1.08,Math.sin(i*2.399)*spread);
+     secondPose.scale.setScalar(.55+(i%3)*.18);secondPose.updateMatrix();seconds.setMatrixAt(i,secondPose.matrix);
+   }
+   seconds.instanceMatrix.needsUpdate=true;
+ });
 }
 function buildLivingCharacters(group,state,targets,animated,getTraveler,nearbyProps){
  const actors={
@@ -115,7 +143,7 @@ function buildLivingCharacters(group,state,targets,animated,getTraveler,nearbyPr
  for(const actor of actors){
   const memory=state.cast?.[actor.id]||{},affinity=memory.affinity||0;
   const palette=memory.mood==='grateful'?0x79f5c0:memory.mood==='angry'?0xf58a90:0xbce3f3;
-  const model=createActor({coat:actor.cape,hair:actor.hair,accent:palette,mood:memory.mood});
+  const model=createActor({coat:actor.cape,hair:actor.hair,accent:palette,mood:memory.mood,identity:actor.id});
   const figure=model.root;figure.position.set(actor.x,0,actor.z);group.add(figure);
   const aura=ring(figure,.53,.028,emissive(palette,1.1),0,.08,0);aura.rotation.x=Math.PI/2;
   const marker=sign(figure,actor.name,`${(memory.mood||'WATCHFUL').toUpperCase()} · REMEMBERS YOU`,0,3.92,.1,3.5);
@@ -226,7 +254,8 @@ function buildFuture(g,state,animated){
    const vehicle=new THREE.Group();g.add(vehicle);
    vehicle.position.set(-33+seeded(i+20)*66,8+seeded(i+50)*12,-18-seeded(i+90)*22);
    box(vehicle,1.9,.33,.8,metal,0,0,0);box(vehicle,1.55,.08,.12,emissive(i%2?0xffbc77:0x78efff,2),0,-.24,.34);
-   animated.push(t=>{vehicle.position.x=((t*(i%2?-.4:.6)+(i*7))%78)-39;vehicle.position.y+=Math.sin(t*.02+i)*.0003;});
+   const cruiseY=vehicle.position.y;
+   animated.push(t=>{vehicle.position.x=((t*(i%2?-.4:.6)+(i*7))%78)-39;vehicle.position.y=cruiseY+Math.sin(t*.54+i)*.2;});
  }
 }
 function buildSelf(g,state,animated,getTraveler){
@@ -247,8 +276,33 @@ function buildSelf(g,state,animated,getTraveler){
  light(g,0xffc390,3,-4,5,-3,14);
  // An original abstract *skinned* figure driven by authored AnimationMixer clips.
  // No face scan, biometric likeness, remote generation or camera motion.
- const elder=createActor({age:'older',skin:0xbba38f,coat:0x323b48,hair:0xb0bcc5,accent:0xf3ca99,mood:'grateful'});
+ const elder=createActor({age:'older',skin:0xbba38f,coat:0x323b48,hair:0xb0bcc5,accent:0xf3ca99,mood:'grateful',identity:'future-self'});
  elder.root.position.set(0,0,-5.3);g.add(elder.root);
+ // A tabletop projection of a possible life, unlocked only by fictional decisions.
+ // Its miniature character performs a separate authored animation and has no
+ // access to private user notes, biometric likeness, camera or AI history.
+ if(state.invention && state.fate){
+   const generous=state.fate==='gift',traded=state.fate==='auction';
+   const projectionColor=generous?0x85f8cb:traded?0xf4bd81:0xbccfff;
+   const echoActor=createActor({identity:'possible-life-projection',
+     skin:0xb6cbd3,coat:0x547e8c,hair:0xb3dae0,accent:projectionColor,
+     mood:generous?'grateful':traded?'watchful':'curious'});
+   echoActor.root.scale.setScalar(.32);
+   echoActor.root.position.set(0,.76,-2.7);g.add(echoActor.root);
+   echoActor.root.traverse(node=>{
+     const materials=Array.isArray(node.material)?node.material:node.material?[node.material]:[];
+     for(const material of materials){material.transparent=true;material.opacity=Math.min(material.opacity,.55);material.depthWrite=false;}
+   });
+   const projectionHalo=ring(g,.52,.019,emissive(projectionColor,.65),0,.80,-2.7);
+   projectionHalo.rotation.x=Math.PI/2;
+   animated.push((t,moving,dt)=>{
+     const mode=generous?'delighted':traded?'walking':'speaking';
+     echoActor.setMode(mode);
+     echoActor.update(t,dt,{reducedMotion:dt===0});
+     echoActor.root.rotation.y=dt===0?0:Math.sin(t*.29)*.16;
+     projectionHalo.scale.setScalar(dt===0?1:1+.05*Math.sin(t*.45));
+   });
+ }
  let presence='idle';
  const halo=ring(g,1.3,.025,emissive(0xecc29f,.55),0,3.45,-5.5);
  const speechHalo=ring(g,.7,.014,emissive(0xffdfb8,.53),0,3.7,-5.3);speechHalo.rotation.x=Math.PI/2;
@@ -369,9 +423,12 @@ function makeMech(parent,animated){
  titan.userData.combatMotion={recoil:0};
  animated.push((t,moving,dt)=>{
    const motion=titan.userData.combatMotion;
-   motion.recoil=Math.max(0,motion.recoil-Math.max(0,dt)*4.8);
-   titan.rotation.x=-motion.recoil*.07;
-   ventLeft.scale.setScalar(1+.2*Math.sin(t*4)+motion.recoil*.4);
+   // Distinct recoil / recovery beats, never shake or move the tracked viewpoint.
+   motion.recoil=Math.max(0,motion.recoil-Math.max(0,dt)*2.9);
+   titan.rotation.x=-motion.recoil*.085;
+   titan.rotation.z=dt===0?0:(moving?Math.sin(t*3.2)*.018:Math.sin(t*.65)*.006);
+   const pulse=dt===0?1:1+.12*Math.sin(t*2.2);
+   ventLeft.scale.setScalar(pulse+motion.recoil*.36);
    ventRight.scale.copy(ventLeft.scale);
  });
  light(titan,0x88e8ff,2,0,6,2,14);return titan;
@@ -416,7 +473,16 @@ function buildCombatTargets(g,state,animated,targets){
    const zone=mesh(group,new THREE.SphereGeometry(.87,14,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),0,0,.15);
    zone.userData.action={type:'choice',id:'fire-pulse'};targets.push(zone);
    const sight=ring(group,1.03,.035,emissive(0xff7b8e,1.5),0,0,.12);
-   animated.push(t=>{group.position.y=5.1+Math.sin(t*1.2+i)*.35;group.position.x+=(Math.sin(t*.7+i)*.001);sight.rotation.z=t*.3;body.material.emissiveIntensity=1.5+Math.sin(t*3+i)*.4;});
+   const anchorX=group.position.x;
+   animated.push((t,moving,dt)=>{
+     const cue=combatFrame(t,i,{reducedMotion:dt===0});
+     group.position.y=5.1+cue.hover;
+     group.position.x=anchorX+cue.sweep;
+     group.rotation.y=cue.yaw;
+     sight.rotation.z=dt===0?0:t*.18;
+     sight.scale.setScalar(cue.halo);
+     body.material.emissiveIntensity=1.35+(dt===0?0:.15*Math.sin(t*.75+i));
+   });
   }
   sign(g,'TARGET THE DRONES','AIM / CLICK / VR TRIGGER',0,10,-17,5);
  }
@@ -738,7 +804,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    // Three interactive wormholes, placed at each world's far edge.
    const all=Object.keys(WORLDS).filter(w=>w!==state.world);
    for(let i=0;i<all.length;i++){
-     const x=(i-1.5)*5.7;buildPortal(world,all[i],x,-20.5,targets,animated);
+     const x=(i-1.5)*5.7;buildPortal(world,all[i],x,-20.5,targets,animated,()=>playerPos,reduceMotion);
      portalLocations.push({x,z:-20.5,action:{type:'world',world:all[i]}});
    }
    buildParallelGate(world,state,targets,animated);
@@ -829,7 +895,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      }
    }
    focusReticle.visible=Boolean(!renderer.xr.isPresenting&&focusedPoint);
-   if(focusReticle.visible){focusReticle.position.copy(focusedPoint);focusReticle.lookAt(camera.position);focusReticle.rotation.z+=dt*.8;}
+   if(focusReticle.visible){focusReticle.position.copy(focusedPoint);focusReticle.lookAt(camera.position);if(!reduceMotion)focusReticle.rotation.z+=dt*.8;}
    fx?.update(dt);
    for(const fn of animated)fn(t,moving,reduceMotion?0:dt);
    controls.enabled=!renderer.xr.isPresenting;if(!renderer.xr.isPresenting)controls.update();renderer.render(scene,camera);
@@ -841,8 +907,15 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    }}
  }
  renderer.setAnimationLoop(tick);
- renderer.xr.addEventListener('sessionstart',()=>{controls.enabled=false;rig.position.set(0,0,5);camera.position.set(0,0,0);xrWatch.visible=true;xrNote.visible=false;updateXRWatch();if(player)player.visible=false;});
- renderer.xr.addEventListener('sessionend',()=>{care.reset();controls.enabled=true;rig.position.set(0,0,0);rig.rotation.y=0;xrWatch.visible=false;xrNote.visible=false;camera.position.set(0,5.5,18);if(player)player.visible=!(state.world==='mech'&&state.mechDeployed);});
+ // Do not carry desktop-sized particle budgets into a headset session.
+ // Recreate the bounded FX pool whenever presentation mode changes.
+ function switchFeedbackProfile(xr){
+   if(!state)return;
+   fx?.dispose();
+   fx=createKineticEffects(world,{xr,reducedMotion:reduceMotion,mobile:window.innerWidth<900});
+ }
+ renderer.xr.addEventListener('sessionstart',()=>{switchFeedbackProfile(true);controls.enabled=false;rig.position.set(0,0,5);camera.position.set(0,0,0);xrWatch.visible=true;xrNote.visible=false;updateXRWatch();if(player)player.visible=false;});
+ renderer.xr.addEventListener('sessionend',()=>{switchFeedbackProfile(false);care.reset();controls.enabled=true;rig.position.set(0,0,0);rig.rotation.y=0;xrWatch.visible=false;xrNote.visible=false;camera.position.set(0,5.5,18);if(player)player.visible=!(state.world==='mech'&&state.mechDeployed);});
  function reactToDialogue(rawCue){
    if(state?.world!=='self'||!fx)return;
    const cue=safeSceneCue(rawCue);
@@ -850,7 +923,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    // A transient, pooled visual response, never an environmental gameplay mutation.
    const offset={rain:[-3,3,-8],warmth:[0,2.5,-5],wonder:[2,4,-9],quiet:[0,1.5,-6],resolve:[0,3,-7]}[cue];
    fx.emit(kind,new THREE.Vector3(...offset));
-   if(cue==='wonder'||cue==='resolve')setDialogueActivity('delight',2);
+   if(cue==='wonder'||cue==='resolve')setDialogueActivity('delighted',2);
  }
  function setComfort(id){
    comfortId=(id in COMFORT_PRESETS)?id:DEFAULT_COMFORT;

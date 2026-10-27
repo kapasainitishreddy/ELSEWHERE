@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import {clipSpec,ACTOR_MODES,wordMouthOpening,nearActorGaze} from './actor-choreography.js';
 import {angleTo} from './motion-language.js';
+import {performanceFrame} from './performance-direction.js';
 
 const material=(color,opts={})=>new THREE.MeshStandardMaterial({color,roughness:.84,metalness:.10,...opts});
 const element=(parent,geometry,mat,position)=>{
@@ -30,7 +31,7 @@ function animationClip(mode){
  const tracks=channels.map(({path,times,values})=>new THREE.NumberKeyframeTrack(path,times,values));
  return new THREE.AnimationClip(name,duration,tracks);
 }
-export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0xb6eedf,age='adult',mood='watchful'}={}){
+export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0xb6eedf,age='adult',mood='watchful',identity='citizen'}={}){
  const root=new THREE.Group();root.name='Original rigged citizen';
  const visual=new THREE.Group();root.add(visual);
  const lower=pivot('hips',visual,0,.91,0),spine=pivot('spine',lower,0,.67,0);
@@ -56,10 +57,12 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
   brows.push(box(head,sign*.123,.22,.291,.125,.027,.025,eyebrowMaterial));
   const white=sphere(head,.064,material(0xf2e5d1),sign*.127,.105,.293);
   const pupil=sphere(head,.030,eyeMaterial,sign*.127,.105,.343);
-  eyes.push({white,pupil});
+  eyes.push({white,pupil,baseX:sign*.127});
  }
  const mouth=element(head,new THREE.TorusGeometry(.080,.012,5,20,Math.PI),material(0x7b5351),[0,-.053,.294]);
- mouth.rotation.z=Math.PI; // an unobtrusive smile, not a fixed grin
+ mouth.rotation.z=Math.PI; // subtle neutral lip curve
+ const mouthInterior=element(head,new THREE.SphereGeometry(.061,10,8),material(0x503139),[0,-.060,.333]);
+ mouthInterior.scale.set(1,.08,.20);
  const scarf=element(spine,new THREE.TorusGeometry(.34,.07,8,18),material(accent,{metalness:.28}),[0,.56,0]);scarf.rotation.x=Math.PI/2;
  const leftShoulder=pivot('leftShoulder',spine,-.42,.43,0),rightShoulder=pivot('rightShoulder',spine,.42,.43,0);
  const arms=[];
@@ -77,6 +80,8 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
   element(leg,new THREE.BoxGeometry(.26,.18,.44),bootMat,[0,-1.00,.09]);
  }
  // The head remains a deliberate illustration: no scan or generated likeness of a real person.
+ const contactShadow=element(root,new THREE.CircleGeometry(.46,28),new THREE.MeshBasicMaterial({color:0x061019,transparent:true,opacity:.16,depthWrite:false,side:THREE.DoubleSide}),[0,.025,0]);
+ contactShadow.rotation.x=-Math.PI/2;
  const mixer=new THREE.AnimationMixer(visual);
  const actions=Object.fromEntries(ACTOR_MODES.map(mode=>[mode,mixer.clipAction(animationClip(mode))]));
  let activeMode='idle',yaw=0;
@@ -85,7 +90,7 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
  function setMode(mode){
   const next=actions[mode]?mode:'idle';if(next===activeMode)return;
   const from=actions[activeMode],to=actions[next];to.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).play();
-  from.crossFadeTo(to,.28,true);activeMode=next;
+  from.crossFadeTo(to,next==='startled'?.16:.36,true);activeMode=next;
  }
  function update(time,dt,{target=null,walking=false,reducedMotion=false}={}){
   const step=Math.max(0,Math.min(.05,Number.isFinite(dt)?dt:0));
@@ -96,13 +101,32 @@ export function createActor({skin=0xd0b69e,coat=0x3a485e,hair=0x91a2ad,accent=0x
    const dist=Math.hypot(target.x-root.position.x,target.z-root.position.z),attention=nearActorGaze(dist);
    if(attention){const desired=Math.atan2(target.x-root.position.x,target.z-root.position.z);yaw=angleTo(yaw,desired,3.3,step);root.rotation.y=yaw;}
   }
-  const blinkTime=((time+root.position.x*.13)%4.37+4.37)%4.37;
-  const blink=blinkTime<.16?Math.max(.07,Math.abs(blinkTime-.08)/.08):1;
-  for(const eye of eyes){eye.white.scale.y=blink;eye.pupil.scale.y=blink;}
-  mouth.scale.y=1+wordMouthOpening(time,activeMode==='speaking',reducedMotion)*1.9;
-  indicator.position.y=2.83+(reducedMotion?0:Math.sin(time*.8)*.05);
+  const distance = target ? Math.hypot(target.x-root.position.x,target.z-root.position.z) : 20;
+  const acting=performanceFrame(time,{mode:activeMode,mood,identity,distance,reducedMotion});
+  for(const eye of eyes){
+    eye.white.scale.y=acting.eyelid;
+    eye.pupil.scale.y=acting.eyelid;
+    eye.pupil.position.x=eye.baseX+acting.eyeX;
+    eye.pupil.position.y=.105+acting.eyeY;
+  }
+  // Separate speech shapes read clearly at conversational VR distance.
+  mouth.scale.y=1+acting.mouth*.7;
+  mouthInterior.scale.y=.08+acting.mouth*2.5;
+  head.rotation.y=acting.headYaw;
+  head.rotation.z=acting.headRoll;
+  head.rotation.x=reducedMotion?acting.headNod:head.rotation.x+acting.headNod;
+  head.position.y=.67+acting.chest;
+  arms[0].wrist.rotation.z=acting.wristL;
+  arms[1].wrist.rotation.z=acting.wristR;
+  for(const [i,b] of brows.entries()){
+    b.rotation.z=(i?1:-1)*(i?acting.browR:acting.browL);
+  }
+  contactShadow.material.opacity=acting.shadow;
+  indicator.position.y=2.83+(reducedMotion?0:Math.sin(time*.8)*.045);
   indicator.material.color.setHex(activeMode==='speaking'?0xf3c7a7:activeMode==='listening'?0x8ccef8:accent);
-  brows.forEach((b,i)=>{b.rotation.z=(i?1:-1)*(mood==='grateful'?.075:mood==='angry'?-.09:.02);});
+  // Animated gestures never drive locomotion or camera pose.
+  if(!reducedMotion){spine.rotation.z+=acting.shoulder*.17;}
+
  }
- return {root,visual,robe,mixer,setMode,update,get mode(){return activeMode;},bones:{lower,spine,head,arms,leftHip,rightHip},features:{mouth,eyes,scalp}};
+ return {root,visual,robe,mixer,setMode,update,get mode(){return activeMode;},bones:{lower,spine,head,arms,leftHip,rightHip},features:{mouth,mouthInterior,eyes,scalp,contactShadow}};
 }

@@ -23,7 +23,7 @@ test('real skeleton coat is animated by offline original clips with no external 
  assert.match(code,/robe\.bind\(new THREE\.Skeleton\(/);
  assert.match(code,/new THREE\.AnimationMixer\(/);
  assert.match(code,/new THREE\.NumberKeyframeTrack\(/);
- assert.match(code,/crossFadeTo\(to,\.28,true\)/);
+ assert.match(code,/crossFadeTo\(to,next==='startled'\?\.16:\.36,true\)/);
  assert.match(code,/reducedMotion/);
  assert.doesNotMatch(code,/https?:\/\/|\bfetch\s*\(|localStorage|sendBeacon/);
 });

@@ -1,4 +1,18 @@
 # ELSEWHERE
+
+## Living Motion 1.6: performance-directed animation
+
+The new **Presence Director** builds on the existing local skeletal rigs and authored clips rather than pulling external video or AI-generated motions. The future self and NPCs have individual acting rhythms, conversation-sensitive gaze and hand gestures, breathing, subtler blinks, and a more readable speaking mouth. Each character's acting remains deterministic, does not examine a user's face, and doesn't store or send biometric information. This is deliberately **stylized acting, not voice-to-phoneme lip sync**.
+
+- **Reactive portals:** animated rings, a compact same-origin shader, and instanced shards respond to player proximity. Far-away shards update less often for headset performance. The XR camera never follows the effect.
+- **Combat choreography:** mech fire has a visible launch → projectile travel → impact sequence. Drones move on bounded lanes, reactor light responds to recoil, and the Warden/dungeon continue to use existing authoritative combat rules.
+- **Time has motion:** the Hours Bank gains ten instanced fictional seconds that move through a small hourglass. These visuals **do not** charge, reward, or spend hours.
+- **Alternate-life projection:** after deciding what happens to an invention, the future-self apartment can project a miniature, animated possible life onto the table. This is entirely fictional and reflects saved game choices, not any personal future prediction.
+- **Comfort and safety:** respects `prefers-reduced-motion`, caps attack effects, and recreates smaller FX budgets when switching into Quest XR. No automated viewpoint shifts, screen flashes, tracking, cloud calls, or new telemetry.
+- **Drift fix:** moving background vehicles use anchored positions instead of accumulating their vertical offset.
+
+Run `npm run animation:check`, `npm run motion:check`, `npm test`, and `npm run build` on a machine with Three.js and Vite installed. Read [Living Motion QA](docs/LIVING_MOTION_V16.md) for browser and physical Quest checks. Node tests cannot certify visual fidelity or headset comfort; those remain **unverified** here.
+
 ## Story revision · The Ninth Platform (v1.5)
 
 A new original mystery spans the 2046 apartment, 1889 workshop, Hollow Crown, 2199 titan and 2087 station. Six optional chapters are unlocked by physical-world story choices. Inventions, ownership, time debt, Warden mercy/combat, mech defense and the Empire/Legacy/Wanderer endings produce distinct prose. This narrative requires no network or model and uses the existing encrypted local vault. [Read the five-act story bible](docs/STORY_V15.md).
