@@ -1,3 +1,45 @@
+# ELSEWHERE
+
+> One life is never enough.
+
+ELSEWHERE is a privacy-first, browser-based 3D speculative game prototype. Players travel among five fictional eras, meet an imagined future self, invent technology in 1889, choose who owns it, and see the recorded choice alter 2087. The Warden and mech branches add recoverable combat. Game rules and rewards remain deterministic; dialogue may be authored/offline or explicitly optional, and model text cannot change game state. The future-self story is fiction, not prediction, therapy or financial advice.
+
+## Current tested checkpoint — 2026-10-28
+
+**Local development status: verified. External submission status: NO-GO.** The checkout passed `npm ci` with the cache redirected to `/tmp`, all 244 Node tests, the production Vite build, and the deterministic review runner (11 PASS, 0 FAIL, 0 WARNING, 6 UNVERIFIED). The build still warns about large app and Rapier chunks.
+
+Verified local behavior includes:
+
+- Guest entry without saving, portal travel, the future → 1889 invention → distinct gift/patent/auction futures → grounded recall journey.
+- Warden and mech battles that can be lost, exited, re-entered and recovered; repeat rewards remain disabled.
+- Actual Rapier physics props that settle and stay within the tested collider cage through a ten-minute fixed-step simulation.
+- Locally authored causal exhibits derived from saved fictional outcomes; Meta direction is opt-in and the browser/API contract has mock coverage only.
+- AES-GCM local saves, lock/reload/unlock, encrypted backup download, canceled replacement, malformed-file rejection and file-picker restore.
+- Keyboard entry and combat controls; a selected 200% viewport/scale emulation, visible focus, one primary-action contrast check and reduced-motion behavior.
+
+Repeat the verified checks from the repository root:
+
+```bash
+npm ci --cache "${TMPDIR:-/tmp}/elsewhere-npm-cache"
+npm test
+npm run build
+npm run review:agents
+npm run test:e2e:combat-recovery
+npm run test:e2e:backup-recovery
+npm run test:e2e:accessibility
+node --test tests/physics-long-session.test.mjs
+```
+
+In this managed container, the default npm cache path was absent. The clean install passed with `npm ci --cache "${TMPDIR:-/tmp}/elsewhere-npm-cache"`; lockfile integrity checking remained enabled. The browser runs used Chromium 154 with SwiftShader software WebGL and synthetic data. The 200% check emulates zoom geometry by halving the CSS viewport at device scale factor 2; it is not browser zoom UI. Visual review found the right-side story sheet and bottom physics-test button crowd the playfield controls. See [QA evidence](docs/QA_EVIDENCE_CURRENT.md) for commands, screenshots, limitations and that open UI issue.
+
+**External gates remain open:** no live Meta inference (the local mock is not Meta proof), public HTTPS preview/API, real demo video, current official eligibility confirmation, Quest/phone hardware run, screen-reader audit, human research, or submission. SwiftShader output is not hardware performance evidence. Do not describe this prototype as submission-ready.
+
+For setup and first-run instructions, see [Run it](#run-it). The current playable worlds and controls are documented later in this README. The complete feature status is in the [feature ledger](docs/FEATURE_LEDGER.csv).
+
+## Historical release notes
+
+The dated feature notes below preserve what earlier releases claimed. Their statements that installation, builds or visual QA were still outstanding describe the evidence at that time and are superseded by the current checkpoint above and `docs/QA_EVIDENCE_CURRENT.md`; they are not current test results.
+
 **Model-directed exhibit (Oct 27, 2026):** With explicit Meta consent, Muse Spark can select a physical 3D exhibit of the recorded alternate-history consequences (people, infrastructure, memory). Content is locally grounded and never changes saved gameplay. No live model call or public runtime verification is claimed. [Design](docs/META_CAUSAL_EXHIBIT_V113.md).
 
 **Event provenance and Meta verification probe (October 27, 2026):** 23 new commits/84 changed files against the conservative 00:00 ET event baseline; added an opt-in, one-request Meta handler probe (`npm run meta:probe -- --live`), which has **NOT** been executed here. [Provenance and gates](docs/HACKATHON_NEW_WORK_PROVENANCE.md).
@@ -16,13 +58,9 @@
 
 **Living Movement 1.11.1 (October 27, 2026):** The traveler now uses the existing skinned humanoid rig with cross-faded idle/walk clips, frame-rate-independent camera-relative movement, controlled acceleration and braking, smooth turns and a chase camera. Fixed cumulative head and shoulder drift in all actors. The guest preview now explains movement and nearby physics objects. [Design and QA](docs/MOVEMENT_POLISH_V111.md).
 
-# ELSEWHERE
-
-**PLAY WITHOUT INSTALLING ANYTHING:** [Open ELSEWHERE in StackBlitz](https://stackblitz.com/fork/github/kapasainitishreddy/ELSEWHERE?startScript=play&view=preview). StackBlitz imports the current public GitHub branch, installs packages and runs Vite in your browser. Click **PLAY GUEST DEMO** for an unsaved session. Browser-based Rapier/WebXR compatibility has not been certified; use Chrome/Brave on a computer first. [Local setup instructions](docs/HOW_TO_PLAY.md).
+**PLAY WITHOUT INSTALLING ANYTHING:** [Open ELSEWHERE in StackBlitz](https://stackblitz.com/fork/github/kapasainitishreddy/ELSEWHERE?startScript=play&view=preview). StackBlitz imports the current public GitHub branch, installs packages and runs Vite in your browser. Click **PLAY GUEST DEMO** for an unsaved session. Local Chromium software-rendering journeys are tested below; StackBlitz-hosted execution and headset WebXR remain unverified. [Local setup instructions](docs/HOW_TO_PLAY.md).
 
 **Living NPCs 1.9 (October 27, 2026):** Integrated MIT-licensed Yuka steering into the four in-world supporting characters. They follow local bounded routes, avoid existing collision rectangles, stop for conversations, and move their E interaction prompts with their body meshes. The source and isolated contract tests are available, but the full npm install, browser build and physical Quest QA still need verification. [Open-source ledger](docs/OPEN_SOURCE_INTEGRATION.md).
-
-# ELSEWHERE
 
 **Tactile Worlds 1.10.3 (October 27, 2026):** Rapier-powered physical relics and cargo arrive in the dungeon and mech scenes; they react to E, clicks and controller triggers without changing canonical save state. Yuka cast now turns toward its travel direction and the player. The physics stage loads lazily and releases resources between worlds. Imported verified Kenney props also become inspectable through the lazy MIT-licensed three-mesh-bvh adapter, with ordinary picking fallback. [Implementation and QA](docs/TACTILE_WORLDS_V110.md). Dependency installation, full browser build and Quest hardware verification remain outstanding.
 
@@ -31,7 +69,7 @@
 
 **Living Atmosphere 1.7:** Five distinct procedural environmental performances, with one instanced draw call per world, bounded event reactions, Quest/mobile particle caps, and no continuous effect under Reduced Motion. See [the animation and VR QA guide](docs/LIVING_ATMOSPHERE_V17.md). Code-level release only: real headset rendering remains unverified.
 
-## Living Motion 1.6: performance-directed animation
+### Living Motion 1.6: performance-directed animation
 
 The new **Presence Director** builds on the existing local skeletal rigs and authored clips rather than pulling external video or AI-generated motions. The future self and NPCs have individual acting rhythms, conversation-sensitive gaze and hand gestures, breathing, subtler blinks, and a more readable speaking mouth. Each character's acting remains deterministic, does not examine a user's face, and doesn't store or send biometric information. This is deliberately **stylized acting, not voice-to-phoneme lip sync**.
 
@@ -44,11 +82,11 @@ The new **Presence Director** builds on the existing local skeletal rigs and aut
 
 Run `npm run animation:check`, `npm run motion:check`, `npm test`, and `npm run build` on a machine with Three.js and Vite installed. Read [Living Motion QA](docs/LIVING_MOTION_V16.md) for browser and physical Quest checks. Node tests cannot certify visual fidelity or headset comfort; those remain **unverified** here.
 
-## Story revision · The Ninth Platform (v1.5)
+### Story revision · The Ninth Platform (v1.5)
 
 A new original mystery spans the 2046 apartment, 1889 workshop, Hollow Crown, 2199 titan and 2087 station. Six optional chapters are unlocked by physical-world story choices. Inventions, ownership, time debt, Warden mercy/combat, mech defense and the Empire/Legacy/Wanderer endings produce distinct prose. This narrative requires no network or model and uses the existing encrypted local vault. [Read the five-act story bible](docs/STORY_V15.md).
 
-## Trust & Comfort 1.4 — research-informed update (Oct 27, 2026)
+### Trust & Comfort 1.4 — research-informed update (Oct 27, 2026)
 
 - **Memory Cards:** While visiting The Other You, *you* choose up to six memories for your possible older self to retain. These are encrypted with your existing local passphrase vault, are separated between Prime and Echo realities, and can be forgotten individually. Only an explicitly enabled loopback/on-device model can read them; Meta Cloud does not receive them.
 - **Conversation reliability:** A deterministic reviewer rejects some unsupported backstories, chronology contradictions, and repeated generated replies; the authored, private character provides a fallback. No heuristic can guarantee a perfect AI conversation.
@@ -57,15 +95,8 @@ A new original mystery spans the 2046 apartment, 1889 workshop, Hollow Crown, 21
 - **Evidence:** [Research → pain points → test plan](docs/RESEARCH_TO_RELEASE_2026-10-27.md) and [device QA protocol](docs/COMFORT_AND_MEMORY_QA.md).
 
 This is not a medical device, therapy, or a way to manipulate serotonin/dopamine. Test with `npm test` and `npm run submission:check`; **a working browser bundle, real headset comfort, and live Meta model call are mandatory before claiming submission readiness**.
- · First Crossing 1.3
 
-> One life is never enough.
-
-**ELSEWHERE** is a privacy-first, browser-based 3D speculative world prototype by Syrava. Enter portals to another century, meet a fictional older version of yourself, invent technology before its era, trade and steal fictional hours, negotiate with a Warden who remembers your fighting style, and defend a futuristic city from inside a giant original mech.
-
-This is an original experimental game and potential **Meta Global AI Developer Hackathon 2026 Startup-track** submission. It is **not** yet a polished shipped VR game, an MMO, or a verified Meta AI submission. In-world hour balances, fame, wealth and life paths are fictional, never real predictions or financial assets.
-
-## v1.3 First Crossing / submission preview (October 26, 2026)
+### v1.3 First Crossing / submission preview (October 26, 2026)
 
 ELSEWHERE now presents a **guided, skippable seven-stage playable introduction**: meet a fictional older self, ask a question, travel through a portal to alternative 1889, invent technology, choose who owns it, return to talk again, and witness the changed future. The World Atlas adds a deterministic cause-and-effect receipt, with separate authored witness perspectives. Story state remains encrypted in the local vault. This is a game consequence, not a prediction about the player or a real-world financial opportunity.
 
@@ -75,11 +106,11 @@ For a hackathon Meta-model demonstration, an optional **same-origin `/api/charac
 
 The hackathon entry is **interactive, causally consistent storytelling**, not an AI mental-health advisor and not a medical treatment. See [player-pain-point research](docs/RESEARCH_PATTERNS_AND_RESPONSES.md), [three-minute demo shot list](docs/DEMO_3MIN.md) and [manual submission gate](docs/SUBMISSION_CHECKLIST.md). Run `npm run submission:check` to identify source checks versus manual blockers. Earlier source versions predate the official build period, so identify all *new work* truthfully.
 
-## Director's Cut 1.2
+### Director's Cut 1.2
 
 An improved world-first presentation with local illustrated portal thumbnails, enhanced environment grading, an explicit focus-mode exit, and a more immersive experience when desktop movement begins. These are actual user-interface changes, not just a separate concept rendering. Five-world navigation, gameplay state and private saves remain intact. For QA, read [Director's Cut](docs/DIRECTORS_CUT.md). This release does not claim that production Vite, Quest or live Meta inference has been verified.
 
-## Living Presence 1.0.1: animated people and meaningful details
+### Living Presence 1.0.1: animated people and meaningful details
 
 **New in this source update:**
 
@@ -91,7 +122,7 @@ An improved world-first presentation with local illustrated portal thumbnails, e
 
 Read [Character and Quest QA](docs/CHARACTER_AND_ANIMATION_QA.md), then run `npm run animation:check` and `npm run check`. **Node tests and source checks are not substitutes for a successful Vite build, live visual review, measured Quest performance, or real-person comfort testing.**
 
-## Kinetic Worlds 0.9: interact with the world
+### Kinetic Worlds 0.9: interact with the world
 
 The new interaction and animation pass makes the existing worlds more responsive **without adding cloud calls, commercial assets or health claims**:
 
@@ -104,7 +135,7 @@ The new interaction and animation pass makes the existing worlds more responsive
 
 See [Animation & Quest testing](docs/ANIMATION_AND_XR_QA.md). **111 simulation, dialogue, privacy and motion tests passed for the prior 0.9 release; production Vite bundling and physical Quest controls are not verified.** This release still needs visual QA and device performance measurements before being used as a competition demo.
 
-## Future Compass 0.7: a life beyond the headset
+### Future Compass 0.7: a life beyond the headset
 
 The imagined older self now has a **One-Hour Compass**: in the Future Self room, you may privately choose one small real-world act of creation, connection, rest or curiosity. There are no streaks, daily alerts, scores, mandatory answers or rewards for marking a step tried. The character can refer to the selected step and earlier conversation in subsequent turns. Clearing it deletes the active vault's note (not old exported backups). Prime and Echo hold separate intentions.
 
@@ -115,7 +146,7 @@ The imagined older self now has a **One-Hour Compass**: in the Future Self room,
 
 See [Future Self research](docs/FUTURE_SELF_RESEARCH.md), [testing runbook](docs/TESTING_AND_QA.md), and [hackathon scorecard](docs/HACKATHON_SCORECARD.md).
 
-## Earlier Chronal Polish 0.4 work
+### Earlier Chronal Polish 0.4 work
 
 - **World atmosphere:** GPU-friendly original sky gradients, drifting bioluminescent particles, floating debris and portal coronae are now active in all five environments. Particle budgets automatically reduce on small screens and in VR. Reduced-motion players get static alternatives.
 - **Interface assets:** 12 selected **Lucide open-source ISC** icon SVGs are stored in the repository and used by the world selector, encrypted-vault indicator, controls and journal. No CDN is contacted.
@@ -154,18 +185,6 @@ npm run check            # tests then production build
 npm run readiness        # automated checks + explicit submission blockers
 ```
 
-### Current local verification (2026-10-28)
-
-The current working checkpoint has 244 passing Node tests, a successful production Vite build, and an agent-review result of 11 PASS, 0 FAIL, 0 WARNING, and 6 UNVERIFIED. The build still reports large app and Rapier JavaScript chunks. Additional reproducible Chromium paths are available:
-
-```bash
-npm run test:e2e:combat-recovery  # Warden and mech defeat, recovery, victory, replay guards
-npm run test:e2e:backup-recovery  # encrypted backup download, cancel, malformed file, restore/reload
-npm run test:e2e:accessibility    # keyboard guest entry, 200% viewport/scale emulation, contrast, reduced motion
-node --test tests/physics-long-session.test.mjs  # Rapier settling, collider bounds, ten simulated minutes
-```
-
-The browser checks used local system Chromium with SwiftShader software WebGL and synthetic data. The 200% accessibility scenario is an emulation using half the CSS viewport at device scale factor 2; it is not a test of Chromium's browser zoom UI. These results do not establish physical phone/GPU/Quest performance, screen-reader conformance, live Meta inference, public deployment, or hackathon eligibility. Review [current QA evidence](docs/QA_EVIDENCE_CURRENT.md), [feature ledger](docs/FEATURE_LEDGER.csv), and [readiness matrix](docs/HACKATHON_READINESS_CURRENT.md) before making any release claim. Current decision remains **NO-GO** for external submission.
 
 `npm run dev` starts the local Vite server only. Personal gameplay never needs a cloud API. On the first visit, create a passphrase-protected local vault. There is **no passphrase recovery**. Do not lose it. Back up using the encrypted export in My Timeline.
 
@@ -221,7 +240,7 @@ Our production game bundle also avoids remote font CDNs and uses a strict first-
 | Negotiate with Warden | **E** during battle | **Y** | Spatial choice panel |
 | Inspect journal | My Timeline | Use browser UI | Best viewed in desktop mode |
 
-There are glowing portals in the physical 3D scenes as well as accessible text world selectors. Touchscreen has directional buttons and tap controls. Controller haptics are attempted only on supported hardware. VR locomotion defaults to teleportation; no forced continuous VR movement. **Quest/VR rendering, frame rates and controller behavior have not yet been verified on a physical headset.** The 3D engine is plain Three.js WebXR, not Meta's Immersive Web SDK or a full physics engine.
+There are glowing portals in the 3D scenes as well as text world selectors. Touchscreens have directional buttons and tap controls. Controller haptics are attempted only on supported hardware. VR locomotion defaults to teleportation; no forced continuous VR movement. **Quest/VR rendering, frame rates and controller behavior have not been verified on a physical headset.** The 3D runtime uses Three.js WebXR rather than Meta's Immersive Web SDK. Rapier powers dungeon/mech physics props; the project is not a full game-engine framework.
 
 ## The Private Layer
 
@@ -239,21 +258,21 @@ The game includes a **separately started**, opt-in Meta Model API bridge for hac
 
 ## Open source and rights
 
-- **Three.js** (`three` ^0.181.0, MIT): geometry, materials, shaders, camera, OrbitControls, and WebXR VRButton.
-- **Lucide icons** (ISC): 12 selected bundled local SVG assets for HUD and navigation.
-- **Kenney models** (CC0-1.0): 24 optional same-origin GLBs from a pinned verified mirror, installed via `npm run assets:fetch` only; not automatically fetched at runtime.
-- **Khronos Fox** (CC0 + CC BY 4.0 components): optional rigged, multi-clip GLB installed via `npm run assets:animated` with full attribution; not bundled by default.
-- **Original art systems:** per-biome skydomes, GPU effects, animated portal coronas and XR-budgeted particles.
-- **Vite** (^7.1.0, MIT): local development and production web bundling.
-- **Ollama**: OPTIONAL separate local inference runtime, **not** included or automatically installed; API used only when the local service is explicitly started. Models have their own licenses and should be checked before commercial use.
-- **Our original code:** state machine, branching hour economy, fictional characters and agendas, puzzles, combat rules, ambience synthesis, procedural worlds, private vault, journal, UI, and tests. See [LICENSE](LICENSE).
-- Rapier, AI Town, browser-whisper, Godot XR Tools, Meta IWSDK and existing film/anime/manhwa assets are **not bundled into this prototype**. They are research references or future integration candidates, not work we claim to have reused. All current 3D props and titan designs are procedural originals. Twelve Lucide ISC icons are bundled. Twenty-four Kenney CC0 model placements are implemented, with a verified optional developer downloader; GLBs are not checked into main by default.
+Versions below come from the committed `package-lock.json` (lockfile version 3); licenses are the package metadata recorded there. Optional assets have separate notices in [Assets & licenses](docs/ASSETS.md) and are not assumed to be bundled just because an installer or placement exists.
+
+- **Rapier** (`@dimforge/rapier3d-compat` 0.21.0, Apache-2.0): used for the dungeon and mech physics props and exercised by real Rapier WASM tests, including the ten-minute fixed-step settling simulation. It is in the runtime dependency graph; the browser build emits a lazy Rapier chunk.
+- **Three.js** (`three` 0.181.2, MIT): scene graph, renderer, materials, camera, OrbitControls and WebXR VRButton.
+- **three-mesh-bvh** 0.9.16 (MIT): optional acceleration for bounded imported-mesh inspection, with ordinary raycast fallback.
+- **Yuka** 0.7.8 (MIT): local NPC navigation and steering.
+- **Vite** 7.3.7 (MIT) and **Playwright** 1.62.1 (Apache-2.0): development/build tool and browser-test dependency respectively.
+- **Lucide icons** (ISC): 12 selected bundled local SVG assets with their notice in `public/assets/icons/LICENSE-lucide.txt`.
+- **Kenney assets** (CC0-1.0) and the **Khronos Fox** (CC0 plus CC BY 4.0 components): optional developer-installed art packs; their binaries are not included in the default repository. Preserve attribution and the separate notices when installing them.
+- **Original art systems and game code:** procedural environments, characters, portals, story, deterministic state, privacy vault, interface and tests are project-authored; see [LICENSE](LICENSE).
+- AI Town, browser-whisper, Godot XR Tools, Meta IWSDK and film/anime/manhwa assets are not bundled. The optional Meta API bridge is application code, not a bundled Meta SDK, and it has not been validated with a live call.
 
 ## Release and hackathon status
 
-The Node test suite covers time trade invariants, alternate branch isolation, NPC agendas, replay safety, combat adaptation, save integrity, browser encryption, opt-in API boundaries and gamepad mapping. These tests **do not prove the Vite production bundle renders or headset performance is acceptable**. Record actual browser/headset sessions and run a security audit before production launch.
-
-See [Architecture](docs/ARCHITECTURE.md), [Demo script](docs/DEMO_3MIN.md), [QA](docs/QA.md) and [Hackathon submission notes](docs/HACKATHON.md). **No GitHub Actions workflows are used.**
+The current local evidence and unresolved gates are summarized above and in [QA evidence](docs/QA_EVIDENCE_CURRENT.md) and the [readiness matrix](docs/HACKATHON_READINESS_CURRENT.md). Local Chromium and Node checks do not establish a live Meta response, current competition eligibility, public preview, recorded submission video, physical-device performance, Quest comfort, accessibility certification, or participant impact. Submission readiness is **NO-GO** until its applicable external gates are independently satisfied. **No GitHub Actions workflows are present in this repository.**
 
 ## Research-informed immersive storytelling (Stillwater)
 
@@ -273,6 +292,8 @@ To opt into local language-model roleplay on your computer, install [Ollama](htt
 
 
 ## Future Self Presence Lab (v0.8)
+
+This versioned note describes the feature when it was introduced; consult the current checkpoint and QA evidence at the top for present-day verification.
 
 The imagined future-self encounter now has **subtle listening/speaking avatar animation** and a room keepsake that reflects your alternate-history choices. Authored, offline dialogue includes concrete, choice-dependent fictional moments; optional local Ollama provides more flexible conversation. The player's actual future is never predicted.
 
