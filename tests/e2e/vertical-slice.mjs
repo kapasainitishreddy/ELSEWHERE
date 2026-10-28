@@ -10,6 +10,9 @@ import {chromium} from 'playwright';
 const root=new URL('../../',import.meta.url);
 const port=Number(process.env.ELSEWHERE_E2E_PORT||5174);
 const origin=`http://127.0.0.1:${port}`;
+const desktopViewport={width:Number(process.env.ELSEWHERE_E2E_WIDTH||1440),height:Number(process.env.ELSEWHERE_E2E_HEIGHT||900)};
+assert(Number.isInteger(desktopViewport.width)&&desktopViewport.width>=800,'ELSEWHERE_E2E_WIDTH must be an integer of at least 800');
+assert(Number.isInteger(desktopViewport.height)&&desktopViewport.height>=600,'ELSEWHERE_E2E_HEIGHT must be an integer of at least 600');
 const artifactDir=new URL('../../review-output/e2e/',import.meta.url);
 await mkdir(artifactDir,{recursive:true});
 const checkpoint=(label,detail='')=>console.log(`[vertical-slice] ${label}${detail?` — ${detail}`:''}`);
@@ -32,7 +35,7 @@ try {
     (existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined);
   const launchOptions={executablePath,headless:true,env:{...process.env,XDG_CONFIG_HOME:process.env.XDG_CONFIG_HOME||chromiumConfig,XDG_CACHE_HOME:process.env.XDG_CACHE_HOME||chromiumCache},args:['--no-sandbox','--disable-dev-shm-usage','--disable-breakpad','--disable-crash-reporter','--use-angle=swiftshader','--enable-webgl','--enable-unsafe-swiftshader']};
   browserServer=await chromium.launchServer(launchOptions);browser=await chromium.connect(browserServer.wsEndpoint());
-  const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
+  const page=await browser.newPage({viewport:desktopViewport,deviceScaleFactor:1});
   await page.emulateMedia({reducedMotion:'reduce'});
   page.setDefaultTimeout(30000);
   const errors=[],badResponses=[],external=[];
@@ -58,7 +61,7 @@ try {
   assert(await page.locator('#vault-passphrase').isVisible(),'the encrypted save path should remain available on a phone viewport');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390,'the first-run gate should not force horizontal scrolling on mobile');
   await page.screenshot({path:new URL('entry-mobile.png',artifactDir).pathname});
-  await page.setViewportSize({width:1440,height:900});
+  await page.setViewportSize(desktopViewport);
   await page.screenshot({path:new URL('gate.png',artifactDir).pathname});
   await page.locator('#guest-play').click();
   await page.locator('#vault-gate').waitFor({state:'hidden'});
@@ -141,7 +144,7 @@ try {
   assert.deepEqual(errors,[],'browser console or page errors were logged');
   assert.deepEqual(badResponses,[],'browser received an HTTP error response');
   assert.deepEqual(external,[],'the scene should stay same-origin');
-  console.log(JSON.stringify({result:'PASS',browser:await browser.version(),viewport:'1440x900 desktop plus 390x844 mobile',guestVaultUntouched:true,story:'guest → 2046 dialogue → 1889 Aether Cell gift → grounded future-self dialogue → 2087 public workshops',mobile,consoleErrors:errors,badResponses,screenshots:artifactDir.pathname},null,2));
+  console.log(JSON.stringify({result:'PASS',browser:await browser.version(),viewport:`${desktopViewport.width}x${desktopViewport.height} desktop plus 390x844 mobile`,guestVaultUntouched:true,story:'guest → 2046 dialogue → 1889 Aether Cell gift → grounded future-self dialogue → 2087 public workshops',mobile,consoleErrors:errors,badResponses,screenshots:artifactDir.pathname},null,2));
 } finally {
   if(browser)await Promise.race([browser.close(),delay(4000)]);
   if(browserServer){const child=browserServer.process();if(child?.exitCode===null){child.kill('SIGKILL');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),delay(1000)]);}}

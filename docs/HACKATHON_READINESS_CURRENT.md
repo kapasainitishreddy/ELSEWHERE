@@ -4,6 +4,8 @@
 **Track:** Startup (entrant eligibility not established)  
 **Decision:** Not submission-ready. The entry flow and offline game can be demonstrated locally, but the hard Meta and public-access evidence gates are open. This is an evidence register, not a judge score or win prediction.
 
+**Current-source limitation:** the official Meta event page and linked rules page could not be fetched in the restricted network environment during this check (HTTPS proxy CONNECT 403). Deadline and rule details below are retained from an earlier review and are not re-verified here. See [research-to-requirement acceptance](RESEARCH_REQUIREMENTS_ACCEPTANCE_2026-10-28.md) for current source-access status. Recheck the official pages and entry portal before relying on any historical detail or submitting.
+
 ## Mandatory eligibility and submission gates
 
 | Requirement | Source | Evidence available | Status | Gap and next action |

@@ -40,3 +40,12 @@ test('guided release UI is available to keyboard-only and Quest users',()=>{
  assert.match(world,/type:'comfort'/);
  assert.match(ui,/aria-pressed="\$\{comfortMode===id\}"/);
 });
+
+test('physical XR choice panels stay out of the desktop view and desktop ray targets',()=>{
+ assert.match(world,/xrChoicePanel\.visible=xrActive/);
+ assert.match(world,/xrChoiceTargets\.push\(plane\)/);
+ assert.match(world,/setXrChoicePanelActive\(renderer\.xr\.isPresenting\)/);
+ assert.match(world,/setXrChoicePanelActive\(true\)/);
+ assert.match(world,/setXrChoicePanelActive\(false\)/);
+ assert.match(world,/targets=targets\.filter\(target=>!xrChoiceTargets\.includes\(target\)\)/);
+});
