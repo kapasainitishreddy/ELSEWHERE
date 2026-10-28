@@ -40,8 +40,10 @@ try{
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
   };
   try{
-   await page.goto(origin,{waitUntil:'networkidle'});await page.locator('#guest-play').click();
+   await page.goto(`${origin}/?perf=1`,{waitUntil:'networkidle'});await page.locator('#guest-play').click();
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+   await page.waitForFunction(()=>/\d+ DRAWS/.test(document.querySelector('.world-perf-display')?.textContent||''));
+   const baselineDraws=Number((await page.locator('.world-perf-display').innerText()).match(/(\d+) DRAWS/)?.[1]);
    console.log(`${fate}: guest ready`);
    await to('past');await page.locator('.hero-enter').click();
    console.log(`${fate}: entered 1889`);
@@ -53,8 +55,18 @@ try{
    const causal=page.locator('.story-panel .future-box.small').filter({hasText:'CAUSAL WORLD STATUS'});
    await causal.waitFor({state:'visible'});
    const shown=await causal.innerText();assert.match(shown,new RegExp(headline));assert.match(shown,/Aether Cell/);
+   await page.waitForFunction(base=>{
+    const calls=Number((document.querySelector('.world-perf-display')?.textContent||'').match(/(\d+) DRAWS/)?.[1]);
+    return Number.isFinite(calls)&&calls>base;
+   },baselineDraws,{timeout:15000});
+   const outcomeDraws=Number((await page.locator('.world-perf-display').innerText()).match(/(\d+) DRAWS/)?.[1]);
+   assert(outcomeDraws>baselineDraws,`${fate} should add a rendered 2087 landmark (${baselineDraws} → ${outcomeDraws} draws)`);
    await causal.scrollIntoViewIfNeeded();
    await page.screenshot({path:new URL(`fate-${fate}.png`,artifacts).pathname});
+   await page.locator('.story-panel [data-cmd="story-toggle"]').click();
+   const skip=page.locator('.first-crossing [data-cmd="journey-skip"]');if(await skip.isVisible())await skip.click();
+   await page.screenshot({path:new URL(`fate-${fate}-world.png`,artifacts).pathname});
+   await page.locator('#world-canvas canvas').screenshot({path:new URL(`fate-${fate}-scene.png`,artifacts).pathname});
    await to('self');await page.locator('.hero-enter').click();
    await page.locator('#chat-question').fill('Tell me about the invention we chose.');
    await page.locator('#chat-form button[type="submit"]').click();
@@ -62,7 +74,7 @@ try{
    const dialogue=await page.locator('#chat-history .chat-line.elder').last().innerText();assert.match(dialogue,recall[fate]);
    assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'fate demo must remain an unsaved guest run');
    assert.deepEqual(pageErrors,[]);assert.deepEqual(httpErrors,[]);assert.deepEqual(external,[]);
-   console.log(JSON.stringify({result:'PASS',fate,visualOutcome:headline,groundedDialogue:dialogue.replace(/\s+/g,' ').slice(0,180),guestVaultUntouched:true,errors:pageErrors,httpErrors,external}));
+   console.log(JSON.stringify({result:'PASS',fate,visualOutcome:headline,sceneDraws:{before:baselineDraws,after:outcomeDraws},groundedDialogue:dialogue.replace(/\s+/g,' ').slice(0,180),guestVaultUntouched:true,errors:pageErrors,httpErrors,external}));
   }catch(error){try{await page.screenshot({path:`/tmp/elsewhere-fate-${fate}-failure.png`});}catch{}throw error;}finally{
    try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}
    await Promise.race([context.close(),delay(5000)]);

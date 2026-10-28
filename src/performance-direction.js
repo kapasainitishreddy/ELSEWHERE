@@ -9,6 +9,14 @@ const clamp = (v, low, high) => Math.min(high, Math.max(low, finite(v)));
 const fraction = v => v - Math.floor(v);
 const smooth = t => { const n = clamp(t, 0, 1); return n*n*(3-2*n); };
 
+/** Bounded local-space envelope for the nine animated Neo Elysium vehicles. */
+export const SKYLINE_VEHICLE_BOUNDS = Object.freeze({x:0,y:14,z:-29,radius:50});
+/** Wrap motion in both directions without JavaScript's negative-remainder underflow. */
+export function skylineVehicleX(seconds,direction,phase){
+  const cycle=78;
+  return (((finite(seconds)*finite(direction)+finite(phase))%cycle+cycle)%cycle)-cycle/2;
+}
+
 export const ACTING_PALETTES = Object.freeze({
   watchful: Object.freeze({brow:0, warmth:.08, shoulders:.04}),
   grateful: Object.freeze({brow:.10, warmth:.32, shoulders:-.07}),

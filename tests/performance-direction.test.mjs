@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {characterSeed,performanceFrame,portalFrame,combatFrame} from '../src/performance-direction.js';
+import {characterSeed,performanceFrame,portalFrame,combatFrame,skylineVehicleX,SKYLINE_VEHICLE_BOUNDS} from '../src/performance-direction.js';
 import {visualBeat} from '../src/cinematic-beats.js';
 
 const source=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
@@ -46,8 +46,27 @@ test('portals react to proximity without extreme intensity or artificial camera 
  assert.match(scene,/lampIndex\+\+/);
  assert.match(scene,/new THREE\.InstancedMesh\(new THREE\.BoxGeometry\(1,1,1\),metal,9\)/);
  assert.match(scene,/vehicleBody\.instanceMatrix\.needsUpdate=true/);
+ assert.match(scene,/lampGlowTeal=new THREE\.InstancedMesh\(new THREE\.BoxGeometry\(1,1,1\),emissive\(0x30808f,1\),24\)/);
+ assert.match(scene,/lampGlowPale=new THREE\.InstancedMesh\(new THREE\.BoxGeometry\(1,1,1\),emissive\(0x9ed9ef,1\),12\)/);
+ assert.match(scene,/vehicleLightWarm=new THREE\.InstancedMesh\(new THREE\.BoxGeometry\(1,1,1\),emissive\(0xffbc77,2\),4\)/);
+ assert.match(scene,/vehicleLightCool=new THREE\.InstancedMesh\(new THREE\.BoxGeometry\(1,1,1\),emissive\(0x78efff,2\),5\)/);
+ assert.match(scene,/if\(o\.isInstancedMesh\)o\.dispose\(\)/,'world remounts must release per-instance GPU buffers');
+ assert.match(scene,/vehicleBody\.boundingSphere=vehicleBounds\.clone\(\);vehicleLightWarm\.boundingSphere=vehicleBounds\.clone\(\);vehicleLightCool\.boundingSphere=vehicleBounds\.clone\(\)/);
+ assert.doesNotMatch(scene,/vehicleLight(?:Warm|Cool)\.setColorAt\(/,'instanceColor cannot tint emissive output; color batches preserve the original glow');
  assert.doesNotMatch(scene,/const vehicle=new THREE\.Group\(\)/);
  assert.doesNotMatch(scene,/for\(let j=0;j<18;j\+\+\)for\(let x of \[-5\.4,5\.4\]\)/);
+});
+
+test('skyline vehicle animation stays within its persistent culling envelope',()=>{
+ const b=SKYLINE_VEHICLE_BOUNDS,objectRadius=Math.hypot(1.9,.33,.8)/2;
+ for(const x of [-39,39])for(const y of [7.75,20.25])for(const z of [-40.5,-17.5]){
+  const farthest=Math.hypot(x-b.x,y-b.y,z-b.z)+objectRadius;
+  assert.ok(farthest<=b.radius,`motion corner ${x},${y},${z} exceeds sphere (${farthest})`);
+ }
+ for(let t=-500;t<=500;t+=.25)for(let i=0;i<9;i++){
+  const x=skylineVehicleX(t,i%2?-.4:.6,-33+i*8.25+39);
+  assert.ok(x>=-39&&x<39,`vehicle ${i} escaped its horizontal route at t=${t}: ${x}`);
+ }
 });
 
 test('plasma attacks show projectile travel before impact and finish fully',()=>{

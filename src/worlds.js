@@ -21,7 +21,7 @@ import {COMFORT_PRESETS,DEFAULT_COMFORT,comfortPreset,comfortTurn,walkableLandin
 import {createSessionCare} from './session-care.js';
 import {safeSceneCue,safeSceneFocus} from './scene-director.js';
 import {causalExhibitPlan,installCausalExhibit} from './causal-exhibit.js';
-import {portalFrame,combatFrame} from './performance-direction.js';
+import {portalFrame,combatFrame,skylineVehicleX,SKYLINE_VEHICLE_BOUNDS} from './performance-direction.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
 const palettes = {
@@ -239,19 +239,20 @@ function buildFuture(g,state,animated){
  box(g,11,.06,75,mat(0x0c151f,.34,.43),0,-.04,-12);
  // The avenue repeats the same three lamp meshes 36 times. Keep the same silhouette and
  // palette in three instanced draws instead of 108 individual draw calls.
- const lampGlow=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:1,metalness:.32,roughness:.28}),36);
+ const lampGlowTeal=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),emissive(0x30808f,1),24);
+ const lampGlowPale=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),emissive(0x9ed9ef,1),12);
  const lampPole=new THREE.InstancedMesh(new THREE.CylinderGeometry(.07,.12,1,10),metal,36);
  const lampOrb=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),emissive(0x6bddea,1.3),36);
- const lampTransform=new THREE.Object3D();let lampIndex=0;
+ const lampTransform=new THREE.Object3D(),lampGlowIndices={teal:0,pale:0};let lampIndex=0;
  for(let j=0;j<18;j++)for(const x of [-5.4,5.4]){
    const z=15-j*4.7;
-   lampTransform.position.set(x,.035,z);lampTransform.scale.set(.09,.07,2.3);lampTransform.updateMatrix();lampGlow.setMatrixAt(lampIndex,lampTransform.matrix);
-   lampGlow.setColorAt(lampIndex,new THREE.Color(j%3?0x30808f:0x9ed9ef));
+   const glowBatch=j%3?lampGlowTeal:lampGlowPale,glowKey=j%3?'teal':'pale',glowIndex=lampGlowIndices[glowKey]++;
+   lampTransform.position.set(x,.035,z);lampTransform.scale.set(.09,.07,2.3);lampTransform.updateMatrix();glowBatch.setMatrixAt(glowIndex,lampTransform.matrix);
    lampTransform.position.set(x,1.8,z);lampTransform.scale.set(1,3.6,1);lampTransform.updateMatrix();lampPole.setMatrixAt(lampIndex,lampTransform.matrix);
    lampTransform.position.set(x,3.6,z);lampTransform.scale.setScalar(.15);lampTransform.updateMatrix();lampOrb.setMatrixAt(lampIndex,lampTransform.matrix);
    lampIndex++;
  }
- for(const instance of [lampGlow,lampPole,lampOrb]){instance.instanceMatrix.needsUpdate=true;instance.computeBoundingSphere();g.add(instance);}
+ for(const instance of [lampGlowTeal,lampGlowPale,lampPole,lampOrb]){instance.instanceMatrix.needsUpdate=true;instance.computeBoundingSphere();g.add(instance);}
  const sculpture=new THREE.Group();g.add(sculpture);sculpture.position.set(0,4,-8);
  ring(sculpture,2.9,.08,emissive(ripple.cell?0x6cffbb:0x50c6ff,1.6),0,0,0,.4);
  ring(sculpture,2.1,.04,emissive(0xffffff,.8),0,0,0,-.35);
@@ -274,25 +275,64 @@ function buildFuture(g,state,animated){
  billboards(g,ripple.label,0,13,-20,ripple.cell?'#61ffc0':'#5ee5f6');
  // Nine small skyline vehicles keep their motion but share two instanced draws.
  const vehicleBody=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),metal,9);
- const vehicleLight=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:2,metalness:.32,roughness:.28}),9);
- vehicleBody.instanceMatrix.setUsage(THREE.DynamicDrawUsage);vehicleLight.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
- const vehiclePose=new THREE.Object3D(),vehicleCruise=[];
+ const vehicleLightWarm=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),emissive(0xffbc77,2),4);
+ const vehicleLightCool=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),emissive(0x78efff,2),5);
+ for(const instance of [vehicleBody,vehicleLightWarm,vehicleLightCool])instance.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+ const vehiclePose=new THREE.Object3D(),vehicleCruise=[];let warmIndex=0,coolIndex=0;
  for(let i=0;i<9;i++){
    const x=-33+seeded(i+20)*66,y=8+seeded(i+50)*12,z=-18-seeded(i+90)*22;
-   vehicleCruise.push({x,y,z,direction:i%2?-.4:.6,phase:i});
+   const warm=i%2===1,lightIndex=warm?warmIndex++:coolIndex++;
+   vehicleCruise.push({x,y,z,direction:warm?-.4:.6,phase:x+39,warm,lightIndex});
    vehiclePose.position.set(x,y,z);vehiclePose.scale.set(1.9,.33,.8);vehiclePose.updateMatrix();vehicleBody.setMatrixAt(i,vehiclePose.matrix);
-   vehiclePose.position.set(x,y-.24,z+.34);vehiclePose.scale.set(1.55,.08,.12);vehiclePose.updateMatrix();vehicleLight.setMatrixAt(i,vehiclePose.matrix);
-   vehicleLight.setColorAt(i,new THREE.Color(i%2?0xffbc77:0x78efff));
+   vehiclePose.position.set(x,y-.24,z+.34);vehiclePose.scale.set(1.55,.08,.12);vehiclePose.updateMatrix();(warm?vehicleLightWarm:vehicleLightCool).setMatrixAt(lightIndex,vehiclePose.matrix);
  }
- vehicleBody.computeBoundingSphere();vehicleLight.computeBoundingSphere();g.add(vehicleBody,vehicleLight);
+ // These moving batches travel across the skyline. A conservative fixed sphere covers
+ // their entire path and avoids per-frame bounding-sphere recomputation or clipping.
+ const vehicleBounds=new THREE.Sphere(new THREE.Vector3(SKYLINE_VEHICLE_BOUNDS.x,SKYLINE_VEHICLE_BOUNDS.y,SKYLINE_VEHICLE_BOUNDS.z),SKYLINE_VEHICLE_BOUNDS.radius);
+ vehicleBody.boundingSphere=vehicleBounds.clone();vehicleLightWarm.boundingSphere=vehicleBounds.clone();vehicleLightCool.boundingSphere=vehicleBounds.clone();
+ g.add(vehicleBody,vehicleLightWarm,vehicleLightCool);
  animated.push(t=>{
    for(let i=0;i<vehicleCruise.length;i++){
-     const v=vehicleCruise[i],x=((t*v.direction+(i*7))%78)-39,y=v.y+Math.sin(t*.54+i)*.2;
+     const v=vehicleCruise[i],x=skylineVehicleX(t,v.direction,v.phase),y=v.y+Math.sin(t*.54+i)*.2;
      vehiclePose.position.set(x,y,v.z);vehiclePose.scale.set(1.9,.33,.8);vehiclePose.updateMatrix();vehicleBody.setMatrixAt(i,vehiclePose.matrix);
-     vehiclePose.position.set(x,y-.24,v.z+.34);vehiclePose.scale.set(1.55,.08,.12);vehiclePose.updateMatrix();vehicleLight.setMatrixAt(i,vehiclePose.matrix);
+     vehiclePose.position.set(x,y-.24,v.z+.34);vehiclePose.scale.set(1.55,.08,.12);vehiclePose.updateMatrix();(v.warm?vehicleLightWarm:vehicleLightCool).setMatrixAt(v.lightIndex,vehiclePose.matrix);
    }
-   vehicleBody.instanceMatrix.needsUpdate=true;vehicleLight.instanceMatrix.needsUpdate=true;
+   vehicleBody.instanceMatrix.needsUpdate=true;vehicleLightWarm.instanceMatrix.needsUpdate=true;vehicleLightCool.instanceMatrix.needsUpdate=true;
  });
+}
+/** One grounded 2087 landmark makes each validated 1889 ownership choice visible. */
+function buildFutureOutcome(g,state){
+ if(state.fate==='gift'){
+   // Open-sided cooperative workshop: a low canopy, shared bench, and accessible tools.
+   box(g,7.2,.16,4.8,mat(0x536d5d,.18,.82),-10.4,.08,-11.2);
+   for(const x of [-13.5,-7.3])for(const z of [-13.15,-9.3])box(g,.19,4.1,.19,mat(0x88947a,.27,.66),x,2.15,z);
+   box(g,7.8,.24,5.3,mat(0x35544d,.22,.72),-10.4,4.35,-11.2);
+   box(g,4.8,.12,1.15,mat(0x94795c,.16,.76),-10.4,1.05,-9.85);
+   for(const x of [-11.9,-10.4,-8.9])box(g,.55,.5,.58,emissive(x===-10.4?0x82e6b3:0xceb687,.55),x,1.35,-9.85);
+   sign(g,'PUBLIC WORKSHOP','TOOLS OPEN TO EVERYONE',-10.4,5.35,-8.42,5.1);
+   return 'public-workshop';
+ }
+ if(state.fate==='patent'){
+   // A single owned tower interrupts the low open skyline with a clear vertical landmark.
+   box(g,7.6,27,6.4,mat(0x354c63,.72,.27),11.2,13.5,-23);
+   box(g,6.5,22,.12,glass(0x86c7cf,.36),11.2,15,-19.72);
+   for(const x of [8.05,11.2,14.35])box(g,.11,23,.18,emissive(0xd6b677,.68),x,15,-19.58);
+   box(g,8.2,.48,6.8,mat(0xc4a365,.76,.24),11.2,27.35,-23);
+   sign(g,'LICENSED TOWER','OWNED BY THE INVENTOR',11.2,29.05,-19.42,5.5);
+   return 'licensed-tower';
+ }
+ if(state.fate==='auction'){
+   // A closed archive and sealed circular door contrast with the open workshop and tower.
+   box(g,9,6.5,7.2,mat(0x293440,.77,.34),-11,3.25,-20.5);
+   const dome=new THREE.Mesh(new THREE.SphereGeometry(4.45,24,12,0,Math.PI*2,0,Math.PI/2),glass(0x6e8790,.28));
+   dome.position.set(-11,6.5,-20.5);g.add(dome);
+   const door=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,.24,24),mat(0x957957,.8,.25));
+   door.position.set(-11,3.2,-16.78);door.rotation.x=Math.PI/2;g.add(door);
+   ring(g,1.45,.075,emissive(0xd9ad72,.8),-11,3.2,-16.59);
+   sign(g,'PRIVATE ARCHIVE','SEALED BY THE BUYER',-11,10.3,-16.45,5.3);
+   return 'private-archive';
+ }
+ return null;
 }
 function buildSelf(g,state,animated,getTraveler){
  // Warm, intimate architectural contrast to the outer worlds.
@@ -832,6 +872,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    const sameWorld=state?.world===next.world;if(!sameWorld)hasExplored=false;
    const lastPos=playerPos.clone();const lastCamera=camera.position.clone(),lastTarget=controls.target.clone();
    state=next;updateXRWatch();fx?.dispose();physicsStage?.dispose();physicsStage=null;physicsControl.dataset.ready='false';physicsControl.dataset.impulses='0';metaExhibit?.dispose();metaExhibit=null;scene.remove(world);world.traverse(o=>{
+     if(o.isInstancedMesh)o.dispose();
      o.geometry?.dispose();
      const materials=Array.isArray(o.material)?o.material:o.material?[o.material]:[];
      for(const material of materials){material.map?.dispose();material.dispose();}
@@ -847,7 +888,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    edge.position.set(-8,9,-11);world.add(edge);
    ground(world,p);stars(world,state.world==='dungeon'?0xd5bcff:0xb1dce8,state.world==='self'?180:280);
    addAtmosphere(world,state.world,animated,atmosphereBudget({headset:renderer.xr.isPresenting,reducedMotion:reduceMotion,smallScreen:window.innerWidth<900}));
-   if(state.world==='future')buildFuture(world,state,animated);
+   if(state.world==='future'){buildFuture(world,state,animated);buildFutureOutcome(world,state);}
    else if(state.world==='self'){elderPresence=buildSelf(world,state,animated,()=>renderer.xr.isPresenting?rig.position:playerPos);stillwaterTerrace=buildStillwaterTerrace(world,animated,targets);}
    else if(state.world==='past')buildPast(world,state,animated);
    else if(state.world==='dungeon')buildDungeon(world,state,animated);

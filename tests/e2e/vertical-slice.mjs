@@ -12,6 +12,7 @@ const port=Number(process.env.ELSEWHERE_E2E_PORT||5174);
 const origin=`http://127.0.0.1:${port}`;
 const artifactDir=new URL('../../review-output/e2e/',import.meta.url);
 await mkdir(artifactDir,{recursive:true});
+const checkpoint=(label,detail='')=>console.log(`[vertical-slice] ${label}${detail?` — ${detail}`:''}`);
 const vite=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(port),'--strictPort'],{
   cwd:root,stdio:'ignore',env:process.env
 });
@@ -33,12 +34,20 @@ try {
   browserServer=await chromium.launchServer(launchOptions);browser=await chromium.connect(browserServer.wsEndpoint());
   const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
   await page.emulateMedia({reducedMotion:'reduce'});
-  page.setDefaultTimeout(90000);
+  page.setDefaultTimeout(30000);
   const errors=[],badResponses=[],external=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
   page.on('response',response=>{if(response.status()>=400)badResponses.push(`${response.status()} ${response.url()}`);});
   page.on('request',request=>{if(!request.url().startsWith(`${origin}/`))external.push(request.url());});
+  async function waitForWorld(expected,phase){
+    try{await page.waitForFunction(world=>document.querySelector('#app-ui')?.dataset.world===world,expected,{timeout:45000});}
+    catch(error){
+      const diagnostic=await page.evaluate(()=>({world:document.querySelector('#app-ui')?.dataset.world,sceneReady:document.querySelector('#app')?.dataset.sceneReady,journey:document.querySelector('.first-crossing')?.innerText,story:document.querySelector('.story-panel')?.innerText?.slice(0,300)})).catch(()=>({pageUnresponsive:true}));
+      throw new Error(`${phase} did not reach ${expected}: ${JSON.stringify(diagnostic)}; pageErrors=${JSON.stringify(errors)}`,{cause:error});
+    }
+    checkpoint(phase,expected);
+  }
 
   await page.goto(`${origin}/?perf=1`,{waitUntil:'networkidle'});
   assert((await page.title()).includes('ELSEWHERE'));
@@ -53,7 +62,7 @@ try {
   await page.screenshot({path:new URL('gate.png',artifactDir).pathname});
   await page.locator('#guest-play').click();
   await page.locator('#vault-gate').waitFor({state:'hidden'});
-  await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+  await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true',{timeout:45000});
   assert.equal(await page.locator('#world-canvas canvas').count(),1,'guest scene should mount a WebGL canvas');
   assert.match(await page.locator('.privacy-sigil').innerText(),/GUEST · NOT SAVED/,'guest mode must be labeled honestly');
   assert.match(await page.locator('.first-crossing').innerText(),/1889.*2087/s,'the opening guide should explain the invention-to-future goal');
@@ -64,36 +73,42 @@ try {
   assert(Number.isFinite(firstSceneDraws)&&firstSceneDraws<360,`initial 2087 scene should stay below 360 draw calls (saw ${firstSceneDraws})`);
   assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'guest progress must not be written to encrypted vault storage');
   await page.screenshot({path:new URL('guest-2087.png',artifactDir).pathname});
+  checkpoint('guest scene ready',`2087 · ${firstSceneDraws} draws`);
 
   await page.locator('[data-cmd="first-crossing"]').click();
-  await page.waitForFunction(()=>document.querySelector('#app-ui')?.dataset.world==='self');
+  await waitForWorld('self','Meet possible future self');
   await page.locator('[data-cmd="first-crossing"]').click();
   assert((await page.locator('body').innerText()).includes('CONTINUE THE CONVERSATION'));
   await page.locator('#chat-question').fill('What does an ordinary day look like in this possible future?');
   await page.locator('#chat-form button[type="submit"]').click();
-  await page.locator('#chat-history .chat-line.elder').waitFor();
+  await page.locator('#chat-history .chat-line.elder').waitFor({state:'visible',timeout:30000});
+  checkpoint('first authored future-self reply displayed');
   await page.screenshot({path:new URL('future-self-dialogue.png',artifactDir).pathname});
   await page.locator('.story-panel [data-cmd="story-toggle"]').click();
 
   await page.locator('[data-cmd="first-crossing"]').click();
-  await page.waitForFunction(()=>document.querySelector('#app-ui')?.dataset.world==='past');
+  await waitForWorld('past','Travel to 1889');
   assert((await page.locator('body').innerText()).includes('1889'));
   await page.locator('[data-cmd="first-crossing"]').click();
   await page.locator('[data-action="invent-cell"]').click();
   await page.locator('.choice-list [data-action="gift"]').click();
+  assert.match((await page.locator('.story-panel').innerText()).toLowerCase(),/you chose to share the invention/i,'the selected gift must be visible in the live story panel');
+  checkpoint('1889 invention and gift choice applied');
   await page.locator('.story-panel [data-cmd="story-toggle"]').click();
 
   await page.locator('[data-cmd="first-crossing"]').click();
+  await waitForWorld('self','Return to the future-self world');
   await page.locator('[data-cmd="first-crossing"]').click();
   await page.locator('#chat-question').fill('What changed in 2087 after we shared the invention?');
   await page.locator('#chat-form button[type="submit"]').click();
-  await page.locator('#chat-history .chat-line.elder').nth(1).waitFor();
+  await page.locator('#chat-history .chat-line.elder').nth(1).waitFor({state:'visible',timeout:30000});
   assert.match((await page.locator('#chat-history').innerText()).toLowerCase(),/public workshops/,'future-self must refer to the recorded gift fate');
   await page.screenshot({path:new URL('future-self-remembers-gift.png',artifactDir).pathname});
+  checkpoint('future self recalls public workshops after gift');
   await page.locator('.story-panel [data-cmd="story-toggle"]').click();
 
   await page.locator('[data-cmd="first-crossing"]').click();
-  await page.waitForFunction(()=>document.querySelector('#app-ui')?.dataset.world==='future');
+  await waitForWorld('future','Return to Neo Elysium after invention');
   assert((await page.locator('body').innerText()).includes('Neo Elysium'));
   await page.locator('.hero-enter').click();
   const outcome=await page.locator('.story-panel').innerText();
