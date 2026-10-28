@@ -1,20 +1,25 @@
-# ELSEWHERE — three-minute live hackathon demo (v1.3)
+# ELSEWHERE — three-minute demo shot list (v1.4)
 
-**Status: shot list; NOT RECORDED.** Show real running gameplay and feature changes made during the hackathon. Use a fictional player and no actual private diary entries. Don't substitute generated imagery for a working screen capture.
+**Status: shot list only; NOT RECORDED.** This is not a completed competition demo or an eligibility claim. Show real running gameplay, use synthetic data, and do not substitute concept art or generated imagery for the running application. Use the provenance comparison in `docs/HACKATHON_NEW_WORK_PROVENANCE.md`; timestamps alone do not establish eligible work.
 
 | Time | What judges see | Why it matters |
 | --- | --- | --- |
-| 00:00–00:18 | Full-screen future city and portal, live cursor/controller navigation, title: "A world that remembers". | Instant visual hook and user experience |
-| 00:18–00:43 | Unlock an encrypted test vault, use the **First Crossing** guide, meet the 2046 future-self character, ask a natural question. | Real utility, clarity and local privacy |
-| 00:43–01:12 | Portal to alternate 1889. Invent Skyrail Drive. Choose GIFT instead of auction/patent. | Meaningful interaction that changes game state |
-| 01:12–01:38 | Return to 2087. Show a changed city, a deterministic cause-and-effect receipt and Ada/Iris's separate recollections. | Technical depth and causal consistency |
-| 01:38–02:05 | Compare the alternative reality; same invention with different fate produces different consequences and NPC dialogue. | Replayability, branching logic |
-| 02:05–02:37 | Explicitly opt into **Meta Cloud** with a fictional world summary; show a verified live Muse Spark response and a `cue` that briefly changes world ambience, with gameplay state unchanged. The API call must really succeed. | 25% Meta tooling and 25% demo weighting |
-| 02:37–02:50 | Change VR comfort mode; show headset teleport and controller rays **only if independently verified on Quest**. Otherwise demonstrate on desktop and explain hardware test pending. | Craft and reliability |
-| 02:50–03:00 | End card: public repo, newly authored modules, 1-sentence intended customer, factual local test result and live demo URL. | Eligibility and startup potential |
+| 00:00–00:15 | Start **PLAY GUEST DEMO** from a clean browser. Show the `GUEST · NOT SAVED` label, the live 2087 city and one keyboard movement. | Instant entry and honest unsaved status |
+| 00:15–00:38 | Enter the 2046 apartment, introduce the future self as an imagined character, ask one synthetic question and show the authored local reply with cloud mode off. | Clear premise and offline fallback |
+| 00:38–01:00 | Travel to 1889, choose the Aether Cell, then choose **GIFT**. Keep the actual game controls visible. | A short, playable cause-making choice |
+| 01:00–01:25 | Return to 2087. Show the public-workshop environment and its deterministic causal receipt. | A visible consequence grounded in game state |
+| 01:25–01:45 | Re-enter the future-self conversation and show accurate recall of the Aether Cell gift. | State-grounded narrative continuity |
+| 01:45–02:10 | Compare the real captured gift, patent and auction receipts from separate verified browser sessions. Label them as browser captures if shown as stills; do not imply this is one continuous playthrough. | Replayability and three distinct outcomes |
+| 02:10–02:32 | Show the causal exhibit as **AUTHORED PREVIEW · META DISABLED** (a clearly identified video overlay; do not imply the current app renders that label). Explain that mocked output is not live model evidence. Do not present mock output as a Meta response. | Explain the model/state boundary without overstating proof |
+| 02:32–02:48 | Show the lock screen and source proof for bounded save/consent cleanup. Never show a passphrase, private letter or real personal text. | Privacy and implementation evidence |
+| 02:48–03:00 | Factual end card: repository, verified local test counts, intended user, and “public demo URL pending.” | Close honestly without claiming a public release |
 
-**Pitch:** "ELSEWHERE lets storytellers step inside branching worlds where their decisions reshape history, relationships, and the future. An authored causal engine protects story truth, while Meta's AI helps a character respond naturally and direct safe, reversible environmental effects. Private saves stay encrypted locally."
+**Pitch for this currently verified build:** “ELSEWHERE is a branching story game where a choice in 1889 changes the city you explore in 2087. The causal outcomes and saves are local and deterministic; the future-self dialogue has an authored offline path. Optional Meta integration is not live-verified in this build.”
 
-**Avoid:** "we cure depression", "increase dopamine", "predict your future", "all your data is private even when Meta is enabled", "Quest-tested" without a device, "production ready" without a passing production build, or copying manhwa/IP-based character designs.
+**Meta gate:** The current run has only mocked API contract tests and authored offline dialogue. Do not call this a Meta-powered demo or submit it as clearing Stage One. Replace the authored-preview segment only after an explicitly authorized, successful live synthetic request and capture the actual user-facing behavior. A live handler call alone still does not prove a public deployment works.
+
+**Recording:** `ffmpeg` 7.1.5 and system Chromium are installed, but no clip has been recorded. The recorded Chromium performance used SwiftShader and measured about 4 FPS, so this plan avoids treating that capture environment as polished footage or a hardware benchmark. No video is claimed complete.
+
+**Avoid:** “we cure depression”, “increase dopamine”, “predict your future”, “all your data is private even when Meta is enabled”, “live Meta” for mocked output, “Quest-tested” without a device, “production ready” without a verified deployment, or copying protected character designs.
 
 **Before recording:** run `npm run submission:check` and document which manual gates were actually passed. Follow the official guide for the exact submission endpoint and mandatory fields. Do not assume posting a video alone constitutes entry.
