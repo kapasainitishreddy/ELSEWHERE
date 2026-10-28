@@ -87,6 +87,7 @@ try{
  if(selected.includes('vault-cloud')){
   const {context,page}=await makePage();let metaRequests=0,postedBody;
   try{
+   page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')metaRequests++;});
    await page.goto(origin,{waitUntil:'networkidle'});await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();
    await page.locator('#vault-gate').waitFor({state:'hidden'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
    const readVault=()=>page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1'));
@@ -138,7 +139,7 @@ try{
    await page.locator('#chat-history .chat-line.elder').waitFor();assert.equal(metaRequests,callsBefore,'Meta disabled must produce zero API requests');
    console.log('vault-cloud: authored offline reply made zero Meta requests');
    await page.route('**/api/character',async route=>{
-    metaRequests++;postedBody=route.request().postDataJSON();
+    postedBody=route.request().postDataJSON();
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'The invention we shared supports a network of public workshops.',cue:'wonder',focus:'memory'})});
    });
    page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
@@ -154,7 +155,7 @@ try{
    await page.locator('#chat-question').fill('A malformed response must leave play available.');await page.locator('#chat-form button[type="submit"]').click();
    await page.locator('#chat-history .chat-line.elder').nth(priorElders).waitFor();
    assert.match(await page.locator('#toast-region').innerText(),/Meta unavailable\. Continuing with local dialogue/i);
-   assert.equal(metaRequests,1,'the malformed mock is distinct from the validated success route');
+   assert.equal(metaRequests,2,'request observer counts the malformed response attempt as well');
    await page.reload({waitUntil:'networkidle'});await page.locator('#vault-gate').waitFor({state:'visible'});
    await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();await page.locator('#vault-gate').waitFor({state:'hidden'});
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
@@ -167,27 +168,70 @@ try{
    let delayedCalls=0;
    await page.unroute('**/api/character');
    await page.route('**/api/character',async route=>{delayedCalls++;await new Promise(resolve=>setTimeout(resolve,8000));try{await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'STALE MOCK MUST NEVER APPEAR',cue:'wonder',focus:'memory'})});}catch{}});
+   const optOutRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/character');
+   const optOutFailure=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/api/character'});
+   await page.locator('#chat-question').fill('Opt-out cancellation sentinel.');await page.locator('#chat-form button[type="submit"]').click();await optOutRequest;
+   await page.locator('[data-cmd="cloud-toggle"]').click();const optOutError=await optOutFailure;
+   assert(optOutError.failure()?.errorText,'opt-out must abort the in-flight model request');
+   assert.equal(await page.locator('.privacy-sigil').innerText(),'PRIVATE LOCAL WORLD');
+   assert.doesNotMatch(await page.locator('#chat-history').innerText(),/Opt-out cancellation sentinel|STALE MOCK MUST NEVER APPEAR/);
+   assert.equal(delayedCalls,1);
+   page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
    const worldChangeRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/character');
    const worldChangeFailure=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/api/character'});
    await page.locator('#chat-question').fill('World transition cancellation sentinel.');await page.locator('#chat-form button[type="submit"]').click();await worldChangeRequest;
    await travelTo(page,'future');const worldFailure=await worldChangeFailure;await delay(250);
    assert(worldFailure.failure()?.errorText,'world transition must abort the in-flight model request');
-   assert.equal(delayedCalls,1);assert.equal(await page.locator('#app-ui').getAttribute('data-world'),'future');
+   assert.equal(delayedCalls,2);assert.equal(await page.locator('#app-ui').getAttribute('data-world'),'future');
    assert.doesNotMatch(await page.locator('#app-ui').innerText(),/STALE MOCK MUST NEVER APPEAR|World transition cancellation sentinel/);
-   // Lock while another response is pending; the key and consent clear before
-   // storage can finish, and the cancelled question is not persisted.
+   // Restart while another response is pending; consent and stale work clear.
    await travelTo(page,'self');await page.locator('.hero-enter').click();
+   const resetRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/character');
+   const resetFailure=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/api/character'});
+   await page.locator('#chat-question').fill('Reset cancellation sentinel.');await page.locator('#chat-form button[type="submit"]').click();await resetRequest;
+   await page.locator('[data-cmd="journal"]').click();page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="reset"]').click();
+   assert((await resetFailure).failure()?.errorText,'reset must abort the in-flight model request');
+   assert.equal(await page.locator('.privacy-sigil').innerText(),'PRIVATE LOCAL WORLD');
+   assert.doesNotMatch(await page.locator('#app-ui').innerText(),/STALE MOCK MUST NEVER APPEAR|Reset cancellation sentinel/);
+   assert.equal(delayedCalls,3);
+   // Lock while another response and the final encrypted save are pending.
+   await travelTo(page,'self');await page.locator('.hero-enter').click();
+   page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
    const lockRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/character');
    const lockFailure=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/api/character'});
    await page.locator('#chat-question').fill('Lock transition cancellation sentinel.');await page.locator('#chat-form button[type="submit"]').click();await lockRequest;
-   await page.locator('[data-cmd="lock"]').click();await page.locator('#vault-gate').waitFor({state:'visible'});
+   const beforeSlowLock=await readVault();
+   await page.evaluate(()=>{
+    const subtle=crypto.subtle,native=subtle.encrypt.bind(subtle);let start;
+    window.__vaultEncryptStarted=new Promise(resolve=>{start=resolve;});
+    Object.defineProperty(subtle,'encrypt',{configurable:true,value:(...args)=>{
+     if(!window.__holdVaultEncrypt)return native(...args);
+     window.__holdVaultEncrypt=false;start();
+     return new Promise(resolve=>{window.__releaseVaultEncrypt=()=>native(...args).then(resolve);});
+    }});
+    window.__holdVaultEncrypt=true;
+   });
+   await page.locator('[data-cmd="lock"]').click();await page.evaluate(()=>window.__vaultEncryptStarted);
+   await page.locator('#vault-gate').waitFor({state:'visible'});
+   assert.equal(await page.locator('#vault-gate').getAttribute('aria-busy'),'true');
+   assert.equal(await page.locator('#app').evaluate(element=>element.inert),true,'private world must become inert before save settles');
+   assert.equal(await page.locator('#app-ui').evaluate(element=>element.inert),true,'private controls must be inert before save settles');
+   assert.equal(await page.locator('#vault-submit').isDisabled(),true,'gate actions stay disabled while the bounded save is pending');
+   await page.waitForFunction(()=>document.querySelector('#vault-gate')?.getAttribute('aria-busy')==='false',{timeout:9000});
+   assert.equal(await page.locator('#app-ui').innerText(),'','private UI must be removed when lock cleanup finishes');
+   assert.match(await page.locator('#vault-notice').innerText(),/latest changes could not be confirmed as saved/i,'slow save must hit bounded-lock messaging');
+   assert.equal(await readVault(),beforeSlowLock,'timed-out save must preserve last confirmed ciphertext');
    assert((await lockFailure).failure()?.errorText,'lock must abort the in-flight model request');
+   assert.equal(delayedCalls,4);
    assert.equal(await page.locator('#vault-passphrase').inputValue(),'');
+   await page.evaluate(()=>window.__releaseVaultEncrypt());
+   await delay(100);
+   assert.equal(await readVault(),beforeSlowLock,'late encryption after key revocation must not replace ciphertext');
    await page.reload({waitUntil:'networkidle'});await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();await page.locator('#vault-gate').waitFor({state:'hidden'});
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
    await page.locator('.hero-enter').click();
-   assert.doesNotMatch(await page.locator('.story-panel').innerText(),/Lock transition cancellation sentinel|STALE MOCK MUST NEVER APPEAR/);
-   console.log(JSON.stringify({result:'PASS',scenario:'AES-GCM create/save/lock/reload/unlock; no plaintext sentinel/passphrase; save-failure lock cleanup; offline zero cloud calls; one clearly mocked Meta request; consent resets after reload',mockApiCalls:metaRequests}));
+   assert.doesNotMatch(await page.locator('.story-panel').innerText(),/Opt-out cancellation sentinel|World transition cancellation sentinel|Reset cancellation sentinel|Lock transition cancellation sentinel|STALE MOCK MUST NEVER APPEAR/);
+   console.log(JSON.stringify({result:'PASS',scenario:'AES-GCM create/save/lock/reload/unlock; no plaintext sentinel/passphrase; save-failure lock cleanup; observed zero offline calls; mocked valid/malformed replies; request cancellation on opt-out/reset/world/lock; consent resets after reload',mockApiCalls:metaRequests}));
   }finally{try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}await Promise.race([context.close(),delay(5000)]);}
  }
 

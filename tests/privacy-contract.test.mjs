@@ -36,6 +36,7 @@ test('opt-in Meta request omits NPC memory, letter, dialogue and other branches'
 });
 test('consent revocation, restart, world travel and lock invalidate in-flight optional inference',()=>{
  const source=load('src/main.js');
+ const vault=load('src/vault.js');
  assert.match(source,/const pendingCloudRequests=new Set\(\)/);
  assert.match(source,/pendingCloudRequests\.add\(controller\)/);
  assert.match(source,/function invalidateOptionalInference\(\)\{sessionEpoch\+\+;abortPendingRequests\(\);\}/);
@@ -43,5 +44,6 @@ test('consent revocation, restart, world travel and lock invalidate in-flight op
  assert.match(source,/if\(cloudEnabled\)\{invalidateOptionalInference\(\);cloudEnabled=false/);
  assert.match(source,/if\(changed\)\{stopPresence\(\);abortPendingRequests\(\);\}/);
  assert.match(source,/sessionEpoch\+\+;abortPendingRequests\(\);cloudEnabled=false;localAiEnabled=false/);
- assert.match(source,/await vault\.save\(state\);\}catch\(error\)\{saveError=error;\}[\s\S]*?await vault\.lock\(\);\}catch\(error\)\{saveError\?\?=error;\}/);
+ assert.match(source,/async function lock\(\)\{[\s\S]*?gate\.hidden=false;setGateBusy\(true\)[\s\S]*?document\.querySelector\('#app'\)\.inert=true;[\s\S]*?Promise\.race\(\[finalSave,[\s\S]*?vault\.lock\(\);/);
+ assert.match(vault,/function lock\(\)\{key=null;salt=null;queue=Promise\.resolve\(\);\}/);
 });

@@ -69,7 +69,9 @@ export function createLocalVault(storage,{crypto=globalThis.crypto}={}){
   const captured=structuredClone(state),secret=key,seed=salt;
   return run(async()=>{const json=await encrypt(crypto,secret,seed,captured);if(key!==secret)no('Vault locked before save.');storage.setItem(VAULT_KEY,json);return true;});
  }
- async function lock(){await queue;key=null;salt=null;}
+ // Revoke access synchronously. Pending saves capture the old key and check it
+ // again after encryption, so they cannot commit ciphertext after this boundary.
+ function lock(){key=null;salt=null;queue=Promise.resolve();}
  function exportCiphertext(){const file=storage.getItem(VAULT_KEY);validateEnvelope(file);return file;}
  async function importCiphertext(text,pass){
   if(typeof text!=='string'||text.length>1000000)no('Encrypted backup exceeds the safe limit.');

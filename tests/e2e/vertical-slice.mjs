@@ -89,7 +89,10 @@ try {
   await page.screenshot({path:new URL('future-2087-gift.png',artifactDir).pathname});
 
   await page.keyboard.down('KeyW');await delay(350);await page.keyboard.up('KeyW');
-  await page.setViewportSize({width:390,height:844});await page.keyboard.press('Escape');
+  await page.setViewportSize({width:390,height:844});
+  assert.equal(await page.locator('.world-first-play').isVisible(),false,'desktop movement hint must not cover mobile journey controls');
+  await page.keyboard.press('Escape');
+  await page.locator('.first-crossing [data-cmd="journey-skip"]').click();
   const mobileDpad=page.locator('.mobile-dpad [data-move="KeyW"]');
   await mobileDpad.waitFor({state:'visible'});
   await mobileDpad.hover();await page.mouse.down();await delay(350);await page.mouse.up();
@@ -98,6 +101,12 @@ try {
   const mobile=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth,overflowing:[...document.querySelectorAll('body *')].map(element=>({tag:element.tagName,id:element.id,classes:typeof element.className==='string'?element.className:'',right:Math.round(element.getBoundingClientRect().right)})).filter(element=>element.right>innerWidth+2).sort((a,b)=>b.right-a.right).slice(0,8)}));
   await page.screenshot({path:new URL('future-2087-mobile.png',artifactDir).pathname,fullPage:true});
   assert(mobile.document<=mobile.viewport+1,`mobile horizontal overflow: ${JSON.stringify(mobile)}`);
+  for(const viewport of [{width:1280,height:720},{width:360,height:800}]){
+    await page.setViewportSize(viewport);
+    const width=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
+    assert(width.document<=width.viewport+1,`${viewport.width}×${viewport.height} overflowed horizontally: ${JSON.stringify(width)}`);
+    if(viewport.width===360)await page.screenshot({path:new URL('future-2087-360.png',artifactDir).pathname,fullPage:true});
+  }
   await page.reload({waitUntil:'networkidle'});
   assert(await page.locator('#vault-gate').isVisible(),'reloading a mutated guest story should return to the entry gate');
   assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'guest story mutations must remain absent from the vault after reload');

@@ -71,3 +71,24 @@ This section supersedes the earlier open items where it reports a completed run.
 The code now revokes consent and aborts outstanding optional model requests on opt-out, reset, world transition and lock. Lock attempts to persist first but still clears session state and the vault key when saving fails; the UI reports that the previous encrypted save remains while latest changes may be lost. The local Meta server timeout remains active through upstream response-body parsing. The mobile d-pad is hidden while the story sheet is open, preventing the overlap visible in an earlier screenshot.
 
 Current real synthetic gameplay captures are ignored under `review-output/e2e/`, including the 1440×900 gift journey, 390×844 layout, and 900×650 causal receipts for all three fates (SwiftShader output; not physical hardware evidence). They remain local: this environment has no Library upload capability. No video, live Meta call, preview deployment, Quest run or public submission was performed.
+
+## Latest continuation verification — 2026-10-28
+
+This section records the code and tests after checkpoint `3f614575373c37825023f37a56f4018a169fd880` on `codex/elsewhere-completion-20261027`. The earlier physics status uncertainty is superseded by the command record below.
+
+- `npm_config_cache=/tmp/elsewhere-npm-cache npm ci --no-audit --no-fund`: **PASS**, 21 packages installed. The default cache failure recorded above remains an environment-specific `ENOENT`; the configured `/tmp` cache is reproducible.
+- `node --test tests/entry-gate.test.mjs tests/private-vault.test.mjs tests/privacy-contract.test.mjs`: **PASS**, 14 passed, 0 failed, 0 skipped. This includes synchronous key revocation during stalled encryption, preservation of the last committed ciphertext, immediate private UI inaccessibility, and bounded lock behavior checks.
+- `npm test`: **PASS**, 222 passed, 0 failed, 0 skipped. An initial rerun found two static source assertions that encoded the old save-then-lock ordering; both were updated to enforce inert UI before a bounded save and synchronous key revocation. The full suite passed after that correction.
+- `npm run meta:check`: **PASS**, 11 passed, 0 failed.
+- `npm run movement:check`: **PASS**, 8 passed, 0 failed.
+- `npm run art:check`: **PASS**, 15 passed, 0 failed.
+- `npm run arena:check`: **PASS**, 9 passed, 0 failed.
+- `npm run submission:check`: **PASS**, 0 local failures; 5 manual gates remain.
+- `npm run build`: **PASS**. Vite 7.3.7 built the production bundle; size warnings remain (app chunk 1.03 MB, Rapier chunk 4.34 MB / 1.65 MB gzip).
+- `npm run review:agents`: a first report reflected the earlier full-suite static-assertion failure; after correcting and passing the full suite, the final run was **PASS**, 11 PASS, 0 FAIL, 0 WARNING, 6 UNVERIFIED. Its overall release verdict remains **NO-GO** for live Meta evidence, a public HTTPS deployment, and a real demo video.
+- `npm run test:e2e`: **PASS**, real system Chromium 154.0.8037.57 with SwiftShader. It completed the guest → 2046 dialogue → 1889 Aether Cell gift → future-self recall → 2087 open-workshops story at 1440×900 and 390×844, exercised keyboard and mobile d-pad movement, checked document width at 1280×720 and 360×800, and asserted zero guest vault writes, zero page/console errors, zero HTTP responses ≥400, and zero off-origin requests. The latest synthetic screenshots include `future-2087-mobile.png` and `future-2087-360.png`.
+- `ELSEWHERE_LIFECYCLE=vault-cloud npm run test:e2e:lifecycle`: **PASS**, six observed mocked `/api/character` calls. A request observer installed before offline play confirmed zero calls with Meta disabled. The browser covered valid and malformed mocked replies, opt-out/reset/world-change/lock cancellation, AES-GCM create/lock/reload/unlock, quota failure recovery, and a deliberately stalled final encryption. During save, the vault gate was busy, its actions disabled, and the app inert; lock completed within the five-second cap. A late encryption could not overwrite the previous ciphertext. The mocked provider is **not live Meta evidence**.
+- `ELSEWHERE_LIFECYCLE=physics npm run test:e2e:lifecycle`: **PASS**, confirmed by `/tmp/elsewhere-physics-e2e.status` = `0` and its retained log: 32 accepted E/button impulses, exit/re-entry, and another working E impulse, with no vault write. SwiftShader reported 4 FPS and 456.9 ms P95 at 361 draws/63,124 triangles; these are software-renderer observations, not hardware performance claims.
+- `git diff --check`: **PASS**.
+
+The latest screenshot set remains ignored under `review-output/e2e/` and was visually inspected locally. The 360 px capture has clipped decorative edge widgets but no document-level horizontal overflow; the movement pad is separated from the open story sheet. The Library upload connector is not available in this environment, so no remote file IDs or screenshot links are claimed.

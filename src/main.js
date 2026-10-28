@@ -88,6 +88,11 @@ function showGate(message=''){
  gateStatus.textContent=message || (vault.present()?'Only your passphrase decrypts this save. It never leaves your device.':vault.recoverableLegacy()?'An existing unencrypted timeline will be migrated into an encrypted vault.':'Everything you do stays in this encrypted browser vault.');
  gateInput.value='';gateInput.focus();
 }
+function setGateBusy(busy){
+ gate.setAttribute('aria-busy',String(busy));
+ gateForm.querySelectorAll('button,input').forEach(control=>{control.disabled=busy;});
+ guestButton.disabled=busy;physicsButton.disabled=busy;
+}
 function persist(){
  if(guestMode)return Promise.resolve(true); // Guest choices never touch browser storage.
  return vault.save(state).catch(error=>{toast('Your changes could not be saved securely: '+error.message,false);return false;});
@@ -270,18 +275,34 @@ async function lock(){
  const wasGuest=guestMode;
  sessionEpoch++;abortPendingRequests();cloudEnabled=false;localAiEnabled=false;
  stopPresence();privateSpeech.disable();
- let saveError=null;
- if(!guestMode){
-  try{await vault.save(state);}catch(error){saveError=error;}
-  try{await vault.lock();}catch(error){saveError??=error;}
- }
- guestMode=false;
+ let saveError=null,timedOut=false;
+ // Close the private interaction surface before awaiting storage. The key stays
+ // available only for this bounded final save attempt; input is disabled meanwhile.
+ gate.hidden=false;setGateBusy(true);gateStatus.textContent='Locking your private world…';
+ gateTitle.textContent='LOCKING YOUR PRIVATE WORLD';
+ document.querySelector('#app').inert=true;
+ document.querySelector('#app-ui').inert=true;
  ui.resetEphemeral();soundscape.toggle(false);
  experience?.dispose?.();experience=null;started=false;
  document.querySelector('#app').dataset.sceneReady='false';
  document.querySelector('#app-ui').replaceChildren();
  document.querySelector('#loading-screen')?.classList.remove('hidden');
- showGate(wasGuest?'Guest demo ended. Nothing was saved.':saveError?'Your world is locked. The previous encrypted save remains on this device, but the latest changes could not be saved. Check browser storage before continuing.':'Your key has been cleared from this session. Your encrypted timeline remains on this device.');
+ if(!guestMode){
+  let timer;
+  const finalSave=vault.save(state).catch(error=>{saveError=error;return false;});
+  await Promise.race([finalSave,new Promise(resolve=>{timer=setTimeout(()=>{timedOut=true;resolve(false);},5000);})]);
+  clearTimeout(timer);
+  if(timedOut)saveError=new Error('The final encrypted save did not finish before the lock timeout.');
+  vault.lock();
+ }
+ // A cancelled async reply can run its cleanup after the first teardown. Keep
+ // the surface inert during the save, then remove any DOM it may have restored.
+ document.querySelector('#app-ui').replaceChildren();
+ guestMode=false;
+ document.querySelector('#app-ui').inert=false;
+ document.querySelector('#app').inert=false;
+ showGate(wasGuest?'Guest demo ended. Nothing was saved.':saveError?timedOut?'Your world is locked. The previous encrypted save remains on this device; the latest changes could not be confirmed as saved before the lock timeout. Check browser storage before continuing.':'Your world is locked. The previous encrypted save remains on this device; the latest changes could not be saved. Check browser storage before continuing.':'Your key has been cleared from this session. Your encrypted timeline remains on this device.');
+ setGateBusy(false);
 }
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,
@@ -292,6 +313,9 @@ const ui=createInterface(document.querySelector('#app-ui'),{
 function begin(next,{guest=false,physicsPreview=false}={}){
  stopPresence();privateSpeech.disable();
  abortPendingRequests();
+ document.querySelector('#app').inert=false;
+ document.querySelector('#app-ui').inert=false;
+ setGateBusy(false);
  guestMode=Boolean(guest);
  state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{

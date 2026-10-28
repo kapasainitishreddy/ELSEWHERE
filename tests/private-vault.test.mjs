@@ -45,3 +45,29 @@ test('rapid queued encrypted saves preserve the last state without dropping writ
  await Promise.all([v.save({...initialState(),fame:1}),v.save({...initialState(),fame:2}),v.save({...initialState(),fame:3})]);
  await v.lock();assert.equal((await v.unlock(PASSPHRASE)).fame,3);
 });
+test('lock revokes the key synchronously and a pending save cannot replace the last ciphertext',async()=>{
+ const storage=memory();let unblock,entered,shouldDelay=false;
+ const enteredEncrypt=new Promise(resolve=>{entered=resolve;});
+ const gate=new Promise(resolve=>{unblock=resolve;});
+ const crypto={
+  getRandomValues:webcrypto.getRandomValues.bind(webcrypto),
+  subtle:{
+   importKey:(...args)=>webcrypto.subtle.importKey(...args),
+   deriveKey:(...args)=>webcrypto.subtle.deriveKey(...args),
+   decrypt:(...args)=>webcrypto.subtle.decrypt(...args),
+   encrypt:async(...args)=>{if(shouldDelay){entered();await gate;}return webcrypto.subtle.encrypt(...args);}
+  }
+ };
+ const v=createLocalVault(storage,{crypto});
+ await v.create(PASSPHRASE);
+ shouldDelay=true;
+ const previous=storage.getItem(VAULT_KEY);
+ const pending=v.save({...initialState(),fame:99});
+ await enteredEncrypt;
+ v.lock();
+ assert.equal(v.locked(),true,'lock must revoke key before pending encryption completes');
+ unblock();
+ await assert.rejects(pending,/Vault locked before save/);
+ assert.equal(storage.getItem(VAULT_KEY),previous,'stale pending save must not replace recoverable ciphertext');
+ assert.deepEqual(await v.unlock(PASSPHRASE),initialState());
+});
