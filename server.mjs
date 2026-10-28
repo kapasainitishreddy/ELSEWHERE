@@ -3,6 +3,7 @@
  * Never expose MODEL_API_KEY to frontend code. No request body is logged/stored.
  */
 import { parseDirectedResponse,parseDirectedFocus } from './src/scene-director.js';
+import {fetchMetaJson} from './api/meta-request.js';
 import { createServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -44,17 +45,13 @@ export const server=createServer(async (req,res)=>{
   try {
     for await (const chunk of req) {body+=chunk.toString('utf8');if(body.length>8192)return send(res,413,{error:'Request too large'});}
     const data=JSON.parse(body);if(!validRequest(data))return send(res,400,{error:'Invalid conversation input'});
-    const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),12000);
-    let upstream;
-    try {
-      upstream=await fetch('https://api.meta.ai/v1/chat/completions',{
-        method:'POST',signal:controller.signal,
+    const {response:upstream,data:response}=await fetchMetaJson(fetch,'https://api.meta.ai/v1/chat/completions',{
+        method:'POST',
         headers:{'Authorization':`Bearer ${KEY}`,'Content-Type':'application/json'},
         body:JSON.stringify({model:MODEL,messages:getMessages(data),max_tokens:260})
-      });
-    }finally{clearTimeout(timeout);}
+      },12000);
     if(!upstream.ok)return send(res,502,{error:'Model temporarily unavailable'});
-    const response=await upstream.json();const reply=response?.choices?.[0]?.message?.content;
+    const reply=response?.choices?.[0]?.message?.content;
     const safeReply=parseDirectedResponse(reply);
     if(!safeReply)return send(res,502,{error:'Model output failed safety checks'});
     return send(res,200,{reply:safeReply.reply,cue:safeReply.cue,focus:parseDirectedFocus(reply),model:MODEL});

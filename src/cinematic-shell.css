@@ -192,7 +192,7 @@
  .portal-dock{left:47%;width:min(570px,62vw)}
  .dock-label{display:none}
  .world-serial{left:42%;font-size:200px}
- .artifact-tracker{bottom:133px;left:18px}
+ .artifact-tracker{top:101px;right:18px;bottom:auto;left:auto}
  .privacy-sigil{bottom:206px;left:18px}
  .bottom-hud{display:none}
 }
@@ -267,6 +267,7 @@
     color:#f7eee7;backdrop-filter:blur(8px);touch-action:none;
   }
   #app[data-scene-ready="true"] .mobile-dpad button:active{background:rgba(var(--accent-rgb),.35)}
+  #app-ui[data-story-open="true"] .mobile-dpad{display:none}
 }
 @media(max-width:460px) {
   .world-quote {display:block;font-size:15px;max-width:260px}

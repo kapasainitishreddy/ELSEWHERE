@@ -55,7 +55,7 @@ export function createPhysicsSimulation(RAPIER,worldId){
    lastImpulse.set(id,elapsed);return true;
  }
  function dispose(){if(disposed)return;disposed=true;lastImpulse.clear();bodies.clear();space.free();}
- return {bodies,step,impulse,dispose,get disposed(){return disposed;}};
+ return {bodies,step,impulse,dispose,get disposed(){return disposed;},get elapsed(){return elapsed;}};
 }
 
 /** Synchronize an isolated Rapier arena with original Three.js sculptures. */
@@ -169,7 +169,7 @@ export function createPhysicsStage(THREE,RAPIER,parent,worldId,targets,nearby,op
      }
    }
    return accepted;
- },root};
+ },root,get elapsed(){return simulation.elapsed;}};
 }
 
 /** Lazy WASM initialization; discarded immediately if a player changes worlds. */

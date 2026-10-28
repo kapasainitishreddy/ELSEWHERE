@@ -34,6 +34,12 @@ const toastRoot=document.querySelector('#toast-region');
 const soundscape=createSoundscape();
 let state=initialState(), experience=null, started=false, guestMode=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
 const pendingLocalRequests=new Set();
+const pendingCloudRequests=new Set();
+function abortPendingRequests(){
+ for(const controller of pendingLocalRequests)controller.abort();
+ for(const controller of pendingCloudRequests)controller.abort();
+}
+function invalidateOptionalInference(){sessionEpoch++;abortPendingRequests();}
 const onLocalMachine=isLoopbackHostname(window.location.hostname);
 // No microphone or voice activity starts automatically. Only voices explicitly
 // marked local by the browser may speak. A private passphrase is never read.
@@ -88,7 +94,7 @@ function persist(){
 }
 function publish(next,event){
  const changed=previousWorld!==next.world;
- if(changed)stopPresence();
+ if(changed){stopPresence();abortPendingRequests();}
  previousWorld=next.world;
  state=next;
  void persist();
@@ -107,7 +113,7 @@ function publish(next,event){
 }
 function chooseWorld(world){const outcome=travel(state,world);if(outcome.ok&&outcome.event)publish(outcome.state,outcome.event);else if(!outcome.ok)toast(outcome.error,false);}
 function chooseAction(id){const outcome=applyAction(state,id);if(outcome.ok)publish(outcome.state,outcome.event);else toast(outcome.error,false);}
-function reset(){const question=guestMode?'Restart guest demo? Your unsaved choices will be lost.':'Begin a new story in this vault? The current story will be replaced unless you export an encrypted backup.';if(!window.confirm(question))return;publish(initialState(),{title:'A new life begins'});}
+function reset(){const question=guestMode?'Restart guest demo? Your unsaved choices will be lost.':'Begin a new story in this vault? The current story will be replaced unless you export an encrypted backup.';if(!window.confirm(question))return;invalidateOptionalInference();cloudEnabled=false;localAiEnabled=false;publish(initialState(),{title:'A new life begins'});ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');}
 /** Explicitly enabled on-device inference. This never routes to Meta or an internet URL.
  * The only backend it contacts is the separately launched local loopback proxy.
  */
@@ -134,15 +140,17 @@ async function localNpcReply(snapshot,id,question){
  }finally{clearTimeout(timer);pendingLocalRequests.delete(controller);}
 }
 async function toggleLocalAi(){
- if(localAiEnabled){localAiEnabled=false;ui.render(state);ui.updateStatus('LOCAL · AUTHORED');toast('On-device language model disabled.');return;}
+ if(localAiEnabled){invalidateOptionalInference();localAiEnabled=false;ui.render(state);ui.updateStatus('LOCAL · AUTHORED');toast('On-device language model disabled.');return;}
  if(!onLocalMachine){toast('On-device AI can only be enabled from a local computer-hosted game.',false);return;}
+ const epoch=sessionEpoch;
  // Read a non-private health endpoint first. No player content is sent here.
  try{
   const response=await fetch(`${LOCAL_AI_PATH}/health`,{cache:'no-store',signal:AbortSignal.timeout(1800)});
   const data=await response.json();
   if(!response.ok||data.mode!=='device-only')throw new Error('Not running');
  }catch{toast('Start Ollama and run npm run dev:local-ai to unlock private generative dialogue.',false);return;}
- localAiEnabled=true;cloudEnabled=false;ui.render(state);ui.updateStatus('ON-DEVICE AI · NO CLOUD');
+ if(!started||sessionEpoch!==epoch)return;
+ invalidateOptionalInference();localAiEnabled=true;cloudEnabled=false;ui.render(state);ui.updateStatus('ON-DEVICE AI · NO CLOUD');
  toast('Local model selected. Conversations stay on this computer.');
 }
 async function ask(question){
@@ -161,6 +169,7 @@ async function ask(question){
   mode='META REQUEST ATTEMPTED';
   try{
    const controller=new AbortController();
+   pendingCloudRequests.add(controller);
    const timer=setTimeout(()=>controller.abort(),11000);
    try{
     // Share only the player-typed question and an explicit, allowlisted *fictional* game summary.
@@ -174,7 +183,7 @@ async function ask(question){
     const data=await res.json();if(typeof data?.reply!=='string'||!data.reply.trim())throw new Error('No AI dialogue');
     const safe=reviewGeneratedCharacterReply(before,'elder',data.reply);if(!safe.ok)throw new Error('Unreliable or repetitive generated claim');
     reply=safe.reply;visualCue=safeSceneCue(data.cue,visualCue);visualFocus=safeSceneFocus(data.focus);mode='META · CLOUD RESPONSE';
-   }finally{clearTimeout(timer);}
+   }finally{clearTimeout(timer);pendingCloudRequests.delete(controller);}
   }catch{
    mode='META ATTEMPTED · LOCAL FALLBACK';
    toast('Meta unavailable. Continuing with local dialogue. A remote request may have been attempted.',false);
@@ -187,9 +196,10 @@ async function ask(question){
  if(!privateSpeech.speak(reply))experience?.setDialogueActivity?.('speaking',Math.min(5,1.6+reply.length/80));
 }
 function toggleCloud(){
- if(cloudEnabled){cloudEnabled=false;ui.render(state);ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');
+ if(cloudEnabled){invalidateOptionalInference();cloudEnabled=false;ui.render(state);ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');
   toast('Remote conversations disabled.');return;}
  if(!window.confirm('Optional CLOUD MODE: Each submitted question and a small fictional game summary will be sent to Meta Model API. This is NOT completely local. Your passphrase, future letter, encrypted save, other timeline, and NPC memories will NOT be sent. Enable until you lock or reload?'))return;
+ invalidateOptionalInference();
  cloudEnabled=true;localAiEnabled=false;ui.render(state);ui.updateStatus('META OPT-IN · CLOUD');toast('Cloud conversation is now enabled. Type only what you want to send.');
 }
 async function npcAsk(person,question){
@@ -257,24 +267,31 @@ async function rekey(){
 }
 async function lock(){
  if(!started)return;
+ const wasGuest=guestMode;
+ sessionEpoch++;abortPendingRequests();cloudEnabled=false;localAiEnabled=false;
  stopPresence();privateSpeech.disable();
- if(!guestMode){await vault.save(state);await vault.lock();}
- const wasGuest=guestMode;guestMode=false;
- ui.resetEphemeral();sessionEpoch++;for(const c of pendingLocalRequests)c.abort();cloudEnabled=false;localAiEnabled=false;soundscape.toggle(false);
+ let saveError=null;
+ if(!guestMode){
+  try{await vault.save(state);}catch(error){saveError=error;}
+  try{await vault.lock();}catch(error){saveError??=error;}
+ }
+ guestMode=false;
+ ui.resetEphemeral();soundscape.toggle(false);
  experience?.dispose?.();experience=null;started=false;
  document.querySelector('#app').dataset.sceneReady='false';
  document.querySelector('#app-ui').replaceChildren();
  document.querySelector('#loading-screen')?.classList.remove('hidden');
- showGate(wasGuest?'Guest demo ended. Nothing was saved.':'Your key has been cleared from this session. Your encrypted timeline remains on this device.');
+ showGate(wasGuest?'Guest demo ended. Nothing was saved.':saveError?'Your world is locked. The previous encrypted save remains on this device, but the latest changes could not be saved. Check browser storage before continuing.':'Your key has been cleared from this session. Your encrypted timeline remains on this device.');
 }
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,
  sound:toggleSound,forgetConversation,pinMemory:text=>memoryAction('pin',text),forgetMemory:index=>memoryAction('forget',index),compassSave,compassTried,compassClear,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
- privacyStatus:()=>true,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
+ privacyStatus:()=>true,guestMode:()=>guestMode,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
  voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus,comfort:id=>experience?.setComfort?.(id)
 });
 function begin(next,{guest=false,physicsPreview=false}={}){
  stopPresence();privateSpeech.disable();
+ abortPendingRequests();
  guestMode=Boolean(guest);
  state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{
@@ -306,5 +323,5 @@ gateForm.addEventListener('submit',async(event)=>{
 if(import.meta.env.PROD && 'serviceWorker' in navigator){
  window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
-window.addEventListener('pagehide',()=>soundscape.dispose());
+window.addEventListener('pagehide',()=>{abortPendingRequests();soundscape.dispose();});
 showGate();

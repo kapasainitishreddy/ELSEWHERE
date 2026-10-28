@@ -11,6 +11,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test tests/*.test.mjs",
     "test:e2e": "node tests/e2e/vertical-slice.mjs",
+    "test:e2e:fates": "node tests/e2e/fates.mjs",
+    "test:e2e:lifecycle": "node tests/e2e/lifecycle.mjs",
     "check": "npm run test && npm run build",
     "dev:api": "node server.mjs",
     "dev:meta": "node scripts/dev.mjs",
@@ -33,7 +35,7 @@
     "review:agents": "node tools/review/run.mjs",
     "review:source": "node tools/review/run.mjs --source-only",
     "meta:probe": "node tools/review/meta-live-probe.mjs",
-    "meta:check": "node --test tests/meta-causal-exhibit.test.mjs tests/serverless-meta.test.mjs tests/scene-director.test.mjs"
+    "meta:check": "node --test tests/meta-causal-exhibit.test.mjs tests/serverless-meta.test.mjs tests/scene-director.test.mjs tests/meta-request.test.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",

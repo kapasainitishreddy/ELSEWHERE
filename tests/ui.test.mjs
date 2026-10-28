@@ -36,6 +36,25 @@ test('private letters are escaped and cloud and microphone controls are absent',
  assert.ok(!root.innerHTML.includes('id="cloud-consent"'));
  assert.ok(!root.innerHTML.includes('data-cmd="mic"'));
 });
+test('guest play shows a not-saved label while normal local mode stays private',()=>{
+ const guestRoot={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(){},querySelector(){return null}};
+ const guestUI=createInterface(guestRoot,{guestMode:()=>true});guestUI.render(initialState());
+ assert.match(guestRoot.innerHTML,/GUEST · NOT SAVED/);
+ assert.match(guestRoot.innerHTML,/Guest demo; progress is not saved/);
+ const localRoot={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(){},querySelector(){return null}};
+ createInterface(localRoot,{}).render(initialState());
+ assert.match(localRoot.innerHTML,/PRIVATE LOCAL WORLD/);
+ assert.doesNotMatch(localRoot.innerHTML,/GUEST · NOT SAVED/);
+});
+test('touch d-pad forwards a captured pointer hold and release to movement controls',()=>{
+ const listeners={};const root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(type,handler){listeners[type]=handler;},querySelector(){return null;}};
+ const moves=[];createInterface(root,{move:(key,pressed)=>moves.push([key,pressed])});
+ const button={dataset:{move:'KeyW'},closest(selector){return selector==='[data-move]'?this:null;},setPointerCapture(id){this.captured=id;}};
+ let prevented=false;
+ listeners.pointerdown({target:button,pointerId:17,preventDefault(){prevented=true;}});
+ listeners.pointerup({target:button});
+ assert.equal(prevented,true);assert.equal(button.captured,17);assert.deepEqual(moves,[['KeyW',true],['KeyW',false]]);
+});
 test('Stillwater offers four private stories without changing or scoring game state',()=>{
  const {root,ui}=makeUI();const s=go(initialState(),'self');const snapshot=structuredClone(s);
  ui.render(s);assert.match(root.innerHTML,/data-cmd="stillwater-open"/);

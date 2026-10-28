@@ -618,11 +618,16 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  physicsControl.setAttribute('aria-label','Apply a physics impulse to a training object');
  physicsControl.textContent='▶ TEST OBJECT PHYSICS';
  physicsControl.hidden=true;container.append(physicsControl);
+ physicsControl.dataset.impulses='0';
+ physicsControl.dataset.ready='false';
+ const recordPhysicsImpulse=()=>{physicsControl.dataset.impulses=String(Number(physicsControl.dataset.impulses||0)+1);};
  physicsControl.addEventListener('click',()=>{
    if(!physicsStage||!state)return;
    const id=`${state.world}-relic-2`;
    const applied=physicsStage.impulse(id,playerPos);
+   physicsControl.dataset.lastAttempt=`${physicsStage.elapsed.toFixed(2)}:${applied?'accepted':'cooldown'}`;
    if(applied){
+     recordPhysicsImpulse();
      fx?.emit('impact',new THREE.Vector3(8.4,1.3,5.8));
      ambientStage?.react('impact');
    }
@@ -728,10 +733,13 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    if(!action)return;
    if(action.type==='physics'){
      const traveler=renderer.xr.isPresenting?rig.position:playerPos;
-     if(physicsStage?.impulse(action.id,traveler)){
+     const applied=physicsStage?.impulse(action.id,traveler);
+     physicsControl.dataset.lastAttempt=`${physicsStage?.elapsed?.toFixed(2)||'0'}:${applied?'accepted':'cooldown'}`;
+     if(applied){
        fx?.emit('impact',new THREE.Vector3(8.4,1.3,5.8));
        ambientStage?.react('impact');
        if(renderer.xr.isPresenting)showXRNote('Training object moved. This does not alter your timeline.');
+       recordPhysicsImpulse();
      }
      return;
    }
@@ -799,7 +807,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  function mount(next){
    const sameWorld=state?.world===next.world;if(!sameWorld)hasExplored=false;
    const lastPos=playerPos.clone();const lastCamera=camera.position.clone(),lastTarget=controls.target.clone();
-   state=next;updateXRWatch();fx?.dispose();physicsStage?.dispose();physicsStage=null;metaExhibit?.dispose();metaExhibit=null;scene.remove(world);world.traverse(o=>{
+   state=next;updateXRWatch();fx?.dispose();physicsStage?.dispose();physicsStage=null;physicsControl.dataset.ready='false';physicsControl.dataset.impulses='0';metaExhibit?.dispose();metaExhibit=null;scene.remove(world);world.traverse(o=>{
      o.geometry?.dispose();
      const materials=Array.isArray(o.material)?o.material:o.material?[o.material]:[];
      for(const material of materials){material.map?.dispose();material.dispose();}
@@ -846,6 +854,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
        if(!stage)return;
        if(!level.parent){stage.dispose();return;}
        physicsStage=stage;
+       physicsControl.dataset.ready='true';
        sign(level,'TOUCH THE WORLD','E · CLICK · VR TRIGGER',8.4,4.2,5.8,4);
        if(options.spawnNearPhysics&&!physicsNotified){onInspect('Physics is ready. Press E near a relic or click it.');physicsNotified=true;}
      }).catch(()=>{if(options.spawnNearPhysics&&!physicsNotified){onInspect('Physics could not start in this browser. The story remains playable.');physicsNotified=true;}}); // fallback if WASM fails

@@ -1,0 +1,75 @@
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {mkdir, mkdtemp, rm} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {setTimeout as delay} from 'node:timers/promises';
+import {chromium} from 'playwright';
+
+const root=new URL('../../',import.meta.url),port=Number(process.env.ELSEWHERE_FATE_PORT||5175),origin=`http://127.0.0.1:${port}`;
+const artifacts=new URL('../../review-output/e2e/',import.meta.url);await mkdir(artifacts,{recursive:true});
+const vite=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(port),'--strictPort'],{cwd:root,stdio:'ignore',env:process.env});
+let browser;
+let browserServer;
+const chromiumConfig=await mkdtemp(join(tmpdir(),'elsewhere-chromium-config-'));
+const chromiumCache=await mkdtemp(join(tmpdir(),'elsewhere-chromium-cache-'));
+try{
+ let ready=false;
+ for(let n=0;n<80;n++){if(vite.exitCode!==null)throw new Error(`Vite exited (${vite.exitCode})`);try{if((await fetch(origin)).ok){ready=true;break;}}catch{}await delay(250);}
+ assert(ready,'Vite did not become ready');
+ const executablePath=process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined);
+  const launchOptions={executablePath,headless:true,env:{...process.env,XDG_CONFIG_HOME:process.env.XDG_CONFIG_HOME||chromiumConfig,XDG_CACHE_HOME:process.env.XDG_CACHE_HOME||chromiumCache},args:['--no-sandbox','--disable-dev-shm-usage','--disable-breakpad','--disable-crash-reporter','--use-angle=swiftshader','--enable-webgl','--enable-unsafe-swiftshader']};
+  browserServer=await chromium.launchServer(launchOptions);browser=await chromium.connect(browserServer.wsEndpoint());
+ const outcomes={gift:'A city of open workshops',patent:'A licensed skyline',auction:'A city of hidden owners'};
+ const recall={gift:/public workshops/i,patent:/towers outside bear our name/i,auction:/monument to the invention we sold/i};
+ const selected=(process.env.ELSEWHERE_FATES||Object.keys(outcomes).join(',')).split(',').filter(id=>Object.hasOwn(outcomes,id));
+ for(const fate of selected){const headline=outcomes[fate];
+  const context=await browser.newContext({viewport:{width:900,height:650},deviceScaleFactor:0.5});
+  const page=await context.newPage();await page.emulateMedia({reducedMotion:'reduce'});page.setDefaultTimeout(25000);
+  const pageErrors=[],httpErrors=[],external=[];
+  page.on('pageerror',error=>pageErrors.push(error.message));
+  page.on('console',message=>{if(message.type()==='error')pageErrors.push(message.text());});
+  page.on('response',response=>{if(response.status()>=400)httpErrors.push(`${response.status()} ${response.url()}`);});
+  page.on('request',request=>{if(!request.url().startsWith(`${origin}/`))external.push(request.url());});
+  const to=async world=>{
+   if(await page.locator('#app-ui').getAttribute('data-world')===world)return;
+   await page.locator('.brand').click();
+   await page.locator(`.world-link[data-world="${world}"]`).click();
+   await page.waitForFunction(id=>document.querySelector('#app-ui')?.dataset.world===id,world);
+   await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+  };
+  try{
+   await page.goto(origin,{waitUntil:'networkidle'});await page.locator('#guest-play').click();
+   await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+   console.log(`${fate}: guest ready`);
+   await to('past');await page.locator('.hero-enter').click();
+   console.log(`${fate}: entered 1889`);
+   await page.locator('.choice-list [data-action="invent-cell"]').click();
+   await page.locator(`.choice-list [data-action="${fate}"]`).click();
+   console.log(`${fate}: invention ownership chosen`);
+   await to('future');await page.locator('.hero-enter').click();
+   console.log(`${fate}: returned to 2087`);
+   const causal=page.locator('.story-panel .future-box.small').filter({hasText:'CAUSAL WORLD STATUS'});
+   await causal.waitFor({state:'visible'});
+   const shown=await causal.innerText();assert.match(shown,new RegExp(headline));assert.match(shown,/Aether Cell/);
+   await causal.scrollIntoViewIfNeeded();
+   await page.screenshot({path:new URL(`fate-${fate}.png`,artifacts).pathname});
+   await to('self');await page.locator('.hero-enter').click();
+   await page.locator('#chat-question').fill('Tell me about the invention we chose.');
+   await page.locator('#chat-form button[type="submit"]').click();
+   await page.locator('#chat-history .chat-line.elder').waitFor();
+   const dialogue=await page.locator('#chat-history .chat-line.elder').last().innerText();assert.match(dialogue,recall[fate]);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'fate demo must remain an unsaved guest run');
+   assert.deepEqual(pageErrors,[]);assert.deepEqual(httpErrors,[]);assert.deepEqual(external,[]);
+   console.log(JSON.stringify({result:'PASS',fate,visualOutcome:headline,groundedDialogue:dialogue.replace(/\s+/g,' ').slice(0,180),guestVaultUntouched:true,errors:pageErrors,httpErrors,external}));
+  }catch(error){try{await page.screenshot({path:`/tmp/elsewhere-fate-${fate}-failure.png`});}catch{}throw error;}finally{
+   try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}
+   await Promise.race([context.close(),delay(5000)]);
+  }
+ }
+}finally{
+ if(browser)await Promise.race([browser.close(),delay(4000)]);
+ if(browserServer){const child=browserServer.process();if(child?.exitCode===null){child.kill('SIGKILL');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),delay(1000)]);}}
+ vite.kill('SIGTERM');await Promise.all([rm(chromiumConfig,{recursive:true,force:true}),rm(chromiumCache,{recursive:true,force:true})]);
+}

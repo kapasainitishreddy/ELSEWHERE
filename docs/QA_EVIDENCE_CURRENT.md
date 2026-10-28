@@ -47,3 +47,27 @@ The E2E screenshots are real browser captures from synthetic guest gameplay and 
 - **Original work provenance and adult user feedback:** UNVERIFIED; update event-period commit comparison and gather real, consented evidence before submission.
 
 The submission preflight reports NOT ESTABLISHED until its five external/manual gates are verified. Hackathon readiness remains **NO-GO**.
+
+## Follow-up verification — 2026-10-28
+
+This section supersedes the earlier open items where it reports a completed run. It records the 2026-10-28 verification and changes made after the confirmed pushed checkpoint `d3b2dd9776c63e9e942d59c1aba6655671e07e62`.
+
+- `npm ci`: the default npm cache path under `/home/agent/.npm` was unavailable (`ENOENT`), so that attempt failed. A clean retry with `npm_config_cache=/tmp/elsewhere-npm-cache npm ci` **PASS** — 21 packages installed from the lockfile. The lockfile was not changed by the retry.
+- `npm test`: **PASS** — 221 passed, 0 failed, 0 skipped.
+- `npm run meta:check`: **PASS** — 11 passed, 0 failed.
+- `npm run movement:check`: **PASS** — 8 passed, 0 failed.
+- `npm run art:check`: **PASS** — 15 passed, 0 failed.
+- `npm run arena:check`: **PASS** — 9 passed, 0 failed.
+- `npm run submission:check`: **PASS** — 0 local reported failures; 5 manual gates remain.
+- `npm run review:agents`: **PASS** — 11 PASS, 0 FAIL, 0 WARNING, 6 UNVERIFIED; the verdict remains NO-GO.
+- `npm run build`: **PASS** — Vite 7.3.7 production build. The earlier bundle-size warnings remain: app chunk about 1.02 MB and Rapier about 4.34 MB (1.65 MB gzip).
+- `npm run test:e2e`: **PASS** — Chromium 154.0.8037.57 with SwiftShader; guest journey and reloaded guest non-persistence, full gift story, desktop keyboard input, mobile d-pad pointer hold/release, 1440×900 and 390×844, no page/console errors, no HTTP ≥400, and no off-origin requests. The responsive run after the d-pad overlap CSS fix also passed; mobile document width remained 390 px.
+- `npm run test:e2e:fates`: **PASS** — separate fresh Chromium contexts for gift, patent, and auction. Each rendered a different causal status (“A city of open workshops,” “A licensed skyline,” and “A city of hidden owners”), recalled the correct ownership choice in future-self dialogue, stayed an unsaved guest, and reported empty page-error, HTTP-error and off-origin request lists.
+- `ELSEWHERE_LIFECYCLE=guest-reset npm run test:e2e:lifecycle`: **PASS** — consent reset, truthful guest label, no vault write, zero Meta calls.
+- `ELSEWHERE_LIFECYCLE=vault-cloud npm run test:e2e:lifecycle`: **PASS** — AES-GCM save/lock/reload/unlock; a synthetic private letter stayed ciphertext-only and was restored; a quota failure still cleared the active session while preserving the last unlockable ciphertext; offline dialogue made zero Meta requests; one explicit mocked response used only the allowlisted request; malformed mock output fell back; delayed mock requests were aborted on world travel and lock; cancellation content was not stored; cloud consent reset after reload. The provider reply in this test is a **mock**, not a live Meta inference.
+- `ELSEWHERE_LIFECYCLE=physics npm run test:e2e:lifecycle`: **UNVERIFIED** — the process session was lost at the environment boundary after `physics-30-interactions.png` appeared. Do not infer completion from the screenshot. The script covers 30 accepted physics impulses, re-entry and another E-triggered impulse, but the final command status was not retained. Rapier/arena unit and scene checks above did pass.
+- `npx playwright install chromium`: **BLOCKED** by the network proxy (`cdn.playwright.dev` returned HTTP 403). The installed system Chromium was used for the actual browser tests instead; no browser source/regex check substituted for them.
+
+The code now revokes consent and aborts outstanding optional model requests on opt-out, reset, world transition and lock. Lock attempts to persist first but still clears session state and the vault key when saving fails; the UI reports that the previous encrypted save remains while latest changes may be lost. The local Meta server timeout remains active through upstream response-body parsing. The mobile d-pad is hidden while the story sheet is open, preventing the overlap visible in an earlier screenshot.
+
+Current real synthetic gameplay captures are ignored under `review-output/e2e/`, including the 1440×900 gift journey, 390×844 layout, and 900×650 causal receipts for all three fates (SwiftShader output; not physical hardware evidence). They remain local: this environment has no Library upload capability. No video, live Meta call, preview deployment, Quest run or public submission was performed.
