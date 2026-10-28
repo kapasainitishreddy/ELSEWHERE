@@ -22,6 +22,7 @@ import {createSessionCare} from './session-care.js';
 import {safeSceneCue,safeSceneFocus} from './scene-director.js';
 import {causalExhibitPlan,installCausalExhibit} from './causal-exhibit.js';
 import {portalFrame,combatFrame,skylineVehicleX,SKYLINE_VEHICLE_BOUNDS} from './performance-direction.js';
+import {FUTURE_OUTCOME_LAYOUTS,FUTURE_PORTAL_Z,portalXAt} from './future-outcomes.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
 const palettes = {
@@ -158,7 +159,7 @@ function buildLivingCharacters(group,state,targets,animated,getTraveler,nearbyPr
   touch.userData.action=action;targets.push(touch);
   const npcHint={x:actor.x,z:actor.z,action};nearbyProps.push(npcHint);
   const npcNav=createNpcNavigator(YUKA,{id:actor.id,x:actor.x,z:actor.z,
-    rects:collisionRects(state.world),radius:memory.mood==='angry'?.65:1.05});
+    rects:collisionRects(state.world,state.fate),radius:memory.mood==='angry'?.65:1.05});
   animated.push((t,moving,dt)=>{
     const traveler=getTraveler?.();
     const step=Math.max(0,dt||0);
@@ -302,34 +303,36 @@ function buildFuture(g,state,animated){
 }
 /** One grounded 2087 landmark makes each validated 1889 ownership choice visible. */
 function buildFutureOutcome(g,state){
+ const layout=FUTURE_OUTCOME_LAYOUTS[state.fate];if(!layout)return null;
+ const landmark=new THREE.Group();landmark.position.set(layout.offsetX,0,layout.offsetZ);g.add(landmark);
  if(state.fate==='gift'){
    // Open-sided cooperative workshop: a low canopy, shared bench, and accessible tools.
-   box(g,7.2,.16,4.8,mat(0x536d5d,.18,.82),-10.4,.08,-11.2);
-   for(const x of [-13.5,-7.3])for(const z of [-13.15,-9.3])box(g,.19,4.1,.19,mat(0x88947a,.27,.66),x,2.15,z);
-   box(g,7.8,.24,5.3,mat(0x35544d,.22,.72),-10.4,4.35,-11.2);
-   box(g,4.8,.12,1.15,mat(0x94795c,.16,.76),-10.4,1.05,-9.85);
-   for(const x of [-11.9,-10.4,-8.9])box(g,.55,.5,.58,emissive(x===-10.4?0x82e6b3:0xceb687,.55),x,1.35,-9.85);
-   sign(g,'PUBLIC WORKSHOP','TOOLS OPEN TO EVERYONE',-10.4,5.35,-8.42,5.1);
+   box(landmark,7.2,.16,4.8,mat(0x536d5d,.18,.82),-10.4,.08,-11.2);
+   for(const x of [-13.5,-7.3])for(const z of [-13.15,-9.3])box(landmark,.19,4.1,.19,mat(0x88947a,.27,.66),x,2.15,z);
+   box(landmark,7.8,.24,5.3,mat(0x35544d,.22,.72),-10.4,4.35,-11.2);
+   box(landmark,4.8,.12,1.15,mat(0x94795c,.16,.76),-10.4,1.05,-9.85);
+   for(const x of [-11.9,-10.4,-8.9])box(landmark,.55,.5,.58,emissive(x===-10.4?0x82e6b3:0xceb687,.55),x,1.35,-9.85);
+   sign(landmark,'PUBLIC WORKSHOP','TOOLS OPEN TO EVERYONE',-10.4,5.35,-8.42,5.1);
    return 'public-workshop';
  }
  if(state.fate==='patent'){
-   // A single owned tower interrupts the low open skyline with a clear vertical landmark.
-   box(g,7.6,27,6.4,mat(0x354c63,.72,.27),11.2,13.5,-23);
-   box(g,6.5,22,.12,glass(0x86c7cf,.36),11.2,15,-19.72);
-   for(const x of [8.05,11.2,14.35])box(g,.11,23,.18,emissive(0xd6b677,.68),x,15,-19.58);
-   box(g,8.2,.48,6.8,mat(0xc4a365,.76,.24),11.2,27.35,-23);
-   sign(g,'LICENSED TOWER','OWNED BY THE INVENTOR',11.2,29.05,-19.42,5.5);
+   // A single owned tower rises behind a clear walkable portal corridor.
+   box(landmark,7.6,27,6.4,mat(0x354c63,.72,.27),11.2,13.5,-23);
+   box(landmark,6.5,22,.12,glass(0x86c7cf,.36),11.2,15,-19.72);
+   for(const x of [8.05,11.2,14.35])box(landmark,.11,23,.18,emissive(0xd6b677,.68),x,15,-19.58);
+   box(landmark,8.2,.48,6.8,mat(0xc4a365,.76,.24),11.2,27.35,-23);
+   sign(landmark,'LICENSED TOWER','OWNED BY THE INVENTOR',11.2,29.05,-19.42,5.5);
    return 'licensed-tower';
  }
  if(state.fate==='auction'){
    // A closed archive and sealed circular door contrast with the open workshop and tower.
-   box(g,9,6.5,7.2,mat(0x293440,.77,.34),-11,3.25,-20.5);
+   box(landmark,9,6.5,7.2,mat(0x293440,.77,.34),-11,3.25,-20.5);
    const dome=new THREE.Mesh(new THREE.SphereGeometry(4.45,24,12,0,Math.PI*2,0,Math.PI/2),glass(0x6e8790,.28));
-   dome.position.set(-11,6.5,-20.5);g.add(dome);
+   dome.position.set(-11,6.5,-20.5);landmark.add(dome);
    const door=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,.24,24),mat(0x957957,.8,.25));
-   door.position.set(-11,3.2,-16.78);door.rotation.x=Math.PI/2;g.add(door);
-   ring(g,1.45,.075,emissive(0xd9ad72,.8),-11,3.2,-16.59);
-   sign(g,'PRIVATE ARCHIVE','SEALED BY THE BUYER',-11,10.3,-16.45,5.3);
+   door.position.set(-11,3.2,-16.78);door.rotation.x=Math.PI/2;landmark.add(door);
+   ring(landmark,1.45,.075,emissive(0xd9ad72,.8),-11,3.2,-16.59);
+   sign(landmark,'PRIVATE ARCHIVE','SEALED BY THE BUYER',-11,10.3,-16.45,5.3);
    return 'private-archive';
  }
  return null;
@@ -750,7 +753,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
      const rayToFloor=new THREE.Ray(origin,dir);
      if(rayToFloor.intersectPlane(floor,point)){
        const x=point.x,z=point.z;
-       if(walkableLanding({x,z,source:origin,distance:point.distanceTo(origin),rects:collisionRects(state.world),limit:comfortPreset(comfortId).teleportDistance})){
+       if(walkableLanding({x,z,source:origin,distance:point.distanceTo(origin),rects:collisionRects(state.world,state.fate),limit:comfortPreset(comfortId).teleportDistance})){
          // Teleport was explicitly selected. Move the same rig that owns both hands.
          rig.position.x=x;rig.position.z=z;
          playerPos.x=x;playerPos.z=z;
@@ -930,8 +933,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    // Three interactive wormholes, placed at each world's far edge.
    const all=Object.keys(WORLDS).filter(w=>w!==state.world);
    for(let i=0;i<all.length;i++){
-     const x=(i-1.5)*5.7;buildPortal(world,all[i],x,-20.5,targets,animated,()=>playerPos,reduceMotion);
-     portalLocations.push({x,z:-20.5,action:{type:'world',world:all[i]}});
+     const x=portalXAt(i,all.length);buildPortal(world,all[i],x,FUTURE_PORTAL_Z,targets,animated,()=>playerPos,reduceMotion);
+     portalLocations.push({x,z:FUTURE_PORTAL_Z,action:{type:'world',world:all[i]}});
    }
    buildParallelGate(world,state,targets,animated);
    const active=worldOptions(state).filter(o=>!o.disabled && !o.id.startsWith('go-'));
@@ -971,9 +974,10 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    const iz=(pressed.has('KeyS')||pressed.has('ArrowDown')?1:0)-(pressed.has('KeyW')||pressed.has('ArrowUp')?1:0)+gamepadAxes.z;
    const cameraYaw=Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z);
    const pose=locomotion.step({x:playerPos.x,z:playerPos.z,inputX:ix,inputZ:iz,cameraYaw,
-     sprint:pressed.has('ShiftLeft'),dt,rects:collisionRects(state.world),
+     sprint:pressed.has('ShiftLeft'),dt,rects:collisionRects(state.world,state.fate),
      collisions:!(state.world==='mech'&&state.mechDeployed)});
    moving=pose.moving;travelerSpeed=pose.speed;playerPos.set(pose.x,0,pose.z);
+   if(showPerf){container.dataset.playerX=playerPos.x.toFixed(2);container.dataset.playerZ=playerPos.z.toFixed(2);}
    if(moving&&!hasExplored){hasExplored=true;if(window.innerWidth>780)onExplore();}
    if(state.world==='mech'&&state.mechDeployed&&titan){
      titan.position.x=playerPos.x;titan.position.z=playerPos.z-13;titan.rotation.y=pose.heading;

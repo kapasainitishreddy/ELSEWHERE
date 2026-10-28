@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {futureOutcomeCollisionRects} from './future-outcomes.js';
 
 /* Original, procedural scenery. No third-party meshes, textures or unlicensed characters. */
 const palettes={
@@ -167,6 +168,7 @@ export function addScenery(group,state,animated){
 }
 
 /** Deliberate coarse collision proxies; no heavy physics dependency is needed for walking. */
-export function collisionRects(world){
-  return ({future:[[-3.7,3.7,-11.7,-4]],self:[[-3.1,3.1,-8,-5]],past:[[-4.1,4.1,-9,-5]],dungeon:[[-3.7,3.7,-13,-8]],mech:[]})[world]||[];
+export function collisionRects(world,fate=null){
+  const base=({future:[[-3.7,3.7,-11.7,-4]],self:[[-3.1,3.1,-8,-5]],past:[[-4.1,4.1,-9,-5]],dungeon:[[-3.7,3.7,-13,-8]],mech:[]})[world]||[];
+  return world==='future'?[...base,...futureOutcomeCollisionRects(fate)]:base;
 }

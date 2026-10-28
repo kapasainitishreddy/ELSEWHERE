@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {characterSeed,performanceFrame,portalFrame,combatFrame,skylineVehicleX,SKYLINE_VEHICLE_BOUNDS} from '../src/performance-direction.js';
 import {visualBeat} from '../src/cinematic-beats.js';
+import {portalXAt} from '../src/future-outcomes.js';
 
 const source=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
 
@@ -41,7 +42,12 @@ test('portals react to proximity without extreme intensity or artificial camera 
  }
  const scene=await source('src/worlds.js');
  assert.match(scene,/portalFrame\(time,distance/);
- assert.match(scene,/buildPortal\(world,all\[i\],x,-20\.5,targets,animated,\(\)=>playerPos,reduceMotion\)/);
+ assert.equal([0,1,2,3].map(i=>portalXAt(i,4)).join(','),'-8.55,-2.85,2.85,8.55');
+ assert.match(scene,/const x=portalXAt\(i,all\.length\);buildPortal\(world,all\[i\],x,FUTURE_PORTAL_Z/);
+ assert.match(scene,/landmark\.position\.set\(layout\.offsetX,0,layout\.offsetZ\)/);
+ assert.match(scene,/rects:collisionRects\(state\.world,state\.fate\)/,'movement collision must receive the canonical ownership fate');
+ const scenery=await source('src/scenery.js');
+ assert.match(scenery,/world==='future'\?\[\.\.\.base,\.\.\.futureOutcomeCollisionRects\(fate\)\]:base/);
  assert.match(scene,/new THREE\.InstancedMesh\(new THREE\.CylinderGeometry\(\.07,\.12,1,10\),metal,36\)/);
  assert.match(scene,/lampIndex\+\+/);
  assert.match(scene,/new THREE\.InstancedMesh\(new THREE\.BoxGeometry\(1,1,1\),metal,9\)/);

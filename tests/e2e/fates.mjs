@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 import {chromium} from 'playwright';
+import {FUTURE_PORTAL_Z} from '../../src/future-outcomes.js';
 
 const root=new URL('../../',import.meta.url),port=Number(process.env.ELSEWHERE_FATE_PORT||5175),origin=`http://127.0.0.1:${port}`;
 const artifacts=new URL('../../review-output/e2e/',import.meta.url);await mkdir(artifacts,{recursive:true});
@@ -39,6 +40,36 @@ try{
    await page.waitForFunction(id=>document.querySelector('#app-ui')?.dataset.world===id,world);
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
   };
+  const approachFuturePortal=async({x,world,label})=>{
+   const cue=label.toUpperCase();
+   const storyToggle=page.locator('.story-panel [data-cmd="story-toggle"]');
+   if(await storyToggle.isVisible())await storyToggle.click();
+   const skip=page.locator('.first-crossing [data-cmd="journey-skip"]');if(await skip.isVisible())await skip.click();
+   console.log(`${fate}: walking to ${label} portal approach`);
+   const lateral=x>0?'KeyD':'KeyA';
+   await page.keyboard.down(lateral);
+   try{
+    await page.waitForFunction(target=>Math.abs(Number(document.querySelector('#world-canvas')?.dataset.playerX)-target)<.45,x,{timeout:60000});
+   }finally{await page.keyboard.up(lateral);}
+   await page.keyboard.down('KeyW');
+   try{
+    await page.waitForFunction(({name,targetZ})=>{
+     const node=document.querySelector('.world-proximity-cue');
+     const z=Number(document.querySelector('#world-canvas')?.dataset.playerZ);
+     return z<=targetZ&&node?.classList.contains('visible')&&node.textContent.toUpperCase().includes(name);
+    },{name:cue,targetZ:FUTURE_PORTAL_Z+2.6},{timeout:90000});
+   }catch(error){
+    const diagnostic=await page.evaluate(()=>({world:document.querySelector('#app-ui')?.dataset.world,
+     position:{x:document.querySelector('#world-canvas')?.dataset.playerX,z:document.querySelector('#world-canvas')?.dataset.playerZ},
+     cue:document.querySelector('.world-proximity-cue')?.textContent,visible:document.querySelector('.world-proximity-cue')?.className}));
+    throw new Error(`could not reach ${label} portal: ${JSON.stringify(diagnostic)}`,{cause:error});
+   }finally{await page.keyboard.up('KeyW');}
+   await page.keyboard.press('KeyE');
+   await page.waitForFunction(id=>document.querySelector('#app-ui')?.dataset.world===id,world,{timeout:30000});
+   await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+   console.log(`${fate}: entered ${label} through the 3D portal`);
+   await to('future');
+  };
   try{
    await page.goto(`${origin}/?perf=1`,{waitUntil:'networkidle'});await page.locator('#guest-play').click();
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
@@ -67,6 +98,8 @@ try{
    const skip=page.locator('.first-crossing [data-cmd="journey-skip"]');if(await skip.isVisible())await skip.click();
    await page.screenshot({path:new URL(`fate-${fate}-world.png`,artifacts).pathname});
    await page.locator('#world-canvas canvas').screenshot({path:new URL(`fate-${fate}-scene.png`,artifacts).pathname});
+   if(fate==='patent')await approachFuturePortal({x:8.55,world:'mech',label:'Titan Foundry'});
+   if(fate==='auction')await approachFuturePortal({x:-8.55,world:'self',label:'The Other You'});
    await to('self');await page.locator('.hero-enter').click();
    await page.locator('#chat-question').fill('Tell me about the invention we chose.');
    await page.locator('#chat-form button[type="submit"]').click();
