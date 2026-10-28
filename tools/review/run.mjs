@@ -69,9 +69,13 @@ check('Physics Agent','Physics and Yuka modules wired',
   worlds.includes('createNpcNavigator')&&worlds.includes('installPhysicsStage')&&
   present('src/player-motion.js'),
   'Not visual quality evidence');
-check('Reproducibility Agent','Dependency lockfile',
-  present('package-lock.json')||present('pnpm-lock.yaml')||present('yarn.lock'),
-  'No committed lockfile found; rebuilds may resolve different dependency versions','WARNING');
+const lockfile=['package-lock.json','pnpm-lock.yaml','yarn.lock'].find(present);
+const trackedLockfile=lockfile&&spawnSync('git',['ls-files','--error-unmatch',lockfile],{
+  cwd:root,encoding:'utf8',shell:false
+}).status===0;
+check('Reproducibility Agent','Dependency lockfile',Boolean(trackedLockfile),
+  trackedLockfile?`${lockfile} is tracked; this check does not execute npm ci.`:
+    'No tracked dependency lockfile found; rebuilds may resolve different dependency versions.','WARNING');
 
 if(sourceOnly){
   blocked('Execution Agent','Full npm tests','Skipped by --source-only');

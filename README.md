@@ -136,9 +136,15 @@ These are developer-side commands. Player conversations, saved timelines and vau
 Requires Node.js 22+, npm and an installed copy of the dependencies. Default mode runs entirely on your own computer with authored local dialogue and **no Meta API key**. There is also an optional on-device generative model adapter, enabled only when you run a separate local service.
 
 ```bash
-npm install
+npm ci
 npm run dev
 # Visit http://localhost:5173
+```
+
+Use Node.js 22 or newer. `npm ci` installs the exact versions recorded in `package-lock.json`. In restricted containers where npm's default cache directory is unavailable, you can keep the same integrity-checked install while placing the cache under `/tmp`:
+
+```bash
+npm ci --cache "${TMPDIR:-/tmp}/elsewhere-npm-cache"
 ```
 
 ```bash
@@ -147,6 +153,19 @@ npm run build            # production Vite build
 npm run check            # tests then production build
 npm run readiness        # automated checks + explicit submission blockers
 ```
+
+### Current local verification (2026-10-28)
+
+The current working checkpoint has 244 passing Node tests, a successful production Vite build, and an agent-review result of 11 PASS, 0 FAIL, 0 WARNING, and 6 UNVERIFIED. The build still reports large app and Rapier JavaScript chunks. Additional reproducible Chromium paths are available:
+
+```bash
+npm run test:e2e:combat-recovery  # Warden and mech defeat, recovery, victory, replay guards
+npm run test:e2e:backup-recovery  # encrypted backup download, cancel, malformed file, restore/reload
+npm run test:e2e:accessibility    # keyboard guest entry, 200% viewport/scale emulation, contrast, reduced motion
+node --test tests/physics-long-session.test.mjs  # Rapier settling, collider bounds, ten simulated minutes
+```
+
+The browser checks used local system Chromium with SwiftShader software WebGL and synthetic data. The 200% accessibility scenario is an emulation using half the CSS viewport at device scale factor 2; it is not a test of Chromium's browser zoom UI. These results do not establish physical phone/GPU/Quest performance, screen-reader conformance, live Meta inference, public deployment, or hackathon eligibility. Review [current QA evidence](docs/QA_EVIDENCE_CURRENT.md), [feature ledger](docs/FEATURE_LEDGER.csv), and [readiness matrix](docs/HACKATHON_READINESS_CURRENT.md) before making any release claim. Current decision remains **NO-GO** for external submission.
 
 `npm run dev` starts the local Vite server only. Personal gameplay never needs a cloud API. On the first visit, create a passphrase-protected local vault. There is **no passphrase recovery**. Do not lose it. Back up using the encrypted export in My Timeline.
 
