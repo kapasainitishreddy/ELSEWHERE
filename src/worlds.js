@@ -23,6 +23,7 @@ import {safeSceneCue,safeSceneFocus} from './scene-director.js';
 import {causalExhibitPlan,installCausalExhibit} from './causal-exhibit.js';
 import {portalFrame,combatFrame,skylineVehicleX,SKYLINE_VEHICLE_BOUNDS} from './performance-direction.js';
 import {FUTURE_OUTCOME_LAYOUTS,FUTURE_PORTAL_Z,portalXAt} from './future-outcomes.js';
+import {shouldShowSceneSign} from './scene-label-visibility.js';
 
 const COLORS = { future: 0x62dbe7, self: 0xe5b78c, past: 0xe9b972, dungeon: 0xaa88ff, mech: 0xf5b079 };
 const palettes = {
@@ -50,7 +51,7 @@ function labelTexture(title,subtitle='',fg='#c6faff',accent='#60e8e8'){
  c.font='26px monospace';c.fillStyle='#a1b8c5';c.fillText(subtitle,384,169);
  const tx=new THREE.CanvasTexture(canvas);tx.colorSpace=THREE.SRGBColorSpace;return tx;
 }
-function sign(parent,title,subtitle,x,y,z,w=3.8){const t=labelTexture(title,subtitle);const plane=mesh(parent,new THREE.PlaneGeometry(w,w/3),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,side:THREE.DoubleSide}),x,y,z);return plane;}
+function sign(parent,title,subtitle,x,y,z,w=3.8){const t=labelTexture(title,subtitle);const plane=mesh(parent,new THREE.PlaneGeometry(w,w/3),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,side:THREE.DoubleSide}),x,y,z);plane.userData.sceneSign=true;return plane;}
 function ground(g,p){mesh(g,new THREE.PlaneGeometry(170,170),mat(p.ground,.1,.9),0,-.12,0,-Math.PI/2);const grid=new THREE.GridHelper(170,80,p.light,0x31414e);grid.material.transparent=true;grid.material.opacity=.12;grid.position.y=-.097;g.add(grid);}
 function stars(group,color=0xc2edff,count=300){const vertices=[];for(let i=0;i<count;i++){const a=seeded(i*2)*Math.PI*2;const r=20+seeded(i*3+17)*65;vertices.push(Math.sin(a)*r,3+seeded(i*11+9)*30,Math.cos(a)*r);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));const p=new THREE.Points(g,new THREE.PointsMaterial({color,size:.14,transparent:true,opacity:.5,sizeAttenuation:true,depthWrite:false}));group.add(p);}
 function buildPortal(group,world,x,z,interactables,animated,getTraveler,reduceMotion=false){
@@ -675,7 +676,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  container.append(renderer.domElement);
  const rig=new THREE.Group();scene.add(rig);const camera=new THREE.PerspectiveCamera(63,1,.08,200);rig.add(camera);camera.position.set(0,5,17);
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.055;controls.enablePan=false;controls.maxPolarAngle=Math.PI*.47;controls.minDistance=5;controls.maxDistance=28;controls.target.set(0,2,0);
- const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],nearbyProps=[],player=null,titan=null,moving=false,stillwaterTerrace=null,elderPresence=null,dialogueUntil=0,fx=null,ambientStage=null,physicsStage=null,metaExhibit=null;
+ const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();let state=null,world=new THREE.Group(),animated=[],targets=[],beacons=[],portalLocations=[],nearbyProps=[],sceneSigns=[],player=null,titan=null,moving=false,stillwaterTerrace=null,elderPresence=null,dialogueUntil=0,fx=null,ambientStage=null,physicsStage=null,metaExhibit=null;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  const hover=document.querySelector('#interaction-hint');let pointerDown=null;
  const proximityCue=document.createElement('div');proximityCue.className='world-proximity-cue';proximityCue.setAttribute('aria-live','off');container.append(proximityCue);
@@ -710,7 +711,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  focusReticle.visible=false;focusReticle.renderOrder=12;scene.add(focusReticle);
  let lastCue='',focusedPoint=null,activeChoice=null;
  const worldNames=Object.fromEntries(Object.entries(WORLDS).map(([key,w])=>[key,w.name]));
- const clock=new THREE.Clock();const care=createSessionCare();const locomotion=createPlayerMotion();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();let comfortId=DEFAULT_COMFORT;
+ const clock=new THREE.Clock();const care=createSessionCare();const locomotion=createPlayerMotion();let playerPos=new THREE.Vector3(0,0,6);const pressed=new Set();let comfortId=DEFAULT_COMFORT,nextSignVisibilityUpdate=0;
+ const signTraveler=new THREE.Vector3(),signPosition=new THREE.Vector3();
  let hasExplored=false,travelerSpeed=0,physicsNotified=false;let previousGamepadButtons=new Set(),gamepadAxes={x:0,z:0};
  function desktopGamepad(){
    if(renderer.xr.isPresenting || !state || !document.querySelector('#vault-gate')?.hidden || document.querySelector('.modal-shade')){
@@ -923,7 +925,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
        if(!level.parent){stage.dispose();return;}
        physicsStage=stage;
        physicsControl.dataset.ready='true';
-       sign(level,'TOUCH THE WORLD','E · CLICK · VR TRIGGER',8.4,4.2,5.8,4);
+       sceneSigns.push(sign(level,'TOUCH THE WORLD','E · CLICK · VR TRIGGER',8.4,4.2,5.8,4));
        if(options.spawnNearPhysics&&!physicsNotified){onInspect('Physics is ready. Press E near a relic or click it.');physicsNotified=true;}
      }).catch(()=>{if(options.spawnNearPhysics&&!physicsNotified){onInspect('Physics could not start in this browser. The story remains playable.');physicsNotified=true;}}); // fallback if WASM fails
    }
@@ -946,6 +948,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    physical.forEach((o,i)=>buildActionBeacon(world,o,i,COLORS[state.world],animated,targets,beacons));
    for(const beacon of beacons)nearbyProps.push({x:beacon.position.x,z:beacon.position.z,action:{type:'choice',id:beacon.action,label:beacon.title}});
    xrChoicePanels(state.world);
+   sceneSigns=[];world.traverse(object=>{if(object.userData.sceneSign)sceneSigns.push(object);});nextSignVisibilityUpdate=0;
    player=makePlayer(world);player.visible=!renderer.xr.isPresenting && !(state.world==='mech'&&state.mechDeployed);
    const startPosition=options.spawnNearPhysics&&state.world==='dungeon'?new THREE.Vector3(5.45,0,5.8):new THREE.Vector3(0,0,6);
    playerPos.copy(sameWorld?lastPos:startPosition);
@@ -1034,6 +1037,7 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    }
    focusReticle.visible=Boolean(!renderer.xr.isPresenting&&focusedPoint);
    if(focusReticle.visible){focusReticle.position.copy(focusedPoint);focusReticle.lookAt(camera.position);if(!reduceMotion)focusReticle.rotation.z+=dt*.8;}
+   if(clock.elapsedTime>=nextSignVisibilityUpdate){nextSignVisibilityUpdate=clock.elapsedTime+.5;const traveler=renderer.xr.isPresenting?rig.position:playerPos;signTraveler.set(traveler.x,0,traveler.z);for(const label of sceneSigns){if(label.userData.action)continue;label.getWorldPosition(signPosition);label.visible=shouldShowSceneSign(signPosition.distanceToSquared(signTraveler));}}
    fx?.update(dt);
    for(const fn of animated)fn(t,moving,reduceMotion?0:dt);
    metaExhibit?.update(t,reduceMotion);
