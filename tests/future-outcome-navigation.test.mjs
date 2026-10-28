@@ -47,7 +47,7 @@ test('portal travel remains walkable and landings avoid outcome structures',()=>
  }
 });
 
-test('solid outcome landmarks block walking and XR landing through their footprint',()=>{
+test('solid landmarks block walking while XR boundary and rectangle guards are tested separately',()=>{
  for(const fate of ['patent','auction']){
   const layout=FUTURE_OUTCOME_LAYOUTS[fate],rects=collisionRects('future',fate),rect=layout.collisionRect;
   assert.ok(rects.some(r=>r[0]===rect[0]&&r[1]===rect[1]&&r[2]===rect[2]&&r[3]===rect[3]),`${fate} is missing its walk collision proxy`);
@@ -55,8 +55,14 @@ test('solid outcome landmarks block walking and XR landing through their footpri
   const motion=createPlayerMotion();let z=-18;
   for(let frame=0;frame<160;frame++)z=motion.step({x,z,inputZ:-1,dt:.05,rects}).z;
   assert.ok(z>=rect[3]-.55,`${fate} player passed through its structure: z=${z}`);
-  assert.equal(walkableLanding({x,z:rect[3]+.2,source:{x:0,z:0},distance:8,rects,limit:11}),false,
-   `${fate} permits teleporting into its structure`);
+  assert.ok(layout.bounds.maxZ < -18,`${fate} landmark should remain entirely beyond the XR landing z boundary`);
+  const insideLandmark={x,z:rect[3]+.2};
+  assert.equal(walkableLanding({...insideLandmark,source:{x:0,z:0},distance:8,rects:[],limit:11}),false,
+   `${fate} in-world landmark fixture should be rejected by the global XR boundary; its collision rectangle is outside landing range`);
  }
+ const inBoundsFixture=[-1,1,-5,-3],landing={x:0,z:-4,source:{x:0,z:0},distance:4,limit:11};
+ assert.equal(walkableLanding({...landing,rects:[]}),true,'control landing is valid without an XR collision rectangle');
+ assert.equal(walkableLanding({...landing,rects:[inBoundsFixture]}),false,
+  'an in-bounds landing inside a rectangle should be rejected by the rectangle collision check');
  assert.deepEqual(collisionRects('future','gift'),[[-3.7,3.7,-11.7,-4]],'the open workshop should stay traversable');
 });
