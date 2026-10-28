@@ -94,8 +94,34 @@ try {
   assert((await page.locator('body').innerText()).includes('1889'));
   await page.locator('[data-cmd="first-crossing"]').click();
   await page.locator('[data-action="invent-cell"]').click();
-  await page.locator('.choice-list [data-action="gift"]').click();
+  const gift=page.locator('.choice-list [data-action="gift"]');
+  await gift.scrollIntoViewIfNeeded();
+  const giftBefore=await gift.evaluate(node=>{
+    const rect=node.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2,hit=document.elementFromPoint(x,y);
+    const ancestors=[];for(let current=node;current&&ancestors.length<8;current=current.parentElement){const style=getComputedStyle(current);ancestors.push({tag:current.tagName,id:current.id,className:typeof current.className==='string'?current.className:'',overflowY:style.overflowY,pointerEvents:style.pointerEvents,position:style.position,zIndex:style.zIndex,transform:style.transform,scrollTop:current.scrollTop});}
+    return {rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},centerHit:hit?{tag:hit.tagName,id:hit.id,className:typeof hit.className==='string'?hit.className:String(hit.className),action:hit.getAttribute('data-action')}:null,hitWithinGift:hit?.closest('[data-action="gift"]')===node,activeElement:{tag:document.activeElement?.tagName,id:document.activeElement?.id},world:document.querySelector('#app-ui')?.dataset.world,storyOpen:!document.querySelector('.story-panel')?.hasAttribute('inert'),scrollTop:document.querySelector('.story-panel')?.scrollTop,scrollHeight:document.querySelector('.story-panel')?.scrollHeight,clientHeight:document.querySelector('.story-panel')?.clientHeight,ancestors};
+  });
+  assert(giftBefore.hitWithinGift,'the visible center of the gift button must not be covered by another element');
+  await page.evaluate(()=>{
+    const target=document.querySelector('.choice-list [data-action="gift"]');
+    const diagnostics={start:performance.now(),target,targetConnectedBefore:target?.isConnected,events:[],longTasks:[]};
+    window.__giftActionDiagnostics=diagnostics;
+    document.addEventListener('pointerdown',event=>{if(event.target.closest?.('[data-action="gift"]'))diagnostics.events.push({type:'pointerdown',at:performance.now()});},{capture:true,once:true});
+    document.addEventListener('click',event=>{if(event.target.closest?.('[data-action="gift"]'))diagnostics.events.push({type:'click',at:performance.now()});},{capture:true,once:true});
+    if('PerformanceObserver' in window)try{new PerformanceObserver(list=>diagnostics.longTasks.push(...list.getEntries().map(entry=>({start:entry.startTime,duration:entry.duration})))).observe({type:'longtask',buffered:true});}catch{}
+  });
+  const giftClickStartedAt=Date.now();checkpoint('attempting gift click',JSON.stringify(giftBefore));
+  try{await page.mouse.click(giftBefore.rect.x+giftBefore.rect.width/2,giftBefore.rect.y+giftBefore.rect.height/2);}
+  catch(error){
+    const giftAfter=await page.evaluate(()=>({activeElement:{tag:document.activeElement?.tagName,id:document.activeElement?.id},world:document.querySelector('#app-ui')?.dataset.world,storyOpen:!document.querySelector('.story-panel')?.hasAttribute('inert'),storyText:document.querySelector('.story-panel')?.innerText?.slice(-500),choice:document.querySelector('.choice-list [data-action="gift"]')?.outerHTML,clickDiagnostics:window.__giftActionDiagnostics&&{probeStartedAt:window.__giftActionDiagnostics.start,targetConnectedBefore:window.__giftActionDiagnostics.targetConnectedBefore,targetConnectedAfter:window.__giftActionDiagnostics.target?.isConnected,events:window.__giftActionDiagnostics.events,longTasks:window.__giftActionDiagnostics.longTasks},scrollTop:document.querySelector('.story-panel')?.scrollTop,scrollHeight:document.querySelector('.story-panel')?.scrollHeight,clientHeight:document.querySelector('.story-panel')?.clientHeight})).catch(()=>({pageUnresponsive:true}));
+    await Promise.race([page.screenshot({path:new URL('gift-click-failure-1440.png',artifactDir).pathname}),delay(3000)]);
+    throw new Error(`gift pointer action failed at ${desktopViewport.width}x${desktopViewport.height} after ${Date.now()-giftClickStartedAt}ms; before=${JSON.stringify(giftBefore)}; after=${JSON.stringify(giftAfter)}; pageErrors=${JSON.stringify(errors)}`,{cause:error});
+  }
+  const giftAfter=await page.evaluate(()=>{const diagnostic=window.__giftActionDiagnostics,longTasks=diagnostic?.longTasks||[];return {targetConnected:diagnostic?.target?.isConnected,diagnostics:diagnostic&&{startedAt:diagnostic.start,events:diagnostic.events,longTaskCount:longTasks.length,maxLongTaskMs:Math.max(0,...longTasks.map(task=>task.duration)),longTasksOver1000ms:longTasks.filter(task=>task.duration>=1000)},storyText:document.querySelector('.story-panel')?.innerText?.slice(-500),choice:document.querySelector('.choice-list [data-action="gift"]')?.outerHTML};});
+  assert(giftAfter.diagnostics?.events?.some(event=>event.type==='click'),'the pointer click must reach the gift control');
+  assert.equal(giftAfter.targetConnected,false,'applying the fate should rerender the original choice button');
   assert.match((await page.locator('.story-panel').innerText()).toLowerCase(),/you chose to share the invention/i,'the selected gift must be visible in the live story panel');
+  checkpoint('gift click completed',`${Date.now()-giftClickStartedAt}ms; ${JSON.stringify({before:giftBefore,after:giftAfter})}`);
   checkpoint('1889 invention and gift choice applied');
   await page.locator('.story-panel [data-cmd="story-toggle"]').click();
 
