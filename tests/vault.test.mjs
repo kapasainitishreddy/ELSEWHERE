@@ -30,3 +30,39 @@ test('encrypted backups are portable but authenticated and require a passphrase'
  await assert.rejects(v2.unlock(pass),/Could not unlock/);
  assert.equal((await v2.unlock('new private password that is longer')).world,'future');
 });
+
+test('erasing a local vault removes its saves and revokes the key without clearing unrelated storage',async()=>{
+ const store=storage(),vault=createLocalVault(store,{crypto:webcrypto}),pass='synthetic delete passphrase';
+ await vault.create(pass);store.setItem(SAVE_KEY,'legacy plaintext sentinel');store.setItem('syrava.elsewhere.letter-consent','true');store.setItem('other-app.setting','keep');
+ vault.erase();
+ assert.equal(vault.present(),false);assert.equal(vault.locked(),true);
+ assert.equal(store.getItem(VAULT_KEY),null);assert.equal(store.getItem(SAVE_KEY),null);assert.equal(store.getItem('syrava.elsewhere.letter-consent'),null);
+ assert.equal(store.getItem('other-app.setting'),'keep');
+ await assert.rejects(vault.save(initialState()),/Vault is locked/);
+});
+
+test('erasing during an in-flight encrypted save prevents the old write from recreating the vault',async()=>{
+ const store=storage();let blockNext=false,startedResolve,releaseResolve;
+ const started=new Promise(resolve=>{startedResolve=resolve}),blocked=new Promise(resolve=>{releaseResolve=resolve});
+ const native=webcrypto.subtle;
+ const crypto={getRandomValues:webcrypto.getRandomValues.bind(webcrypto),subtle:{
+  importKey:native.importKey.bind(native),deriveKey:native.deriveKey.bind(native),decrypt:native.decrypt.bind(native),
+  encrypt:async(...args)=>{if(blockNext){blockNext=false;startedResolve();await blocked;}return native.encrypt(...args);}
+ }};
+ const vault=createLocalVault(store,{crypto});await vault.create('synthetic delayed delete passphrase');
+ blockNext=true;const pendingWrite=vault.save({...initialState(),fame:1});await started;
+ vault.erase();releaseResolve();
+ await assert.rejects(pendingWrite,/Vault locked before save/);
+ assert.equal(store.getItem(VAULT_KEY),null);assert.equal(vault.present(),false);assert.equal(vault.locked(),true);
+});
+
+test('storage failure during erasure revokes the key and reports that the vault remains',async()=>{
+ const store=storage(),vault=createLocalVault(store,{crypto:webcrypto});await vault.create('synthetic partial delete passphrase');
+ store.setItem(SAVE_KEY,'legacy plaintext sentinel');const remove=store.removeItem;
+ store.removeItem=key=>{if(key===VAULT_KEY)throw new Error('synthetic storage denial');remove(key);};
+ assert.throws(()=>vault.erase(),/synthetic storage denial/);
+ assert.equal(vault.locked(),true,'a failed erase must still revoke the in-memory decryption key');
+ assert.equal(vault.present(),true,'a failed ciphertext removal must remain visible as an existing vault');
+ assert.equal(store.getItem(SAVE_KEY),null,'legacy plaintext should be removed before attempting encrypted-vault deletion');
+ await assert.rejects(vault.save(initialState()),/Vault is locked/);
+});

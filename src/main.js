@@ -306,8 +306,27 @@ async function lock(){
  showGate(wasGuest?'Guest demo ended. Nothing was saved.':saveError?timedOut?'Your world is locked. The previous encrypted save remains on this device; the latest changes could not be confirmed as saved before the lock timeout. Check browser storage before continuing.':'Your world is locked. The previous encrypted save remains on this device; the latest changes could not be saved. Check browser storage before continuing.':'Your key has been cleared from this session. Your encrypted timeline remains on this device.');
  setGateBusy(false);
 }
+function eraseVault(){
+ if(guestMode||!started||!vault.present()){toast('There is no saved private vault to erase.',false);return;}
+ if(!window.confirm('Permanently erase this browser’s encrypted ELSEWHERE save and legacy ELSEWHERE data? Exported backup files are separate and will not be deleted. This cannot be undone.'))return;
+ let notice;
+ try{vault.erase();notice='This browser’s encrypted timeline was erased. Exported backup files are not deleted.';}
+ catch(error){notice='The key was cleared, but browser storage could not confirm that the encrypted timeline was erased. It may still be present. Exported backups are separate.';}
+ sessionEpoch++;abortPendingRequests();cloudEnabled=false;localAiEnabled=false;
+ stopPresence();privateSpeech.disable();ui.resetEphemeral();soundscape.toggle(false);
+ gate.hidden=false;setGateBusy(true);gateTitle.textContent='ERASING YOUR PRIVATE WORLD';gateStatus.textContent='Closing this private world…';
+ document.querySelector('#app').inert=true;document.querySelector('#app-ui').inert=true;
+ let sceneCleanupFailed=false;
+ try{experience?.dispose?.();}catch{sceneCleanupFailed=true;}
+ experience=null;started=false;state=initialState();previousWorld=state.world;
+ document.querySelector('#app').dataset.sceneReady='false';document.querySelector('#app-ui').replaceChildren();
+ document.querySelector('#loading-screen')?.classList.remove('hidden');
+ if(sceneCleanupFailed)notice+=' Scene cleanup was incomplete; reload before continuing.';
+ guestMode=false;document.querySelector('#app-ui').inert=false;document.querySelector('#app').inert=false;
+ showGate(notice);setGateBusy(false);
+}
 const ui=createInterface(document.querySelector('#app-ui'),{
- travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,
+ travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,eraseVault,
  sound:toggleSound,forgetConversation,pinMemory:text=>memoryAction('pin',text),forgetMemory:index=>memoryAction('forget',index),compassSave,compassTried,compassClear,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
  privacyStatus:()=>true,guestMode:()=>guestMode,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
  voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus,comfort:id=>experience?.setComfort?.(id)

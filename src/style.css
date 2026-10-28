@@ -127,6 +127,7 @@
 .consent-line{display:flex;align-items:start;gap:9px;padding:8px 0;color:#b5a997;font-size:10px;line-height:1.45}.consent-line input{accent-color:#bfa37c;margin-top:2px;flex-shrink:0}.consent-line span{flex:1}
 
 .portable-saves{margin-top:22px;border-top:1px solid rgba(144,185,204,.15);padding-top:22px}.portable-saves>div{display:grid;grid-template-columns:1fr 1fr;gap:9px}.portable-saves button{border:1px solid rgba(139,217,228,.4);background:rgba(28,60,73,.3);color:#bbebf3;padding:12px 5px;font:700 9px 'Space Grotesk';letter-spacing:.08em}.portable-saves button:hover{background:rgba(62,137,151,.33)}.portable-saves p{font:400 10px/1.5 'DM Sans';color:#9bb0bb;margin:13px 0 0}
+.vault-erase-action{margin-top:20px;padding:14px;border:1px solid rgba(189,113,96,.28);background:rgba(63,33,32,.22)}.vault-erase-action button{width:100%;min-height:44px;padding:11px;border:1px solid rgba(213,133,111,.6);background:rgba(83,41,38,.45);color:#f0c6b8;font:700 10px 'Space Grotesk';letter-spacing:.08em}.vault-erase-action button:hover{background:rgba(111,51,44,.62)}.vault-erase-action p{margin:10px 0 0;color:#c7a69c;font:400 10px/1.5 'DM Sans'}
 
 /* Privacy gate is the actual entry point; no world is loaded until unlocked. */
 .vault-gate{position:fixed;inset:0;z-index:90;background:radial-gradient(ellipse at 50% 38%,#14323a,#090f19 55%,#05070e);display:grid;place-items:center;overflow-y:auto;padding:24px;color:#edfaff}

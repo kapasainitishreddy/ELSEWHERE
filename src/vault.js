@@ -72,6 +72,9 @@ export function createLocalVault(storage,{crypto=globalThis.crypto}={}){
  // Revoke access synchronously. Pending saves capture the old key and check it
  // again after encryption, so they cannot commit ciphertext after this boundary.
  function lock(){key=null;salt=null;queue=Promise.resolve();}
+ // Delete only ELSEWHERE's local save keys. Revoke the in-memory key before
+ // touching storage so an in-flight save cannot recreate the encrypted record.
+ function erase(){lock();storage.removeItem(SAVE_KEY);storage.removeItem('syrava.elsewhere.letter-consent');storage.removeItem(VAULT_KEY);}
  function exportCiphertext(){const file=storage.getItem(VAULT_KEY);validateEnvelope(file);return file;}
  async function importCiphertext(text,pass){
   if(typeof text!=='string'||text.length>1000000)no('Encrypted backup exceeds the safe limit.');
@@ -84,5 +87,5 @@ export function createLocalVault(storage,{crypto=globalThis.crypto}={}){
   await queue;storage.setItem(VAULT_KEY,await encrypt(crypto,newKey,newSalt,existing));key=newKey;salt=newSalt;
   return existing;
  }
- return {present,locked,recoverableLegacy,create,unlock,save,lock,exportCiphertext,importCiphertext,rekey};
+ return {present,locked,recoverableLegacy,create,unlock,save,lock,erase,exportCiphertext,importCiphertext,rekey};
 }

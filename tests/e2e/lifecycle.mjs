@@ -32,17 +32,23 @@ try{
   page.on('request',request=>{if(!request.url().startsWith(`${origin}/`))external.push(request.url());});
   return {context,page};
  };
- const startGuest=async page=>{await page.goto(origin,{waitUntil:'networkidle'});await page.locator('#guest-play').click();await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');};
+ const clickUser=async(page,locator)=>{
+  await locator.scrollIntoViewIfNeeded();
+  const point=await locator.evaluate(node=>{const rect=node.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2,hit=document.elementFromPoint(x,y);return{x,y,visible:rect.width>0&&rect.height>0&&getComputedStyle(node).visibility!=='hidden',enabled:!('disabled'in node&&node.disabled),hitWithin:!!hit&&(hit===node||node.contains(hit))};});
+  assert(point.visible&&point.enabled&&point.hitWithin,`user click target must be visible, enabled and unobstructed: ${JSON.stringify(point)}`);
+  await page.mouse.click(point.x,point.y);
+ };
+ const startGuest=async page=>{await page.goto(origin,{waitUntil:'networkidle'});await clickUser(page,page.locator('#guest-play'));await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');};
  const travelTo=async(page,world)=>{
   if(await page.locator('#app-ui').getAttribute('data-world')===world)return;
-  await page.locator('.brand').click();await page.locator(`.world-link[data-world="${world}"]`).click();
+  await clickUser(page,page.locator('.brand'));await clickUser(page,page.locator(`.world-link[data-world="${world}"]`));
   await page.waitForFunction(id=>document.querySelector('#app-ui')?.dataset.world===id,world);
   await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
  };
  const enterGift=async page=>{
-  await travelTo(page,'past');await page.locator('.hero-enter').click();
-  await page.locator('.choice-list [data-action="invent-cell"]').click();
-  await page.locator('.choice-list [data-action="gift"]').click();
+  await travelTo(page,'past');await clickUser(page,page.locator('.hero-enter'));
+  await clickUser(page,page.locator('.choice-list [data-action="invent-cell"]'));
+  await clickUser(page,page.locator('.choice-list [data-action="gift"]'));
   await travelTo(page,'future');
  };
 
@@ -231,7 +237,20 @@ try{
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
    await page.locator('.hero-enter').click();
    assert.doesNotMatch(await page.locator('.story-panel').innerText(),/Opt-out cancellation sentinel|World transition cancellation sentinel|Reset cancellation sentinel|Lock transition cancellation sentinel|STALE MOCK MUST NEVER APPEAR/);
-   console.log(JSON.stringify({result:'PASS',scenario:'AES-GCM create/save/lock/reload/unlock; no plaintext sentinel/passphrase; save-failure lock cleanup; observed zero offline calls; mocked valid/malformed replies; request cancellation on opt-out/reset/world/lock; consent resets after reload',mockApiCalls:metaRequests}));
+   await page.locator('[data-cmd="journal"]').click();const erase=page.locator('[data-cmd="erase-vault"]');await erase.waitFor({state:'visible'});
+   const beforeErase=await readVault();assert(beforeErase);
+   page.once('dialog',dialog=>dialog.dismiss());await clickUser(page,erase);
+   assert.equal(await readVault(),beforeErase,'cancelling vault erasure must preserve ciphertext');assert.equal(await page.locator('#vault-gate').isVisible(),false);
+   page.once('dialog',dialog=>dialog.accept());await clickUser(page,erase);
+   await page.locator('#vault-gate').waitFor({state:'visible'});
+   assert.equal(await readVault(),null,'confirmed erasure removes this browser vault');
+   assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.v1')),null,'confirmed erasure removes legacy plaintext too');
+   assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.letter-consent')),null,'confirmed erasure removes legacy consent state');
+   assert.equal(await page.locator('#vault-title').innerText(),'ENTER YOUR POSSIBLE WORLDS');
+   assert.match(await page.locator('#vault-notice').innerText(),/timeline was erased.*Exported backup files are not deleted/i);
+   await page.reload({waitUntil:'networkidle'});await page.locator('#vault-gate').waitFor({state:'visible'});
+   assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'reload must not restore the erased local vault');
+   console.log(JSON.stringify({result:'PASS',scenario:'AES-GCM create/save/lock/reload/unlock; no plaintext sentinel/passphrase; quota failure preservation; zero offline calls; mocked valid/malformed replies; request cancellation on opt-out/reset/world/lock; consent resets; erase confirmation preserves on cancel and removes only this browser save on confirm',mockApiCalls:metaRequests}));
   }finally{try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}await Promise.race([context.close(),delay(5000)]);}
  }
 

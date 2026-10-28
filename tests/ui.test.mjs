@@ -57,6 +57,20 @@ test('guest play shows a not-saved label while normal local mode stays private',
  assert.match(localRoot.innerHTML,/PRIVATE LOCAL WORLD/);
  assert.doesNotMatch(localRoot.innerHTML,/GUEST · NOT SAVED/);
 });
+test('saved private journal exposes explicit browser-vault erasure and explains exported backups remain',()=>{
+ const openJournal=guest=>{
+  const listeners=[],root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(type,handler){if(type==='click')listeners.push(handler);},querySelector(){return null;}};
+  const ui=createInterface(root,{guestMode:()=>guest,eraseVault(){}});ui.render(initialState());
+  const button={dataset:{cmd:'journal'}};const event={target:{closest(selector){return selector==='[data-cmd]'?button:null;}}};
+  for(const listener of listeners)listener(event);
+  return root.innerHTML;
+ };
+ const savedMarkup=openJournal(false),guestMarkup=openJournal(true);
+ assert.match(savedMarkup,/data-cmd="erase-vault"/);
+ assert.match(savedMarkup,/ERASE THIS BROWSER'S ENCRYPTED SAVE/);
+ assert.match(savedMarkup,/Exported backup files are not deleted/);
+ assert.doesNotMatch(guestMarkup,/data-cmd="erase-vault"/,'unsaved guest mode must not advertise vault deletion');
+});
 test('touch d-pad forwards a captured pointer hold and release to movement controls',()=>{
  const listeners={};const root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(type,handler){listeners[type]=handler;},querySelector(){return null;}};
  const moves=[];createInterface(root,{move:(key,pressed)=>moves.push([key,pressed])});

@@ -33,18 +33,27 @@ try{
   page.on('console',message=>{if(message.type()==='error')pageErrors.push(message.text());});
   page.on('response',response=>{if(response.status()>=400)httpErrors.push(`${response.status()} ${response.url()}`);});
   page.on('request',request=>{if(!request.url().startsWith(`${origin}/`))external.push(request.url());});
+  const clickUser=async locator=>{
+   await locator.scrollIntoViewIfNeeded();
+   const point=await locator.evaluate(node=>{
+    const rect=node.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2,hit=document.elementFromPoint(x,y);
+    return {x,y,visible:rect.width>0&&rect.height>0&&getComputedStyle(node).visibility!=='hidden',enabled:!('disabled'in node&&node.disabled),hitWithin:!!hit&&(hit===node||node.contains(hit))};
+   });
+   assert(point.visible&&point.enabled&&point.hitWithin,`user click target must be visible, enabled and unobstructed: ${JSON.stringify(point)}`);
+   await page.mouse.click(point.x,point.y);
+  };
   const to=async world=>{
    if(await page.locator('#app-ui').getAttribute('data-world')===world)return;
-   await page.locator('.brand').click();
-   await page.locator(`.world-link[data-world="${world}"]`).click();
+   await clickUser(page.locator('.brand'));
+   await clickUser(page.locator(`.world-link[data-world="${world}"]`));
    await page.waitForFunction(id=>document.querySelector('#app-ui')?.dataset.world===id,world);
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
   };
   const approachFuturePortal=async({x,world,label})=>{
    const cue=label.toUpperCase();
    const storyToggle=page.locator('.story-panel [data-cmd="story-toggle"]');
-   if(await storyToggle.isVisible())await storyToggle.click();
-   const skip=page.locator('.first-crossing [data-cmd="journey-skip"]');if(await skip.isVisible())await skip.click();
+   if(await storyToggle.isVisible())await clickUser(storyToggle);
+   const skip=page.locator('.first-crossing [data-cmd="journey-skip"]');if(await skip.isVisible())await clickUser(skip);
    console.log(`${fate}: walking to ${label} portal approach`);
    const lateral=x>0?'KeyD':'KeyA';
    await page.keyboard.down(lateral);
@@ -71,17 +80,17 @@ try{
    await to('future');
   };
   try{
-   await page.goto(`${origin}/?perf=1`,{waitUntil:'networkidle'});await page.locator('#guest-play').click();
+   await page.goto(`${origin}/?perf=1`,{waitUntil:'networkidle'});await clickUser(page.locator('#guest-play'));
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
    await page.waitForFunction(()=>/\d+ DRAWS/.test(document.querySelector('.world-perf-display')?.textContent||''));
    const baselineDraws=Number((await page.locator('.world-perf-display').innerText()).match(/(\d+) DRAWS/)?.[1]);
    console.log(`${fate}: guest ready`);
-   await to('past');await page.locator('.hero-enter').click();
+   await to('past');await clickUser(page.locator('.hero-enter'));
    console.log(`${fate}: entered 1889`);
-   await page.locator('.choice-list [data-action="invent-cell"]').click();
-   await page.locator(`.choice-list [data-action="${fate}"]`).click();
+   await clickUser(page.locator('.choice-list [data-action="invent-cell"]'));
+   await clickUser(page.locator(`.choice-list [data-action="${fate}"]`));
    console.log(`${fate}: invention ownership chosen`);
-   await to('future');await page.locator('.hero-enter').click();
+   await to('future');await clickUser(page.locator('.hero-enter'));
    console.log(`${fate}: returned to 2087`);
    const causal=page.locator('.story-panel .future-box.small').filter({hasText:'CAUSAL WORLD STATUS'});
    await causal.waitFor({state:'visible'});
@@ -93,16 +102,15 @@ try{
    const outcomeDraws=Number((await page.locator('.world-perf-display').innerText()).match(/(\d+) DRAWS/)?.[1]);
    assert(outcomeDraws>baselineDraws,`${fate} should add a rendered 2087 landmark (${baselineDraws} → ${outcomeDraws} draws)`);
    await causal.scrollIntoViewIfNeeded();
-   await page.screenshot({path:new URL(`fate-${fate}.png`,artifacts).pathname});
-   await page.locator('.story-panel [data-cmd="story-toggle"]').click();
-   const skip=page.locator('.first-crossing [data-cmd="journey-skip"]');if(await skip.isVisible())await skip.click();
-   await page.screenshot({path:new URL(`fate-${fate}-world.png`,artifacts).pathname});
+   await causal.screenshot({path:new URL(`fate-${fate}.png`,artifacts).pathname});
+   await clickUser(page.locator('.story-panel [data-cmd="story-toggle"]'));
+   const skip=page.locator('.first-crossing [data-cmd="journey-skip"]');if(await skip.isVisible())await clickUser(skip);
    await page.locator('#world-canvas canvas').screenshot({path:new URL(`fate-${fate}-scene.png`,artifacts).pathname});
    if(fate==='patent')await approachFuturePortal({x:8.55,world:'mech',label:'Titan Foundry'});
    if(fate==='auction')await approachFuturePortal({x:-8.55,world:'self',label:'The Other You'});
-   await to('self');await page.locator('.hero-enter').click();
+   await to('self');await clickUser(page.locator('.hero-enter'));
    await page.locator('#chat-question').fill('Tell me about the invention we chose.');
-   await page.locator('#chat-form button[type="submit"]').click();
+   await clickUser(page.locator('#chat-form button[type="submit"]'));
    await page.locator('#chat-history .chat-line.elder').waitFor();
    const dialogue=await page.locator('#chat-history .chat-line.elder').last().innerText();assert.match(dialogue,recall[fate]);
    assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'fate demo must remain an unsaved guest run');
