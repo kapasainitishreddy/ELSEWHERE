@@ -36,3 +36,17 @@ The game’s opt-in `?perf=1` panel reports a rolling frame-time estimate plus `
 - `node tools/review/profile-browser.mjs`: PASS — Chromium/SwiftShader profile; zero page errors and zero HTTP error responses.
 - `npm run test:e2e`: PASS on the same branch before this profile — complete guest gift journey, local fallback dialogue, 2087 causal outcome, keyboard/mobile layout checks, no browser errors or HTTP failures. It does not establish hardware performance.
 - Regression tests verify the 14-unit decorative-sign visibility radius and that interaction labels remain visible at any distance. Full unit/build/browser results after this change are in the current QA log.
+
+## XR-panel and sign-clarity profile — 2026-10-28
+
+This is the matched 1440×900 profile after hiding desktop-only XR choice panels and limiting visible scene signs. It used the same Chromium 154 / SwiftShader renderer, DPR 1, guest 2087 initial scene, 3.5-second W hold, and self-world UI transition as the prior profile. The 120-frame HUD is rolling and phase values can carry earlier spikes.
+
+| Phase | Latest observed frame display | Draw calls / triangles | Other evidence |
+|---|---|---|---|
+| Idle in 2087 | 44 FPS / 22.5 ms P95 | 301 steady (first sample 305) / 67,442 steady (first sample 68,562) | Player stayed at x=0, z=6. |
+| WASD movement | 7 FPS / 388.8 ms rolling P95 | 301–303 / 67,438–67,446 | 3.5-second W hold moved 0.41 world units. |
+| UI-selected transition to The Other You | 7–9 FPS; rolling P95 remained 388.8 ms | 301 on the first sample, then 360–362 / 67,430–69,302 | Scene-state change took 2,756 ms. |
+
+The prior post-sign-culling profile reported 316 steady initial-2087 draws; this run reports 301 steady draws, a reduction of 15. The previous profile's latest idle sample was 85 FPS / 11.7 ms P95, versus 44 FPS / 22.5 ms here. Movement and transition readings are also substantially slower and noisy. This establishes **lower draw count**, not faster rendering; the cause of frame-time variation was not isolated. The rendering path is SwiftShader software WebGL. These numbers are not desktop GPU, phone, or Quest measurements.
+
+The current real capture, `review-output/e2e/performance-profile-idle.png`, shows the XR-only controller panel absent from desktop and only a limited number of 3D signs. The profile completed with zero console/page errors and zero HTTP errors. The frame loop continuously spends high CPU in software rendering; target hardware profiling is still needed before drawing an optimization conclusion.
