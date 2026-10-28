@@ -1,7 +1,7 @@
 /* First-party offline assets. Navigations are network-first to avoid trapping
  * players on old versions; remote AI, private saves and dynamic APIs are never cached.
  */
-const CACHE='elsewhere-static-v7';
+const CACHE='elsewhere-static-v8';
 const SHELL=['/','/index.html'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));

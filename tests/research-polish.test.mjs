@@ -86,7 +86,7 @@ test('service worker prefers updated documents and excludes private/API requests
  assert.match(sw,/url\.pathname\.startsWith\('\/api\/'\)/);
  assert.match(sw,/url\.pathname\.startsWith\('\/private\/'\)/);
  assert.match(sw,/if\(!\/\^\\\/\(assets/);
- assert.match(sw,/elsewhere-static-v7/);
+ assert.match(sw,/elsewhere-static-v8/);
 });
 
 test('future-self UI allows pinning and forgetting from a local encrypted vault',()=>{

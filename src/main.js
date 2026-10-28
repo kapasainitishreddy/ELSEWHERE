@@ -311,7 +311,7 @@ function eraseVault(){
  if(!window.confirm('Permanently erase this browser’s encrypted ELSEWHERE save and legacy ELSEWHERE data? Exported backup files are separate and will not be deleted. This cannot be undone.'))return;
  let notice;
  try{vault.erase();notice='This browser’s encrypted timeline was erased. Exported backup files are not deleted.';}
- catch(error){notice='The key was cleared, but browser storage could not confirm that the encrypted timeline was erased. It may still be present. Exported backups are separate.';}
+ catch(error){notice='The key was cleared, but browser storage could not confirm all ELSEWHERE data was erased. Some local data may remain. Exported backups are separate.';}
  sessionEpoch++;abortPendingRequests();cloudEnabled=false;localAiEnabled=false;
  stopPresence();privateSpeech.disable();ui.resetEphemeral();soundscape.toggle(false);
  gate.hidden=false;setGateBusy(true);gateTitle.textContent='ERASING YOUR PRIVATE WORLD';gateStatus.textContent='Closing this private world…';

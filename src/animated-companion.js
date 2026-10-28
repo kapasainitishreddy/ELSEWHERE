@@ -4,18 +4,21 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {COMPANION_INDEX,validCompanionIndex,companionMoodDistance} from './animated-companion-manifest.js';
+import {disposeGltfResources} from './gltf-lifecycle.js';
 const loader=new GLTFLoader();
-export async function installAnimatedCompanion(parent,animated,getTraveler,reducedMotion=false){
+export async function installAnimatedCompanion(parent,animated,getTraveler,reducedMotion=false,dependencies={}){
  try{
   if(!parent.parent)return false;
-  const response=await fetch(COMPANION_INDEX,{credentials:'same-origin',cache:'no-cache'});
+  const fetcher=dependencies.fetcher||fetch,assetLoader=dependencies.loader||loader;
+  const response=await fetcher(COMPANION_INDEX,{credentials:'same-origin',cache:'no-cache'});
   if(!response.ok || !validCompanionIndex(await response.json()))return false;
-  const model=await loader.loadAsync('/assets/companions/fox.glb');
-  if(!parent.parent)return false; // stop stale world loads
+  if(!parent.parent)return false;
+  const model=await assetLoader.loadAsync('/assets/companions/fox.glb');
+  if(!parent.parent){disposeGltfResources(model.scene);return false;} // discard late world loads
   const avatar=model.scene;
   avatar.updateMatrixWorld(true);
   const bounds=new THREE.Box3().setFromObject(avatar),extent=bounds.getSize(new THREE.Vector3());
-  if(!Number.isFinite(extent.y)||extent.y<=.001)return false;
+  if(!Number.isFinite(extent.y)||extent.y<=.001){disposeGltfResources(avatar);return false;}
   const scale=Math.min(16,Math.max(.001,.75/extent.y));
   avatar.scale.setScalar(scale);
   avatar.position.set(-3.0,-bounds.min.y*scale,-3.0);

@@ -23,8 +23,9 @@ No comparable-game or user-study claim was used to justify this change. Audience
 ## Sources checked in this pass
 
 - WebXR Device API editor's draft in the W3C Immersive Web Working Group repository: https://github.com/immersive-web/webxr/blob/main/index.bs — fetched successfully over the configured GitHub/raw GitHub allowlist; input events, session visibility, and session animation-frame sections inspected.
-- Meta event landing page: https://dev.meta.ai/events/global-hackathon — blocked by managed network proxy, CONNECT 403.
-- Rules page previously linked from the landing page: https://cerebralvalley.ai/e/meta-ai-developer-hackathon/waiver — blocked by managed network proxy, CONNECT 403.
+- Official Meta event landing page: https://dev.meta.ai/events/global-hackathon — requested with `curl -sSIL --max-time 12` at 2026-10-28 19:35 UTC; blocked at the enforced HTTPS proxy, CONNECT 403. No HTTP response content retrieved.
+- Cerebral Valley rules rendering previously linked from the Meta landing page: https://cerebralvalley.ai/e/meta-ai-developer-hackathon/waiver — requested with `curl -sSIL --max-time 12` at 2026-10-28 19:35 UTC; blocked at the enforced HTTPS proxy, CONNECT 403. This host is not Meta-controlled, and no response content was retrieved.
+- Current executor status at the same continuation: network policy `restricted` and `enforced`, custom `allowed_hosts` empty, package-manager preset only; no API credentials or outbound identities configured. No attempt was made to bypass this policy or widen egress.
 - Repository-specific acceptance: owner instructions in this task and the current `docs/QA_EVIDENCE_CURRENT.md`; project task's previously supplied product scope is retained as the source of game requirements.
 
 The WebXR editor's draft is an API source, not an HCI study. No primary comfort study or Meta-specific implementation guidance could be freshly checked in this restricted network session. This record does not establish hackathon eligibility, live Meta use, physical-device usability, user impact, or submission readiness.

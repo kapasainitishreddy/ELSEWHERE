@@ -39,16 +39,19 @@ async function decrypt(crypto,key,part){
 }
 export function createLocalVault(storage,{crypto=globalThis.crypto}={}){
  if(!crypto?.subtle||!crypto.getRandomValues)no('Web Crypto is unavailable. Use a secure HTTPS page or localhost.');
- let key=null,salt=null,queue=Promise.resolve();
+ let key=null,salt=null,queue=Promise.resolve(),lifecycle=0;
  const run=(job)=>{const current=queue.then(job);queue=current.catch(()=>{});return current;};
+ const requireCurrent=(epoch,message)=>{if(epoch!==lifecycle)no(message);};
  const present=()=>storage.getItem(VAULT_KEY)!==null;
  const locked=()=>key===null;
  const recoverableLegacy=()=>!present()&&!!storage.getItem(SAVE_KEY);
  async function create(pass){
+  const epoch=lifecycle;
   if(present())no('Vault already exists. Unlock it instead.');
   const nextSalt=random(crypto,16);const nextKey=await derive(crypto,pass,nextSalt);
   const legacy=recoverableLegacy()?loadState(storage):initialState();
   const record=await encrypt(crypto,nextKey,nextSalt,legacy);
+  requireCurrent(epoch,'Vault locked before creation completed.');
   storage.setItem(VAULT_KEY,record);
   // Only remove the plaintext legacy save after the authenticated vault is committed.
   storage.removeItem(SAVE_KEY);
@@ -56,9 +59,11 @@ export function createLocalVault(storage,{crypto=globalThis.crypto}={}){
   key=nextKey;salt=nextSalt;return legacy;
  }
  async function unlock(pass){
+  const epoch=lifecycle;
   const part=validateEnvelope(storage.getItem(VAULT_KEY)||no('No local vault exists on this device.'));
   let derived;let value;
   try{derived=await derive(crypto,pass,part.salt);value=await decrypt(crypto,derived,part);}catch{no('Could not unlock the vault. Check the passphrase or file integrity.');}
+  requireCurrent(epoch,'Vault locked before unlock completed.');
   key=derived;salt=part.salt;
   // Legacy plaintext from interrupted upgrades must not remain beside an encrypted vault.
   storage.removeItem(SAVE_KEY);
@@ -67,25 +72,41 @@ export function createLocalVault(storage,{crypto=globalThis.crypto}={}){
  function save(state){
   if(locked())return Promise.reject(new Error('Vault is locked.'));
   const captured=structuredClone(state),secret=key,seed=salt;
-  return run(async()=>{const json=await encrypt(crypto,secret,seed,captured);if(key!==secret)no('Vault locked before save.');storage.setItem(VAULT_KEY,json);return true;});
+  const epoch=lifecycle;
+  return run(async()=>{const json=await encrypt(crypto,secret,seed,captured);if(epoch!==lifecycle||key!==secret)no('Vault locked before save.');storage.setItem(VAULT_KEY,json);return true;});
  }
  // Revoke access synchronously. Pending saves capture the old key and check it
  // again after encryption, so they cannot commit ciphertext after this boundary.
- function lock(){key=null;salt=null;queue=Promise.resolve();}
+ function lock(){lifecycle++;key=null;salt=null;queue=Promise.resolve();}
  // Delete only ELSEWHERE's local save keys. Revoke the in-memory key before
  // touching storage so an in-flight save cannot recreate the encrypted record.
  function erase(){lock();storage.removeItem(SAVE_KEY);storage.removeItem('syrava.elsewhere.letter-consent');storage.removeItem(VAULT_KEY);}
  function exportCiphertext(){const file=storage.getItem(VAULT_KEY);validateEnvelope(file);return file;}
  async function importCiphertext(text,pass){
+  const epoch=lifecycle;
   if(typeof text!=='string'||text.length>1000000)no('Encrypted backup exceeds the safe limit.');
   const part=validateEnvelope(text);let derived,value;
   try{derived=await derive(crypto,pass,part.salt);value=await decrypt(crypto,derived,part);}catch{no('Cannot decrypt this backup with that passphrase.');}
-  await queue;storage.setItem(VAULT_KEY,text);storage.removeItem(SAVE_KEY);key=derived;salt=part.salt;return value;
+  await queue;requireCurrent(epoch,'Vault erased or locked before import completed.');
+  storage.setItem(VAULT_KEY,text);storage.removeItem(SAVE_KEY);key=derived;salt=part.salt;return value;
  }
  async function rekey(oldPass,newPass){
-  const existing=await unlock(oldPass),newSalt=random(crypto,16),newKey=await derive(crypto,newPass,newSalt);
-  await queue;storage.setItem(VAULT_KEY,await encrypt(crypto,newKey,newSalt,existing));key=newKey;salt=newSalt;
-  return existing;
+  const epoch=lifecycle,oldKey=key;
+  const part=validateEnvelope(storage.getItem(VAULT_KEY)||no('No local vault exists on this device.'));
+  let verified,value;
+  try{verified=await derive(crypto,oldPass,part.salt);value=await decrypt(crypto,verified,part);}catch{no('Could not unlock the vault. Check the passphrase or file integrity.');}
+  requireCurrent(epoch,'Vault erased or locked before passphrase change completed.');
+  if(key!==oldKey)no('Vault erased or locked before passphrase change completed.');
+  const newSalt=random(crypto,16),newKey=await derive(crypto,newPass,newSalt);
+  await queue;
+  requireCurrent(epoch,'Vault erased or locked before passphrase change completed.');
+  if(key!==oldKey)no('Vault erased or locked before passphrase change completed.');
+  const encrypted=await encrypt(crypto,newKey,newSalt,value);
+  requireCurrent(epoch,'Vault erased or locked before passphrase change completed.');
+  if(key!==oldKey)no('Vault erased or locked before passphrase change completed.');
+  storage.setItem(VAULT_KEY,encrypted);key=newKey;salt=newSalt;
+  try{storage.removeItem(SAVE_KEY);}catch{no('Vault re-encrypted, but a legacy plaintext save could not be removed. Check browser storage.');}
+  return value;
  }
  return {present,locked,recoverableLegacy,create,unlock,save,lock,erase,exportCiphertext,importCiphertext,rekey};
 }

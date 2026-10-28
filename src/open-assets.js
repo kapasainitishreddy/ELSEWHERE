@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { KENNEY_SOURCE, KENNEY_PLACEMENTS } from './asset-catalog.js';
+import {disposeGltfResources} from './gltf-lifecycle.js';
 
 export const LOCAL_ASSET_INDEX = '/assets/kenney/index.json';
 export function validAssetIndex(index){
@@ -25,9 +26,10 @@ async function getInstalledModels(){
 }
 
 /** The scene is a disposable world group. Stale async loads are discarded. */
-export async function dressWithKenney(world,state,animated,onAsset,onModel){
- const available=await getInstalledModels();
+export async function dressWithKenney(world,state,animated,onAsset,onModel,dependencies={}){
+ const available=await (dependencies.getInstalledModels||getInstalledModels)();
  if(!world.parent || available.size===0)return 0;
+ const assetLoader=dependencies.loader||loader;
  const placements=KENNEY_PLACEMENTS[state.world]||[];
  let count=0;
  // Serial loading is friendlier to Quest memory and prevents a large scene-fetch burst.
@@ -37,13 +39,13 @@ export async function dressWithKenney(world,state,animated,onAsset,onModel){
   const url=`/assets/kenney/${id}.glb`;
   if(!isLocalAssetUrl(url))continue;
   try{
-   const gltf=await loader.loadAsync(url);
-   if(!world.parent){gltf.scene.traverse(n=>{n.geometry?.dispose();});break;}
+   const gltf=await assetLoader.loadAsync(url);
+   if(!world.parent){disposeGltfResources(gltf.scene);break;}
    const model=gltf.scene;
    model.updateMatrixWorld(true);
    const bounds=new THREE.Box3().setFromObject(model);
    const extent=bounds.getSize(new THREE.Vector3());
-   if(!Number.isFinite(extent.y)||extent.y<.001)continue;
+   if(!Number.isFinite(extent.y)||extent.y<.001){disposeGltfResources(model);continue;}
    const scale=THREE.MathUtils.clamp(targetHeight/extent.y,.02,30);
    model.scale.setScalar(scale);
    // Place the actual bounding-box bottom at ground height, without shifting x/z art direction.

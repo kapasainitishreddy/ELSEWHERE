@@ -26,7 +26,9 @@ test('encrypted backups are portable but authenticated and require a passphrase'
  const record=JSON.parse(encrypted);record.data=record.data.slice(0,-6)+'AAAAAA';
  await assert.rejects(v2.importCiphertext(JSON.stringify(record),pass),/Cannot decrypt/);
  assert.equal(v2.present(),true);
+ b.setItem(SAVE_KEY,'synthetic interrupted-import legacy data');
  await v2.rekey(pass,'new private password that is longer');await v2.lock();
+ assert.equal(b.getItem(SAVE_KEY),null,'successful passphrase rotation must not leave a plaintext legacy save beside the encrypted vault');
  await assert.rejects(v2.unlock(pass),/Could not unlock/);
  assert.equal((await v2.unlock('new private password that is longer')).world,'future');
 });
@@ -53,6 +55,35 @@ test('erasing during an in-flight encrypted save prevents the old write from rec
  blockNext=true;const pendingWrite=vault.save({...initialState(),fame:1});await started;
  vault.erase();releaseResolve();
  await assert.rejects(pendingWrite,/Vault locked before save/);
+ assert.equal(store.getItem(VAULT_KEY),null);assert.equal(vault.present(),false);assert.equal(vault.locked(),true);
+});
+
+test('erasing while a backup import is decrypting prevents the late import from restoring a vault',async()=>{
+ const pass='synthetic delayed import passphrase',sourceStore=storage(),source=createLocalVault(sourceStore,{crypto:webcrypto});
+ await source.create(pass);const backup=source.exportCiphertext();
+ const store=storage(),native=webcrypto.subtle;let blocked=false,startedResolve,releaseResolve;
+ const started=new Promise(resolve=>{startedResolve=resolve}),waiting=new Promise(resolve=>{releaseResolve=resolve});
+ const crypto={getRandomValues:webcrypto.getRandomValues.bind(webcrypto),subtle:{
+  importKey:native.importKey.bind(native),deriveKey:native.deriveKey.bind(native),encrypt:native.encrypt.bind(native),
+  decrypt:async(...args)=>{if(blocked){blocked=false;startedResolve();await waiting;}return native.decrypt(...args);}
+ }};
+ const vault=createLocalVault(store,{crypto});blocked=true;const pending=vault.importCiphertext(backup,pass);await started;
+ vault.erase();releaseResolve();
+ await assert.rejects(pending,/Vault erased or locked before import completed/);
+ assert.equal(store.getItem(VAULT_KEY),null);assert.equal(vault.present(),false);assert.equal(vault.locked(),true);
+});
+
+test('erasing while passphrase rotation is encrypting prevents a late rotated vault write',async()=>{
+ const store=storage(),native=webcrypto.subtle;let blocked=false,startedResolve,releaseResolve;
+ const started=new Promise(resolve=>{startedResolve=resolve}),waiting=new Promise(resolve=>{releaseResolve=resolve});
+ const crypto={getRandomValues:webcrypto.getRandomValues.bind(webcrypto),subtle:{
+  importKey:native.importKey.bind(native),deriveKey:native.deriveKey.bind(native),decrypt:native.decrypt.bind(native),
+  encrypt:async(...args)=>{if(blocked){blocked=false;startedResolve();await waiting;}return native.encrypt(...args);}
+ }};
+ const vault=createLocalVault(store,{crypto});await vault.create('synthetic old rotation passphrase');blocked=true;
+ const pending=vault.rekey('synthetic old rotation passphrase','synthetic new rotation passphrase');await started;
+ vault.erase();releaseResolve();
+ await assert.rejects(pending,/Vault erased or locked before passphrase change completed/);
  assert.equal(store.getItem(VAULT_KEY),null);assert.equal(vault.present(),false);assert.equal(vault.locked(),true);
 });
 

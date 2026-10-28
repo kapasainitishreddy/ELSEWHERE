@@ -1,5 +1,7 @@
 # ELSEWHERE submission readiness and judge scorecard
 
+> **Historical planning document, not current rule authority.** Its deadline, weights, video length, eligibility, prize, Meta Stage One, and submission claims have not been freshly verified. Use [HACKATHON_READINESS_CURRENT.md](HACKATHON_READINESS_CURRENT.md) for the current evidence boundary; official pages were blocked by the enforced proxy on 2026-10-28. A project demo target is not an event requirement unless the current official materials confirm it.
+
 **Event:** Meta Global AI Developer Hackathon (Oct 26–Nov 4, 2026)  
 **Track:** Startups | **Deadline:** Nov 4, 2026, 9:00 PM ET | **Prizes:** startup awards 1st $250k, 2nd $150k, 3rd $75k, 4th $50k, 5th $25k.
 

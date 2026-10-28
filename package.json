@@ -14,6 +14,7 @@
     "test:e2e:mobile": "node tests/e2e/mobile-journey.mjs",
     "test:e2e:fates": "node tests/e2e/fates.mjs",
     "test:e2e:lifecycle": "node tests/e2e/lifecycle.mjs",
+    "test:e2e:asset-upgrade": "node tests/e2e/asset-upgrade.mjs",
     "check": "npm run test && npm run build",
     "dev:api": "node server.mjs",
     "dev:meta": "node scripts/dev.mjs",

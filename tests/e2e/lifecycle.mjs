@@ -14,7 +14,7 @@ let browser;
 let browserServer;
 const chromiumConfig=await mkdtemp(join(tmpdir(),'elsewhere-chromium-config-'));
 const chromiumCache=await mkdtemp(join(tmpdir(),'elsewhere-chromium-cache-'));
-const PASS='Synthetic vault passphrase 42',PRIVATE_SENTINEL='SYNTHETIC_PRIVATE_LETTER_SENTINEL';
+const PASS='Synthetic vault passphrase 42',PRIVATE_SENTINEL='SYNTHETIC_PRIVATE_LETTER_SENTINEL',ERASE_SENTINEL='SYNTHETIC_ERASE_RECOVERY_LETTER';
 try{
  let ready=false;
  for(let n=0;n<80;n++){if(vite.exitCode!==null)throw new Error(`Vite exited (${vite.exitCode})`);try{if((await fetch(origin)).ok){ready=true;break;}}catch{}await delay(250);}
@@ -43,7 +43,9 @@ try{
   if(await page.locator('#app-ui').getAttribute('data-world')===world)return;
   await clickUser(page,page.locator('.brand'));await clickUser(page,page.locator(`.world-link[data-world="${world}"]`));
   await page.waitForFunction(id=>document.querySelector('#app-ui')?.dataset.world===id,world);
-  await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+  const overlay=page.locator('.world-sheet-scrim');if(await overlay.isVisible())await clickUser(page,overlay);
+  // The world attribute is rendered after the synchronous experience.mount(state) call.
+  // sceneReady is a startup gate and is not toggled during later world transitions.
  };
  const enterGift=async page=>{
   await travelTo(page,'past');await clickUser(page,page.locator('.hero-enter'));
@@ -101,7 +103,7 @@ try{
    const envelope=JSON.parse(initial);assert.equal(envelope.cipher,'AES-256-GCM');assert.equal(envelope.kdf,'PBKDF2-SHA256');
    assert.doesNotMatch(initial,new RegExp(PASS));
    console.log('vault-cloud: encrypted vault created');
-   await travelTo(page,'self');await page.locator('.hero-enter').click();
+   await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    await page.locator('#letter-text').fill(PRIVATE_SENTINEL);await page.locator('#letter-form button[type="submit"]').click();
    await page.waitForFunction(old=>localStorage.getItem('syrava.elsewhere.private-v1')!==old,initial);
    const letterCipher=await readVault();assert.doesNotMatch(letterCipher,new RegExp(PRIVATE_SENTINEL),'private letter must not appear in plaintext storage');
@@ -118,10 +120,10 @@ try{
    assert.equal(await readVault(),lockedCipher,'reload must preserve the last committed ciphertext');
    await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();await page.locator('#vault-gate').waitFor({state:'hidden'});
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
-   await travelTo(page,'self');await page.locator('.hero-enter').click();
+   await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    assert.equal(await page.locator('#letter-text').inputValue(),PRIVATE_SENTINEL,'encrypted private letter must survive unlock');
    console.log('vault-cloud: lock/reload/unlock restored encrypted story and letter');
-   await travelTo(page,'future');await page.locator('.hero-enter').click();
+   await travelTo(page,'future');await clickUser(page,page.locator('.hero-enter'));
    let outcome=await page.locator('.story-panel').innerText();assert.match(outcome,/A city of open workshops/);assert.match(outcome,/Aether Cell/);
    assert.equal(await page.locator('.privacy-sigil').innerText(),'PRIVATE LOCAL WORLD','unlock must leave cloud consent disabled');
 
@@ -136,10 +138,10 @@ try{
    assert.equal(await readVault(),stableCipher,'failed save must preserve the last committed ciphertext');
    await page.reload({waitUntil:'networkidle'});await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();
    await page.locator('#vault-gate').waitFor({state:'hidden'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
-   await page.locator('.hero-enter').click();outcome=await page.locator('.story-panel').innerText();assert.match(outcome,/A city of open workshops/);
+   await clickUser(page,page.locator('.hero-enter'));outcome=await page.locator('.story-panel').innerText();assert.match(outcome,/A city of open workshops/);
    console.log('vault-cloud: quota failure cleared session, prior ciphertext remained unlockable');
 
-   await travelTo(page,'self');await page.locator('.hero-enter').click();
+   await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    const callsBefore=metaRequests;
    await page.locator('#chat-question').fill('What changed in our possible future?');await page.locator('#chat-form button[type="submit"]').click();
    await page.locator('#chat-history .chat-line.elder').waitFor();assert.equal(metaRequests,callsBefore,'Meta disabled must produce zero API requests');
@@ -169,7 +171,7 @@ try{
 
    // Hold a mocked response in flight and travel away. The transport should abort,
    // and the old reply must not enter either this session or a future reload.
-   await travelTo(page,'self');await page.locator('.hero-enter').click();
+   await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
    let delayedCalls=0;
    await page.unroute('**/api/character');
@@ -191,7 +193,7 @@ try{
    assert.equal(delayedCalls,2);assert.equal(await page.locator('#app-ui').getAttribute('data-world'),'future');
    assert.doesNotMatch(await page.locator('#app-ui').innerText(),/STALE MOCK MUST NEVER APPEAR|World transition cancellation sentinel/);
    // Restart while another response is pending; consent and stale work clear.
-   await travelTo(page,'self');await page.locator('.hero-enter').click();
+   await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    const resetRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/character');
    const resetFailure=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/api/character'});
    await page.locator('#chat-question').fill('Reset cancellation sentinel.');await page.locator('#chat-form button[type="submit"]').click();await resetRequest;
@@ -201,7 +203,7 @@ try{
    assert.doesNotMatch(await page.locator('#app-ui').innerText(),/STALE MOCK MUST NEVER APPEAR|Reset cancellation sentinel/);
    assert.equal(delayedCalls,3);
    // Lock while another response and the final encrypted save are pending.
-   await travelTo(page,'self');await page.locator('.hero-enter').click();
+   await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
    const lockRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/character');
    const lockFailure=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/api/character'});
@@ -235,13 +237,33 @@ try{
    assert.equal(await readVault(),beforeSlowLock,'late encryption after key revocation must not replace ciphertext');
    await page.reload({waitUntil:'networkidle'});await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();await page.locator('#vault-gate').waitFor({state:'hidden'});
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
-   await page.locator('.hero-enter').click();
+   await clickUser(page,page.locator('.hero-enter'));
    assert.doesNotMatch(await page.locator('.story-panel').innerText(),/Opt-out cancellation sentinel|World transition cancellation sentinel|Reset cancellation sentinel|Lock transition cancellation sentinel|STALE MOCK MUST NEVER APPEAR/);
+   await travelTo(page,'self');
+   const returnOverlay=page.locator('.world-sheet-scrim');if(await returnOverlay.isVisible()){await page.keyboard.press('Escape');await returnOverlay.waitFor({state:'detached'});}
+   await clickUser(page,page.locator('.hero-enter'));
+   const beforeEraseLetter=await readVault();await page.locator('#letter-text').fill(ERASE_SENTINEL);await page.locator('#letter-form button[type="submit"]').click();
+   await page.waitForFunction(old=>localStorage.getItem('syrava.elsewhere.private-v1')!==old,beforeEraseLetter);
    await page.locator('[data-cmd="journal"]').click();const erase=page.locator('[data-cmd="erase-vault"]');await erase.waitFor({state:'visible'});
    const beforeErase=await readVault();assert(beforeErase);
    page.once('dialog',dialog=>dialog.dismiss());await clickUser(page,erase);
    assert.equal(await readVault(),beforeErase,'cancelling vault erasure must preserve ciphertext');assert.equal(await page.locator('#vault-gate').isVisible(),false);
+   await page.evaluate(()=>{
+    const remove=Storage.prototype.removeItem;
+    Storage.prototype.removeItem=function(key){if(key==='syrava.elsewhere.v1')throw new Error('synthetic legacy-storage denial');return remove.call(this,key);};
+   });
    page.once('dialog',dialog=>dialog.accept());await clickUser(page,erase);
+   await page.locator('#vault-gate').waitFor({state:'visible'});
+   assert.equal(await readVault(),beforeErase,'storage denial must leave the prior encrypted vault detectable');
+   assert.match(await page.locator('#vault-notice').innerText(),/could not confirm all ELSEWHERE data was erased.*Some local data may remain/i);
+   await page.reload({waitUntil:'networkidle'});await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();await page.locator('#vault-gate').waitFor({state:'hidden'});
+   await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+   await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));assert.equal(await page.locator('#letter-text').inputValue(),ERASE_SENTINEL,'save after erase denial must still be unlockable');
+   await page.locator('[data-cmd="journal"]').click();await page.locator('[data-cmd="erase-vault"]').waitFor({state:'visible'});
+   const retryErase=page.locator('[data-cmd="erase-vault"]');
+   page.once('dialog',dialog=>dialog.dismiss());await clickUser(page,retryErase);
+   assert.equal(await readVault(),beforeErase,'cancel after storage recovery must preserve ciphertext');
+   page.once('dialog',dialog=>dialog.accept());await clickUser(page,retryErase);
    await page.locator('#vault-gate').waitFor({state:'visible'});
    assert.equal(await readVault(),null,'confirmed erasure removes this browser vault');
    assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.v1')),null,'confirmed erasure removes legacy plaintext too');
@@ -257,7 +279,7 @@ try{
  if(selected.includes('guest-reset')){
   const {context,page}=await makePage();let calls=0;page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')calls++;});
   try{
-   await startGuest(page);await travelTo(page,'self');await page.locator('.hero-enter').click();
+   await startGuest(page);await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
    assert.match(await page.locator('.privacy-sigil').innerText(),/META CLOUD/);
    await page.locator('[data-cmd="journal"]').click();page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="reset"]').click();
