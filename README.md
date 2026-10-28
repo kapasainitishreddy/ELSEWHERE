@@ -16,6 +16,7 @@ Verified local behavior includes:
 - Locally authored causal exhibits derived from saved fictional outcomes; Meta direction is opt-in and the browser/API contract has mock coverage only.
 - AES-GCM local saves, lock/reload/unlock, encrypted backup download, canceled replacement, malformed-file rejection and file-picker restore.
 - Keyboard entry and combat controls; a selected 200% viewport/scale emulation, visible focus, one primary-action contrast check and reduced-motion behavior.
+- Entering combat clears the opening-story overlay and collapses the long story sheet; a compact one-row HUD keeps attack, story and portal-atlas controls reachable. Story text remains available in a bounded scroll panel. The physics-sandbox button sits beside the scene and is hidden during combat; the movement prompt stays above the portal dock.
 
 Repeat the verified checks from the repository root:
 
@@ -25,12 +26,13 @@ npm test
 npm run build
 npm run review:agents
 npm run test:e2e:combat-recovery
+ELSEWHERE_COMBAT_LAYOUT_ONLY=1 npm run test:e2e:combat-recovery
 npm run test:e2e:backup-recovery
 npm run test:e2e:accessibility
 node --test tests/physics-long-session.test.mjs
 ```
 
-In this managed container, the default npm cache path was absent. The clean install passed with `npm ci --cache "${TMPDIR:-/tmp}/elsewhere-npm-cache"`; lockfile integrity checking remained enabled. The browser runs used Chromium 154 with SwiftShader software WebGL and synthetic data. The 200% check emulates zoom geometry by halving the CSS viewport at device scale factor 2; it is not browser zoom UI. Visual review found the right-side story sheet and bottom physics-test button crowd the playfield controls. See [QA evidence](docs/QA_EVIDENCE_CURRENT.md) for commands, screenshots, limitations and that open UI issue.
+In this managed container, the default npm cache path was absent. The clean install passed with `npm ci --cache "${TMPDIR:-/tmp}/elsewhere-npm-cache"`; lockfile integrity checking remained enabled. The browser runs used Chromium 154 with SwiftShader software WebGL and synthetic data. The 200% check emulates zoom geometry by halving the CSS viewport at device scale factor 2; it is not browser zoom UI. Real-browser screenshots and combat interactions verified the responsive HUD at 1000×720, 390×844, and a 720×450 reduced-viewport emulation. These results are software-rendered browser evidence, not phone/GPU/Quest performance measurements. See [QA evidence](docs/QA_EVIDENCE_CURRENT.md) for current and historical screenshots and limitations.
 
 **External gates remain open:** no live Meta inference (the local mock is not Meta proof), public HTTPS preview/API, real demo video, current official eligibility confirmation, Quest/phone hardware run, screen-reader audit, human research, or submission. SwiftShader output is not hardware performance evidence. Do not describe this prototype as submission-ready.
 

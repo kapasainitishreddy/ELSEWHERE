@@ -64,13 +64,13 @@
 .quick-entry{margin:23px 0 10px}.guest-play{width:100%;display:flex;align-items:center;gap:18px;text-align:left;border:1px solid rgba(145,247,231,.52);border-radius:14px;padding:20px 22px;background:linear-gradient(125deg,rgba(99,225,211,.24),rgba(23,62,77,.92));color:#eafffc;cursor:pointer;box-shadow:0 16px 48px #0005;font:700 13px 'Space Grotesk',system-ui,sans-serif;letter-spacing:.12em;transition:transform .2s,box-shadow .2s,border-color .2s}.guest-play>span:first-child{font-size:28px;color:#a3fff3}.guest-play small{display:block;font:400 11px/1.7 system-ui,sans-serif;letter-spacing:0;color:#b8d3d5;margin-top:5px}.guest-play:hover,.guest-play:focus-visible{transform:translateY(-2px);border-color:#d2fff8;box-shadow:0 20px 58px rgba(39,174,166,.21)}.guest-play:focus-visible{outline:3px solid #a8fcec;outline-offset:3px}.vault-separator{display:flex;align-items:center;gap:12px;margin-top:28px;color:#8ba4af;font:600 9px system-ui,sans-serif;letter-spacing:.17em}.vault-separator::before,.vault-separator::after{content:'';height:1px;flex:1;background:rgba(154,208,214,.23)}@media(prefers-reduced-motion:reduce){.guest-play{transition:none}.guest-play:hover{transform:none}}
 
 /* First-play guidance without obscuring the fictional world. */
-.world-first-play{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);padding:11px 18px;border-radius:80px;white-space:nowrap;pointer-events:none;color:#e5fcff;background:rgba(8,26,36,.82);border:1px solid rgba(138,218,221,.32);box-shadow:0 10px 40px #0008;font:700 10px/1.3 'Space Grotesk',system-ui,sans-serif;letter-spacing:.14em;text-align:center;z-index:4;backdrop-filter:blur(18px)}.world-first-play[hidden]{display:none!important}@media(max-width:750px){.world-first-play{display:none}}
+.world-first-play{position:absolute;left:50%;bottom:clamp(110px,17vh,134px);transform:translateX(-50%);padding:11px 18px;border-radius:80px;white-space:nowrap;pointer-events:none;color:#e5fcff;background:rgba(8,26,36,.82);border:1px solid rgba(138,218,221,.32);box-shadow:0 10px 40px #0008;font:700 10px/1.3 'Space Grotesk',system-ui,sans-serif;letter-spacing:.14em;text-align:center;z-index:4;backdrop-filter:blur(18px)}.world-first-play[hidden]{display:none!important}@media(max-width:750px){.world-first-play{display:none}}
 
 /* Guest shortcut to the actual physics arena. */
 .guest-physics{margin-top:9px;background:linear-gradient(125deg,rgba(134,119,255,.16),rgba(29,36,64,.90));border-color:rgba(177,154,251,.34)}.guest-physics>span:first-child{color:#dcc7ff}.guest-physics:hover{border-color:#e0c8ff}
 
 /* Functional low-distraction test input for guest physics demonstrations. */
-.world-physics-action{position:absolute;bottom:11%;left:50%;transform:translateX(-50%);z-index:8;
+.world-physics-action{position:absolute;top:50%;right:clamp(12px,2vw,30px);bottom:auto;left:auto;transform:translateY(-50%);z-index:8;
   padding:12px 22px;min-height:46px;border-radius:80px;
   border:1px solid rgba(169,224,226,.58);color:#e9fbfc;
   background:linear-gradient(120deg,rgba(25,44,57,.96),rgba(45,66,83,.9));
@@ -80,5 +80,5 @@
 .world-physics-action:hover{border-color:#d2f6fa;background:rgba(41,72,89,.98)}
 .world-physics-action:focus-visible{outline:3px solid #d4fff9;outline-offset:3px}
 .world-physics-action[hidden]{display:none!important}
-@media(max-width:760px){.world-physics-action{bottom:52%;left:50%;font-size:10px;min-height:42px;max-width:85vw;white-space:nowrap}}
+@media(max-width:760px){.world-physics-action{top:50%;right:8px;font-size:9px;min-height:42px;max-width:46vw;padding:10px 12px;white-space:normal;text-align:center}}
 @media(prefers-reduced-motion:reduce){.world-physics-action{transition:none}}

@@ -276,6 +276,29 @@
   .story-panel {bottom:95px;}
 }
 
+/* Combat keeps the playfield open; the long story remains available as a compact drawer. */
+#app-ui[data-combat='active'] .story-panel {position:fixed;top:auto;bottom:24px;max-height:48vh;}
+.combat-action-dock {position:absolute;top:153px;left:50%;transform:translateX(-50%);z-index:23;justify-content:center;flex-wrap:nowrap;gap:7px;margin:0;padding:7px;max-width:calc(100vw - 24px);border:1px solid rgba(131,218,225,.34);border-radius:14px;background:rgba(8,18,25,.9);box-shadow:0 12px 35px rgba(0,0,0,.42);backdrop-filter:blur(14px);pointer-events:auto;}
+.combat-action-dock button {min-width:64px;padding:9px 8px;min-height:42px;border-radius:9px;cursor:pointer;font:700 10px/1.2 var(--ui-face);white-space:nowrap;}
+.combat-action-dock button:focus-visible,.combat-story-toggle:focus-visible {outline:3px solid #d4fff9;outline-offset:3px;}
+.combat-story-toggle {position:static;min-height:42px;padding:9px 10px;border:1px solid rgba(var(--accent-rgb),.38);border-radius:9px;background:rgba(9,19,27,.92);color:#e6f8f8;font:700 8px/1.2 var(--ui-face);letter-spacing:.06em;cursor:pointer;pointer-events:auto;}
+.combat-portal-toggle {position:static;min-width:70px;min-height:42px;padding:8px 9px;border:1px solid rgba(var(--accent-rgb),.28);border-radius:9px;background:rgba(9,19,27,.92);color:#e6f8f8;font:700 8px/1.2 var(--ui-face);letter-spacing:.06em;cursor:pointer;pointer-events:auto;}
+#app:has(#app-ui[data-combat='active']) .world-physics-action {display:none;}
+@media(max-width:760px) {
+ #app-ui[data-combat='active'] .story-panel {bottom:95px;max-height:35vh;}
+ .combat-story-toggle,.combat-portal-toggle {min-height:38px;padding:7px 3px;font-size:7px;}
+ .combat-action-dock {top:191px;left:10px;right:10px;transform:none;gap:5px;padding:6px;}
+ .combat-action-dock button {flex:1;min-width:0;padding:8px 2px;font-size:8px;white-space:normal;}
+}
+@media(max-width:760px) and (max-height:600px) {
+ #app {min-height:100dvh;}
+ #app-ui[data-combat='active'] .story-panel {bottom:10px;max-height:42vh;}
+ .combat-action-dock {top:187px;}
+}
+@media(prefers-reduced-motion:reduce) {
+ .combat-action-dock,.combat-story-toggle,.combat-portal-toggle {transition:none;}
+}
+
 .atlas-utilities{display:flex;gap:8px;margin:6px 0 18px}
 .atlas-utilities button{flex:1;min-width:0;border:1px solid rgba(var(--accent-rgb),.22);border-radius:9px;background:rgba(var(--accent-rgb),.065);padding:10px 6px;color:#d9e9ea;font:700 8px var(--ui-face);letter-spacing:.045em;cursor:pointer}
 .atlas-utilities button:hover{background:rgba(var(--accent-rgb),.17)}
