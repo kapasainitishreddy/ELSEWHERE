@@ -26,7 +26,7 @@ export function createInterface(root, handlers){
   let state=null, journal=false, instructions=false, busy=false, apiStatus='OFFLINE READY', isSpeaking=false, journalTab='echoes', selectedChapter='prologue', choiceFilter='world', sound=false, focus=false, stillwater=null;
   let storyOpen=false, atlasOpen=false, displayedWorld=null, journeyVisible=true, comfortOpen=false, comfortMode=DEFAULT_COMFORT;
   function render(next){
-    if(displayedWorld!==null && displayedWorld!==next.world){storyOpen=false;atlasOpen=false;focus=false;root.parentElement?.classList.toggle('cinematic',false);}
+    if(displayedWorld!==null && displayedWorld!==next.world){storyOpen=false;atlasOpen=false;focus=false;choiceFilter='world';root.parentElement?.classList.toggle('cinematic',false);}
     displayedWorld=next.world;
     const previousScroll=storyOpen ? (root.querySelector('.story-panel')?.scrollTop??0) : 0;
     state=next;

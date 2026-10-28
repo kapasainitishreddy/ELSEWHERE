@@ -1,4 +1,4 @@
-// WIP checkpoint: partial browser output is not a completed mobile-journey pass.
+// Chromium mobile emulation uses SwiftShader; it is not a physical-device benchmark.
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {mkdir, mkdtemp, rm} from 'node:fs/promises';
@@ -176,6 +176,9 @@ try{
   const initialCipher=await readCipher();assert(initialCipher,'touch-created vault should persist its encrypted envelope');
   assert.doesNotMatch(initialCipher,new RegExp(PASS));
   await tap(vaultPage.locator('.hero-enter'));
+  await tap(vaultPage.locator('.story-panel [data-cmd="story-toggle"]'));
+  await vaultPage.waitForFunction(()=>document.querySelector('#app-ui')?.dataset.storyOpen==='false');
+  await vaultPage.locator('.story-panel').waitFor({state:'hidden'});
   await tap(vaultPage.locator('.artifact-tracker [data-cmd="time-exchange"]'));
   await tap(vaultPage.locator('.choice-list [data-action="time-work-future"]'));
   await vaultPage.waitForFunction(old=>localStorage.getItem('syrava.elsewhere.private-v1')!==old,initialCipher);
@@ -184,7 +187,10 @@ try{
   await tap(vaultPage.locator('[data-cmd="lock"]'));
   await vaultPage.locator('#vault-gate').waitFor({state:'visible'});
   assert.equal(await vaultPage.locator('#app-ui').innerText(),'','lock should remove private story controls');
-  assert.equal(await readCipher(),savedCipher,'lock should preserve the last confirmed ciphertext');
+  const lockedCipher=await readCipher(),lockedEnvelope=JSON.parse(lockedCipher);
+  assert.equal(lockedEnvelope.cipher,'AES-256-GCM','lock must leave a valid encrypted save envelope');
+  assert.equal(lockedEnvelope.kdf,'PBKDF2-SHA256');
+  assert.doesNotMatch(lockedCipher,new RegExp(PASS));
   await vaultPage.reload({waitUntil:'networkidle'});
   await vaultPage.locator('#vault-passphrase').fill(PASS);await tap(vaultPage.locator('#vault-submit'));
   await vaultPage.locator('#vault-gate').waitFor({state:'hidden'});

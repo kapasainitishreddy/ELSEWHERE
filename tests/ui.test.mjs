@@ -20,6 +20,17 @@ test('story interface can render all five worlds and accessible controls without
    assert.match(root.innerHTML, new RegExp(state.world==='mech'?'TITAN NEURAL':state.world==='past'?'ALTER HISTORY':state.world==='future'?'CAUSAL WORLD':state.world==='dungeon'?'CHOOSE YOUR PATH':'CONTINUE THE CONVERSATION'));
  }
 });
+test('changing worlds resets the hour-trade filter so new-world actions stay visible',()=>{
+ const listeners=[];const root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(type,handler){if(type==='click')listeners.push(handler);},querySelector(){return null;}};
+ const ui=createInterface(root,{});let s=go(initialState(),'self');ui.render(s);
+ const selected={dataset:{chooser:'time'}};
+ const event={target:{closest(selector){return selector==='[data-chooser]'?selected:null;}}};
+ for(const listener of listeners)listener(event);
+ assert.match(root.innerHTML,/class="selected" data-chooser="time"/,'time filter should be selected before travel');
+ s=go(s,'past');ui.render(s);
+ assert.match(root.innerHTML,/class="selected" data-chooser="world"/,'world actions should be the default after travel');
+ assert.match(root.innerHTML,/data-action="invent-cell"/,'the 1889 invention action should be visible after travel');
+});
 test('dungeon cipher and mech meter display authoritative simulation state',()=>{
  const {root,ui}=makeUI();let s=go(initialState(),'dungeon');s=act(s,'power-phase');
  s=act(s,`rune-${RUNE_SEQUENCES.phase[0]}`);ui.render(s);
