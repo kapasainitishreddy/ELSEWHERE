@@ -9,6 +9,9 @@ test('HTML contains the complete unlock screen used by the runtime',()=>{
    assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(html,/type="password"/);
  assert.match(html,/minlength="10"/);
+ assert.match(html,/ENTER YOUR POSSIBLE WORLDS/);
+ assert.match(html,/Play the unsaved demo instantly[\s\S]*invent in 1889[\s\S]*2087/);
+ assert.match(read('src/main.js'),/gateTitle\.textContent=vault\.present\(\)\?'UNLOCK YOUR PRIVATE WORLD':'ENTER YOUR POSSIBLE WORLDS'/);
  assert.doesNotMatch(html,/<script[^>]+https?:\/\//);
 });
 test('guest demo is memory-only and cannot mutate the persistent vault',()=>{

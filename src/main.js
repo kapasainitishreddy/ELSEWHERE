@@ -26,6 +26,7 @@ const gateForm=gate.querySelector('#vault-form');
 const gateInput=gate.querySelector('#vault-passphrase');
 const gateStatus=gate.querySelector('#vault-notice');
 const gateTitle=gate.querySelector('#vault-title');
+const gateIntro=gate.querySelector('#vault-intro');
 const gateButton=gate.querySelector('#vault-submit');
 const guestButton=gate.querySelector('#guest-play');
 const physicsButton=gate.querySelector('#physics-play');
@@ -83,7 +84,8 @@ function toast(message,positive=true){
  toastRoot.append(node);setTimeout(()=>node.remove(),4800);
 }
 function showGate(message=''){
- gate.hidden=false;gateTitle.textContent=vault.present()?'UNLOCK YOUR PRIVATE WORLD':'CREATE YOUR PRIVATE WORLD';
+ gate.hidden=false;gateTitle.textContent=vault.present()?'UNLOCK YOUR PRIVATE WORLD':'ENTER YOUR POSSIBLE WORLDS';
+ gateIntro.textContent=vault.present()?'Unlock your encrypted private save in this browser. Your passphrase never leaves this device.':'Play the unsaved demo instantly, or create an encrypted private save. Meet an imagined future self, invent in 1889, then see your choice reshape 2087.';
  gateButton.textContent=vault.present()?'UNLOCK ELSEWHERE':'CREATE ENCRYPTED WORLD';
  gateStatus.textContent=message || (vault.present()?'Only your passphrase decrypts this save. It never leaves your device.':vault.recoverableLegacy()?'An existing unencrypted timeline will be migrated into an encrypted vault.':'Everything you do stays in this encrypted browser vault.');
  gateInput.value='';gateInput.focus();

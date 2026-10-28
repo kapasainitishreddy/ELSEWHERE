@@ -42,8 +42,12 @@ test('portals react to proximity without extreme intensity or artificial camera 
  const scene=await source('src/worlds.js');
  assert.match(scene,/portalFrame\(time,distance/);
  assert.match(scene,/buildPortal\(world,all\[i\],x,-20\.5,targets,animated,\(\)=>playerPos,reduceMotion\)/);
- assert.match(scene,/const cruiseY=vehicle\.position\.y/);
- assert.doesNotMatch(scene,/vehicle\.position\.y\s*\+=/);
+ assert.match(scene,/new THREE\.InstancedMesh\(new THREE\.CylinderGeometry\(\.07,\.12,1,10\),metal,36\)/);
+ assert.match(scene,/lampIndex\+\+/);
+ assert.match(scene,/new THREE\.InstancedMesh\(new THREE\.BoxGeometry\(1,1,1\),metal,9\)/);
+ assert.match(scene,/vehicleBody\.instanceMatrix\.needsUpdate=true/);
+ assert.doesNotMatch(scene,/const vehicle=new THREE\.Group\(\)/);
+ assert.doesNotMatch(scene,/for\(let j=0;j<18;j\+\+\)for\(let x of \[-5\.4,5\.4\]\)/);
 });
 
 test('plasma attacks show projectile travel before impact and finish fully',()=>{

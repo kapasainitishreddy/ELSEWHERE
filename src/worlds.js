@@ -237,10 +237,21 @@ function buildFuture(g,state,animated){
  for(const instance of [boxes,roofs,lit]){instance.instanceMatrix.needsUpdate=true;instance.computeBoundingSphere();g.add(instance);}
  // Main avenue and sky-walk, mirrored light markers.
  box(g,11,.06,75,mat(0x0c151f,.34,.43),0,-.04,-12);
- for(let j=0;j<18;j++)for(let x of [-5.4,5.4]){
-   box(g,.09,.07,2.3,emissive(j%3?0x30808f:0x9ed9ef,1),x,.035,15-j*4.7);
-   cylinder(g,.07,.12,3.6,metal,x,1.8,15-j*4.7);orb(g,.15,emissive(0x6bddea,1.3),x,3.6,15-j*4.7);
+ // The avenue repeats the same three lamp meshes 36 times. Keep the same silhouette and
+ // palette in three instanced draws instead of 108 individual draw calls.
+ const lampGlow=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:1,metalness:.32,roughness:.28}),36);
+ const lampPole=new THREE.InstancedMesh(new THREE.CylinderGeometry(.07,.12,1,10),metal,36);
+ const lampOrb=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),emissive(0x6bddea,1.3),36);
+ const lampTransform=new THREE.Object3D();let lampIndex=0;
+ for(let j=0;j<18;j++)for(const x of [-5.4,5.4]){
+   const z=15-j*4.7;
+   lampTransform.position.set(x,.035,z);lampTransform.scale.set(.09,.07,2.3);lampTransform.updateMatrix();lampGlow.setMatrixAt(lampIndex,lampTransform.matrix);
+   lampGlow.setColorAt(lampIndex,new THREE.Color(j%3?0x30808f:0x9ed9ef));
+   lampTransform.position.set(x,1.8,z);lampTransform.scale.set(1,3.6,1);lampTransform.updateMatrix();lampPole.setMatrixAt(lampIndex,lampTransform.matrix);
+   lampTransform.position.set(x,3.6,z);lampTransform.scale.setScalar(.15);lampTransform.updateMatrix();lampOrb.setMatrixAt(lampIndex,lampTransform.matrix);
+   lampIndex++;
  }
+ for(const instance of [lampGlow,lampPole,lampOrb]){instance.instanceMatrix.needsUpdate=true;instance.computeBoundingSphere();g.add(instance);}
  const sculpture=new THREE.Group();g.add(sculpture);sculpture.position.set(0,4,-8);
  ring(sculpture,2.9,.08,emissive(ripple.cell?0x6cffbb:0x50c6ff,1.6),0,0,0,.4);
  ring(sculpture,2.1,.04,emissive(0xffffff,.8),0,0,0,-.35);
@@ -261,14 +272,27 @@ function buildFuture(g,state,animated){
    box(g,6,4,4,mat(0x4d6b70,.25,.45),8,2,-12);sign(g,'PUBLIC ARCHIVE','FOUNDED BY YOU',8,4.7,-9.95,3.8);
  }
  billboards(g,ripple.label,0,13,-20,ripple.cell?'#61ffc0':'#5ee5f6');
- // Flying vehicles suspended over the skyline.
+ // Nine small skyline vehicles keep their motion but share two instanced draws.
+ const vehicleBody=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),metal,9);
+ const vehicleLight=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:2,metalness:.32,roughness:.28}),9);
+ vehicleBody.instanceMatrix.setUsage(THREE.DynamicDrawUsage);vehicleLight.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+ const vehiclePose=new THREE.Object3D(),vehicleCruise=[];
  for(let i=0;i<9;i++){
-   const vehicle=new THREE.Group();g.add(vehicle);
-   vehicle.position.set(-33+seeded(i+20)*66,8+seeded(i+50)*12,-18-seeded(i+90)*22);
-   box(vehicle,1.9,.33,.8,metal,0,0,0);box(vehicle,1.55,.08,.12,emissive(i%2?0xffbc77:0x78efff,2),0,-.24,.34);
-   const cruiseY=vehicle.position.y;
-   animated.push(t=>{vehicle.position.x=((t*(i%2?-.4:.6)+(i*7))%78)-39;vehicle.position.y=cruiseY+Math.sin(t*.54+i)*.2;});
+   const x=-33+seeded(i+20)*66,y=8+seeded(i+50)*12,z=-18-seeded(i+90)*22;
+   vehicleCruise.push({x,y,z,direction:i%2?-.4:.6,phase:i});
+   vehiclePose.position.set(x,y,z);vehiclePose.scale.set(1.9,.33,.8);vehiclePose.updateMatrix();vehicleBody.setMatrixAt(i,vehiclePose.matrix);
+   vehiclePose.position.set(x,y-.24,z+.34);vehiclePose.scale.set(1.55,.08,.12);vehiclePose.updateMatrix();vehicleLight.setMatrixAt(i,vehiclePose.matrix);
+   vehicleLight.setColorAt(i,new THREE.Color(i%2?0xffbc77:0x78efff));
  }
+ vehicleBody.computeBoundingSphere();vehicleLight.computeBoundingSphere();g.add(vehicleBody,vehicleLight);
+ animated.push(t=>{
+   for(let i=0;i<vehicleCruise.length;i++){
+     const v=vehicleCruise[i],x=((t*v.direction+(i*7))%78)-39,y=v.y+Math.sin(t*.54+i)*.2;
+     vehiclePose.position.set(x,y,v.z);vehiclePose.scale.set(1.9,.33,.8);vehiclePose.updateMatrix();vehicleBody.setMatrixAt(i,vehiclePose.matrix);
+     vehiclePose.position.set(x,y-.24,v.z+.34);vehiclePose.scale.set(1.55,.08,.12);vehiclePose.updateMatrix();vehicleLight.setMatrixAt(i,vehiclePose.matrix);
+   }
+   vehicleBody.instanceMatrix.needsUpdate=true;vehicleLight.instanceMatrix.needsUpdate=true;
+ });
 }
 function buildSelf(g,state,animated,getTraveler){
  // Warm, intimate architectural contrast to the outer worlds.

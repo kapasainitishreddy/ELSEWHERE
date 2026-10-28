@@ -40,15 +40,28 @@ try {
   page.on('response',response=>{if(response.status()>=400)badResponses.push(`${response.status()} ${response.url()}`);});
   page.on('request',request=>{if(!request.url().startsWith(`${origin}/`))external.push(request.url());});
 
-  await page.goto(origin,{waitUntil:'networkidle'});
+  await page.goto(`${origin}/?perf=1`,{waitUntil:'networkidle'});
   assert((await page.title()).includes('ELSEWHERE'));
   assert(await page.locator('#vault-gate').isVisible(),'first run should show the unsaved entry gate');
+  assert.match(await page.locator('#vault-title').innerText(),/ENTER YOUR POSSIBLE WORLDS/,'entry title should welcome both demo and save paths');
+  await page.setViewportSize({width:390,height:844});
+  assert(await page.locator('#guest-play').isVisible(),'the unsaved demo should be immediately available on a phone viewport');
+  assert(await page.locator('#vault-passphrase').isVisible(),'the encrypted save path should remain available on a phone viewport');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390,'the first-run gate should not force horizontal scrolling on mobile');
+  await page.screenshot({path:new URL('entry-mobile.png',artifactDir).pathname});
+  await page.setViewportSize({width:1440,height:900});
   await page.screenshot({path:new URL('gate.png',artifactDir).pathname});
   await page.locator('#guest-play').click();
   await page.locator('#vault-gate').waitFor({state:'hidden'});
   await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
   assert.equal(await page.locator('#world-canvas canvas').count(),1,'guest scene should mount a WebGL canvas');
   assert.match(await page.locator('.privacy-sigil').innerText(),/GUEST · NOT SAVED/,'guest mode must be labeled honestly');
+  assert.match(await page.locator('.first-crossing').innerText(),/1889.*2087/s,'the opening guide should explain the invention-to-future goal');
+  assert.match(await page.locator('.first-crossing-controls').innerText(),/WASD.*arrows.*E to interact.*touch/i,'the opening guide should explain keyboard and touch controls');
+  assert.equal(await page.locator('.first-crossing').evaluate(node=>getComputedStyle(node).backdropFilter),'none','the opaque opening guide should not incur backdrop blur');
+  await page.waitForFunction(()=>/\d+ DRAWS/.test(document.querySelector('.world-perf-display')?.textContent||''));
+  const firstSceneDraws=Number((await page.locator('.world-perf-display').innerText()).match(/(\d+) DRAWS/)?.[1]);
+  assert(Number.isFinite(firstSceneDraws)&&firstSceneDraws<360,`initial 2087 scene should stay below 360 draw calls (saw ${firstSceneDraws})`);
   assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'guest progress must not be written to encrypted vault storage');
   await page.screenshot({path:new URL('guest-2087.png',artifactDir).pathname});
 

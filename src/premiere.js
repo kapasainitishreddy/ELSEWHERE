@@ -4,7 +4,7 @@
  * It remains skippable and makes no claims about a player's real future.
  */
 export const FIRST_CROSSING = Object.freeze([
-  {id:'meet',title:'Someone is waiting in 2046',body:'Cross the first portal. Meet a possible version of yourself, twenty years from now.',world:'self',label:'ENTER THE APARTMENT',kind:'travel'},
+  {id:'meet',title:'Meet a possible future you',body:'Meet an imagined older you, carry one invention from 1889 into 2087, and see how your choice changes the city.',world:'self',label:'MEET YOUR FUTURE SELF',kind:'travel'},
   {id:'listen',title:'Ask a question only you would ask',body:'Your future self is an imagined character. Ask about an ordinary day or the choices that shaped this world.',world:'self',label:'BEGIN A CONVERSATION',kind:'talk'},
   {id:'invent',title:'Carry an impossible idea to 1889',body:'The inventor Ada Voss is waiting. Prototype one of three discoveries and watch the future change.',world:'past',label:'STEP INTO 1889',kind:'invent'},
   {id:'decide',title:'Who deserves the invention?',body:'Patent it, give it away, or auction it. Wealth, public trust, and the skyline will remember.',world:'past',label:'DECIDE ITS FUTURE',kind:'fate'},
