@@ -20,7 +20,7 @@ import {installEnvironmentStage} from './environment-stage.js';
 import {COMFORT_PRESETS,DEFAULT_COMFORT,comfortPreset,comfortTurn,walkableLanding} from './xr-comfort.js';
 import {createSessionCare} from './session-care.js';
 import {safeSceneCue,safeSceneFocus} from './scene-director.js';
-import {causalExhibitPlan,installCausalExhibit} from './causal-exhibit.js';
+import {authoredCausalFocus,causalExhibitPlan,installCausalExhibit} from './causal-exhibit.js';
 import {portalFrame,combatFrame,skylineVehicleX,SKYLINE_VEHICLE_BOUNDS} from './performance-direction.js';
 import {FUTURE_OUTCOME_LAYOUTS,FUTURE_PORTAL_Z,portalXAt} from './future-outcomes.js';
 import {visibleSceneSignIndexes} from './scene-label-visibility.js';
@@ -1069,17 +1069,19 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  renderer.xr.addEventListener('sessionstart',()=>{switchFeedbackProfile(true);setXrChoicePanelActive(true);controls.enabled=false;rig.position.set(0,0,5);camera.position.set(0,0,0);xrWatch.visible=true;xrNote.visible=false;updateXRWatch();if(player)player.visible=false;});
  renderer.xr.addEventListener('sessionend',()=>{switchFeedbackProfile(false);setXrChoicePanelActive(false);care.reset();controls.enabled=true;rig.position.set(0,0,0);rig.rotation.y=0;xrWatch.visible=false;xrNote.visible=false;camera.position.set(0,5.5,18);if(player)player.visible=!(state.world==='mech'&&state.mechDeployed);});
  function reactToDialogue(rawCue,rawFocus=null){
+   renderer.domElement.dataset.dialogueVisualState=`${state?.world||'none'}:${fx?'ready':'unavailable'}`;
    if(state?.world!=='self'||!fx)return;
    const cue=safeSceneCue(rawCue);
    const kind={rain:'arrival',warmth:'memory',wonder:'magic',quiet:'choice',resolve:'invention'}[cue];
    // A transient, pooled visual response, never an environmental gameplay mutation.
    const offset={rain:[-3,3,-8],warmth:[0,2.5,-5],wonder:[2,4,-9],quiet:[0,1.5,-6],resolve:[0,3,-7]}[cue];
    fx.emit(kind,new THREE.Vector3(...offset));
-   const focus=safeSceneFocus(rawFocus);
-   if(focus){
-     metaExhibit?.dispose();
-     metaExhibit=installCausalExhibit(THREE,world,causalExhibitPlan(state,focus));
-   }
+   const modelFocus=safeSceneFocus(rawFocus);
+   const provenance=modelFocus?'meta':'authored';
+   const focus=modelFocus||authoredCausalFocus(state);
+   metaExhibit?.dispose();
+   metaExhibit=installCausalExhibit(THREE,world,causalExhibitPlan(state,focus,provenance));
+   renderer.domElement.dataset.causalExhibit=`${provenance}:${focus}:${state.fate||'none'}`;
    if(cue==='wonder'||cue==='resolve')setDialogueActivity('delighted',2);
  }
  function setComfort(id){
@@ -1112,6 +1114,6 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  }
  return {mount,resize,effect,interact,setDialogueActivity,reactToDialogue,setMove(code,on){if(on)pressed.add(code);else pressed.delete(code);},setComfort,vrSupported:()=>Boolean(navigator.xr),
    enterVR(){vrButton.click();},
-   dispose(){renderer.setAnimationLoop(null);fx?.dispose();physicsStage?.dispose();metaExhibit?.dispose();xrNote.geometry.dispose();xrNote.material.dispose();noteTexture.dispose();xrWatch.geometry.dispose();xrWatch.material.dispose();watchTexture.dispose();scene.remove(focusReticle);focusReticle.geometry.dispose();focusReticle.material.dispose();renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);window.removeEventListener('blur',onBlur);controls.dispose();renderer.dispose();container.replaceChildren();}
+   dispose(){renderer.setAnimationLoop(null);fx?.dispose();physicsStage?.dispose();metaExhibit?.dispose();delete renderer.domElement.dataset.causalExhibit;xrNote.geometry.dispose();xrNote.material.dispose();noteTexture.dispose();xrWatch.geometry.dispose();xrWatch.material.dispose();watchTexture.dispose();scene.remove(focusReticle);focusReticle.geometry.dispose();focusReticle.material.dispose();renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);window.removeEventListener('blur',onBlur);controls.dispose();renderer.dispose();container.replaceChildren();}
  };
 }

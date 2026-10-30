@@ -24,6 +24,7 @@ try{
   browserServer=await chromium.launchServer(launchOptions);browser=await chromium.connect(browserServer.wsEndpoint());
  const outcomes={gift:'A city of open workshops',patent:'A licensed skyline',auction:'A city of hidden owners'};
  const recall={gift:/public workshops/i,patent:/towers outside bear our name/i,auction:/monument to the invention we sold/i};
+ const authoredFocus={gift:'people',patent:'infrastructure',auction:'memory'};
  const selected=(process.env.ELSEWHERE_FATES||Object.keys(outcomes).join(',')).split(',').filter(id=>Object.hasOwn(outcomes,id));
  for(const fate of selected){const headline=outcomes[fate];
   const context=await browser.newContext({viewport:{width:900,height:650},deviceScaleFactor:0.5});
@@ -33,8 +34,8 @@ try{
   page.on('console',message=>{if(message.type()==='error')pageErrors.push(message.text());});
   page.on('response',response=>{if(response.status()>=400)httpErrors.push(`${response.status()} ${response.url()}`);});
   page.on('request',request=>{if(!request.url().startsWith(`${origin}/`))external.push(request.url());});
-  const clickUser=async locator=>{
-   await locator.scrollIntoViewIfNeeded();
+  const clickUser=async(locator,{scroll=true}={})=>{
+   if(scroll)await locator.scrollIntoViewIfNeeded();
    const point=await locator.evaluate(node=>{
     const rect=node.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2,hit=document.elementFromPoint(x,y);
     return {x,y,visible:rect.width>0&&rect.height>0&&getComputedStyle(node).visibility!=='hidden',enabled:!('disabled'in node&&node.disabled),hitWithin:!!hit&&(hit===node||node.contains(hit))};
@@ -44,8 +45,8 @@ try{
   };
   const to=async world=>{
    if(await page.locator('#app-ui').getAttribute('data-world')===world)return;
-   await clickUser(page.locator('.brand'));
-   await clickUser(page.locator(`.world-link[data-world="${world}"]`));
+   await clickUser(page.locator('.brand'),{scroll:false});
+   await clickUser(page.locator(`.world-link[data-world="${world}"]`),{scroll:false});
    await page.waitForFunction(id=>document.querySelector('#app-ui')?.dataset.world===id,world);
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
   };
@@ -113,9 +114,15 @@ try{
    await clickUser(page.locator('#chat-form button[type="submit"]'));
    await page.locator('#chat-history .chat-line.elder').waitFor();
    const dialogue=await page.locator('#chat-history .chat-line.elder').last().innerText();assert.match(dialogue,recall[fate]);
+   const expectedExhibit=`authored:${authoredFocus[fate]}:${fate}`;
+   await page.waitForFunction(value=>document.querySelector('#world-canvas canvas')?.dataset.causalExhibit===value,expectedExhibit);
+   const storyClose=page.locator('.story-panel .sheet-inline-close');
+   if(await storyClose.isVisible())await clickUser(storyClose);
+   await page.waitForFunction(()=>document.querySelector('.story-panel')?.hasAttribute('inert'));
+   await page.screenshot({path:new URL(`fate-${fate}-authored-exhibit.png`,artifacts).pathname});
    assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'fate demo must remain an unsaved guest run');
    assert.deepEqual(pageErrors,[]);assert.deepEqual(httpErrors,[]);assert.deepEqual(external,[]);
-   console.log(JSON.stringify({result:'PASS',fate,visualOutcome:headline,sceneDraws:{before:baselineDraws,after:outcomeDraws},groundedDialogue:dialogue.replace(/\s+/g,' ').slice(0,180),guestVaultUntouched:true,errors:pageErrors,httpErrors,external}));
+   console.log(JSON.stringify({result:'PASS',fate,visualOutcome:headline,sceneDraws:{before:baselineDraws,after:outcomeDraws},groundedDialogue:dialogue.replace(/\s+/g,' ').slice(0,180),authoredExhibit:expectedExhibit,guestVaultUntouched:true,errors:pageErrors,httpErrors,external}));
   }catch(error){try{await page.screenshot({path:`/tmp/elsewhere-fate-${fate}-failure.png`});}catch{}throw error;}finally{
    try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}
    await Promise.race([context.close(),delay(5000)]);

@@ -1,4 +1,19 @@
-# Current QA evidence — 2026-10-27
+# Current QA evidence — latest checkpoint 2026-10-30
+
+## Follow-up checkpoint — 2026-10-30
+
+The working branch adds a deterministic, locally authored 3D causal exhibit when Future Self dialogue runs without Meta. Gift maps to people/public workshops, patent to infrastructure/licensed skyline, and auction to memory/auction record. Exhibit labels explicitly say `AUTHORED PREVIEW`; a consented model-selected perspective is labeled `META-SELECTED FOCUS`. Both use canonical game facts and cannot change game state. The exhibit disposes unique geometry/material/texture resources once.
+
+Executed on this checkout:
+
+- `npm test`: **PASS**, 246 passed, 0 failed, 0 skipped.
+- `npm run meta:check`: **PASS**, 13 passed, 0 failed, 0 skipped.
+- `npm run build`: **PASS**, Vite 7.3.7. Existing large-chunk warnings remain (app chunk ~1.04 MB; Rapier ~4.34 MB, ~1.65 MB gzip).
+- `timeout 480s npm run test:e2e:fates`: **PASS**, gift, patent and auction, each in a fresh Chromium guest context. The journey selects an invention and ownership in 1889, confirms distinct 2087 outcome and additional rendered landmarks, recalls the choice in a later Future Self conversation, then verifies the appropriate authored exhibit. Patent and auction also traverse their 3D portals. Each reports zero page/console errors, HTTP errors, off-origin requests and guest-vault writes. Screenshots are kept locally under ignored `review-output/e2e/fate-*-authored-exhibit.png` and `fate-*-scene.png`.
+- `ELSEWHERE_LIFECYCLE=vault-cloud timeout 360s npm run test:e2e:lifecycle`: **PASS**. Encrypted create/lock/reload/unlock and storage-failure recovery passed; offline dialogue made zero Meta requests; valid and malformed provider replies were mocked; opt-out, reset, world-change and lock canceled pending mocked requests. Six mock API calls were observed. This is not a live Meta call or Stage One proof.
+- `git diff --check`: **PASS** before commit.
+
+The browser used Chromium 154 with SwiftShader software WebGL at 900×650 for the three fate journeys. This is functional browser evidence, not physical GPU, mobile-device, Quest, or comfort/performance evidence. The 3D draw-count changes are not claimed as a performance improvement. Submission remains **NO-GO** pending current official rule/eligibility confirmation, live eligible Meta evidence, authorized public preview and real demo-video/submission gates.
 
 This is a record of commands actually run in the managed ELSEWHERE workspace. It is not a certification of a public release. Synthetic dialogue and local authored dialogue are clearly distinct from a live Meta inference.
 

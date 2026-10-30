@@ -154,6 +154,7 @@ try{
    assert.match(await page.locator('.privacy-sigil').innerText(),/META CLOUD/);
    await page.locator('#chat-question').fill('Tell me what became of the invention we shared.');await page.locator('#chat-form button[type="submit"]').click();
    await page.locator('#chat-history .chat-line.elder').nth(1).waitFor();assert.equal(metaRequests,1);
+   await page.waitForFunction(()=>document.querySelector('#world-canvas canvas')?.dataset.causalExhibit==='meta:memory:gift');
    console.log('vault-cloud: consented mocked Meta reply and allowlisted request validated');
    assert.deepEqual(Object.keys(postedBody).sort(),['cloudConsent','question','timeline','world']);
    assert.doesNotMatch(JSON.stringify(postedBody),new RegExp(`${PASS}|${PRIVATE_SENTINEL}`));
@@ -162,6 +163,7 @@ try{
    const priorElders=await page.locator('#chat-history .chat-line.elder').count();
    await page.locator('#chat-question').fill('A malformed response must leave play available.');await page.locator('#chat-form button[type="submit"]').click();
    await page.locator('#chat-history .chat-line.elder').nth(priorElders).waitFor();
+   await page.waitForFunction(()=>document.querySelector('#world-canvas canvas')?.dataset.causalExhibit==='authored:people:gift');
    assert.match(await page.locator('#toast-region').innerText(),/Meta unavailable\. Continuing with local dialogue/i);
    assert.equal(metaRequests,2,'request observer counts the malformed response attempt as well');
    await page.reload({waitUntil:'networkidle'});await page.locator('#vault-gate').waitFor({state:'visible'});

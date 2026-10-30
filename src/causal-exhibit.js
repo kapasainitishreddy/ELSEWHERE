@@ -7,21 +7,26 @@ const LABELS=Object.freeze({
   auction:{people:'THE NEW OWNER',infrastructure:'PRIVATE FOUNDRIES',memory:'AN AUCTION RECORD'}
 });
 const COLORS=Object.freeze({none:0x92b8ca,gift:0x82e8c3,patent:0xb2c3f9,auction:0xffc48e});
-export function causalExhibitPlan(state,focus){
+const AUTHORED_FOCUS=Object.freeze({gift:'people',patent:'infrastructure',auction:'memory'});
+export function authoredCausalFocus(state){
+ return AUTHORED_FOCUS[state?.fate]||'people';
+}
+export function causalExhibitPlan(state,focus,source='authored'){
  if(!FOCI.includes(focus))return null;
  const fate=Object.hasOwn(LABELS,state?.fate)?state.fate:'none';
- return Object.freeze({focus,fate,title:LABELS[fate][focus],color:COLORS[fate],
+ const provenance=source==='meta'?'META-SELECTED FOCUS':'AUTHORED PREVIEW';
+ return Object.freeze({focus,fate,provenance,title:LABELS[fate][focus],color:COLORS[fate],
    date:fate==='none'?'THE STORY IS UNWRITTEN':fate==='gift'?'1889 · SHARED WITH ALL':fate==='patent'?'1889 · PATENTED':'1889 · AUCTIONED'});
 }
 export function installCausalExhibit(THREE,parent,plan){
  if(!plan||!parent?.add)return null;
- const root=new THREE.Group();root.name='Meta-selected fictional history exhibit';
- root.position.set(5.3,0,-4.1);parent.add(root);
- const resources=[],textures=[];
+ const root=new THREE.Group();root.name=`Fictional causal exhibit · ${plan.provenance}`;
+ root.position.set(1.5,0,-3.4);parent.add(root);
+ const geometries=new Set(),materials=new Set(),textures=new Set();
  function make(geometry,material,x,y,z){
   const object=new THREE.Mesh(geometry,material);
   object.position.set(x,y,z);root.add(object);
-  resources.push({geometry,material});return object;
+  geometries.add(geometry);materials.add(material);return object;
  }
  const base=new THREE.MeshStandardMaterial({color:0x20313b,roughness:.48,metalness:.3});
  const ink=new THREE.MeshStandardMaterial({color:plan.color,roughness:.4,metalness:.18,emissive:plan.color,emissiveIntensity:.14});
@@ -43,15 +48,16 @@ export function installCausalExhibit(THREE,parent,plan){
   }
  }
  if(typeof document!=='undefined'){
-  const canvas=document.createElement('canvas');canvas.width=720;canvas.height=156;
+  const canvas=document.createElement('canvas');canvas.width=800;canvas.height=240;
   const c=canvas.getContext('2d');
   if(c){
-   c.fillStyle='#071923';c.fillRect(0,0,720,156);
-   c.textAlign='center';c.fillStyle='#e0fbf9';c.font='bold 37px Arial';c.fillText(plan.title,360,61);
-   c.fillStyle='#a7c5ce';c.font='25px Arial';c.fillText(plan.date,360,112);
-   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;textures.push(tex);
+   c.fillStyle='#071923';c.fillRect(0,0,800,240);
+   c.textAlign='center';c.fillStyle='#b9e1e5';c.font='bold 44px Arial';c.fillText(`${plan.provenance} · ${plan.focus.toUpperCase()}`,400,48,780);
+   c.fillStyle='#f0fffd';c.font='bold 66px Arial';c.fillText(plan.title,400,131,780);
+   c.fillStyle='#bfd4dc';c.font='44px Arial';c.fillText(plan.date,400,211,780);
+   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;textures.add(tex);
    const labelMat=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true,depthWrite:false});
-   make(new THREE.PlaneGeometry(3.2,.70),labelMat,0,1.98,.13);
+   make(new THREE.PlaneGeometry(6.4,1.92),labelMat,0,2.0,.13);
   }
  }
  let closed=false;
@@ -60,7 +66,8 @@ export function installCausalExhibit(THREE,parent,plan){
   ring.rotation.z=reducedMotion?0:Math.sin(t*.32)*.055;
  },dispose(){
   if(closed)return;closed=true;root.parent?.remove(root);
-  for(const entry of resources){entry.geometry.dispose();entry.material.dispose();}
-  textures.forEach(t=>t.dispose());base.dispose();ink.dispose();aura.dispose();
+  geometries.forEach(geometry=>geometry.dispose());
+  materials.forEach(material=>material.dispose());
+  textures.forEach(texture=>texture.dispose());
  }};
 }
