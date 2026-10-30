@@ -155,6 +155,8 @@ try{
    await page.locator('#chat-question').fill('Tell me what became of the invention we shared.');await page.locator('#chat-form button[type="submit"]').click();
    await page.locator('#chat-history .chat-line.elder').nth(1).waitFor();assert.equal(metaRequests,1);
    await page.waitForFunction(()=>document.querySelector('#world-canvas canvas')?.dataset.causalExhibit==='meta:memory:gift');
+   assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit-world'),'self');
+   assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit-branch'),'prime');
    console.log('vault-cloud: consented mocked Meta reply and allowlisted request validated');
    assert.deepEqual(Object.keys(postedBody).sort(),['cloudConsent','question','timeline','world']);
    assert.doesNotMatch(JSON.stringify(postedBody),new RegExp(`${PASS}|${PRIVATE_SENTINEL}`));
@@ -170,6 +172,7 @@ try{
    await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();await page.locator('#vault-gate').waitFor({state:'hidden'});
    await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
    assert.equal(await page.locator('.privacy-sigil').innerText(),'PRIVATE LOCAL WORLD','reload/unlock must reset cloud consent');
+   assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit'),null,'reloading rebuilds the scene without a stale exhibit marker');
 
    // Hold a mocked response in flight and travel away. The transport should abort,
    // and the old reply must not enter either this session or a future reload.
@@ -193,6 +196,7 @@ try{
    await travelTo(page,'future');const worldFailure=await worldChangeFailure;await delay(250);
    assert(worldFailure.failure()?.errorText,'world transition must abort the in-flight model request');
    assert.equal(delayedCalls,2);assert.equal(await page.locator('#app-ui').getAttribute('data-world'),'future');
+   assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit'),null,'world travel disposes the old physical exhibit and its canvas metadata');
    assert.doesNotMatch(await page.locator('#app-ui').innerText(),/STALE MOCK MUST NEVER APPEAR|World transition cancellation sentinel/);
    // Restart while another response is pending; consent and stale work clear.
    await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));

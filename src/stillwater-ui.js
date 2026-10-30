@@ -3,9 +3,9 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export function renderStillwaterDialog(session){
  const p=stillwaterView(session);
  return '<div class="modal-shade stillwater-shade" data-cmd="stillwater-close">'+
- '<section class="modal stillwater-dialog" role="dialog" aria-modal="true" aria-labelledby="stillwater-title">'+
+ '<section class="modal stillwater-dialog" role="dialog" aria-modal="true" aria-labelledby="stillwater-title" tabindex="-1">'+
  '<div class="stillwater-hero" aria-hidden="true"><div class="stillwater-moon"></div><div class="stillwater-ripple"></div></div>'+
- '<div class="modal-top"><span class="eyebrow">ELSEWHERE · A MOMENT BETWEEN WORLDS</span><button type="button" class="icon-btn" data-cmd="stillwater-close" aria-label="Close quiet story">✕</button></div>'+
+ '<div class="modal-top"><span class="eyebrow">ELSEWHERE · A MOMENT BETWEEN WORLDS</span><button type="button" class="icon-btn" data-cmd="stillwater-close" data-focus-key="stillwater-close" data-dialog-initial aria-label="Close quiet story">✕</button></div>'+
  '<div class="stillwater-content" aria-live="polite"><span class="eyebrow">NO SCORES · NO STREAKS · NO DEADLINES</span><h2 id="stillwater-title">'+esc(p.title)+'</h2>'+
  '<p class="stillwater-subtitle">'+esc(p.subtitle)+'</p><p class="stillwater-body">'+esc(p.body)+'</p>'+
  (p.question?'<h3 class="stillwater-question">'+esc(p.question)+'</h3>':'')+

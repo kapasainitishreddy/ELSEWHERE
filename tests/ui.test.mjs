@@ -71,6 +71,16 @@ test('saved private journal exposes explicit browser-vault erasure and explains 
  assert.match(savedMarkup,/Exported backup files are not deleted/);
  assert.doesNotMatch(guestMarkup,/data-cmd="erase-vault"/,'unsaved guest mode must not advertise vault deletion');
 });
+test('guest privacy journal never describes session-only state as encrypted or offers a vault backup',()=>{
+ const listeners=[],root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(type,handler){if(type==='click')listeners.push(handler);},querySelector(){return null;}};
+ const ui=createInterface(root,{guestMode:()=>true});ui.render(initialState());
+ const dispatch=target=>{for(const listener of listeners)listener({target:{closest(selector){if(selector==='[data-cmd]'&&target.dataset.cmd)return target;if(selector==='[role="tab"][data-tab]'&&target.dataset.tab)return target;return null;}}});};
+ dispatch({dataset:{cmd:'journal'}});dispatch({dataset:{tab:'privacy'}});
+ assert.match(root.innerHTML,/GUEST SESSION · NOT SAVED/);
+ assert.match(root.innerHTML,/not written to an encrypted vault/);
+ assert.match(root.innerHTML,/Guest progress is not saved and has no encrypted backup/);
+ assert.doesNotMatch(root.innerHTML,/DEVICE ONLY · ENCRYPTED|All saves.*AES-256-GCM|data-cmd="export"|data-cmd="import"/);
+});
 test('touch d-pad forwards a captured pointer hold and release to movement controls',()=>{
  const listeners={};const root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(type,handler){listeners[type]=handler;},querySelector(){return null;}};
  const moves=[];createInterface(root,{move:(key,pressed)=>moves.push([key,pressed])});

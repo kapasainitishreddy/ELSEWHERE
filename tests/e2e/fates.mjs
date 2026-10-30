@@ -116,10 +116,30 @@ try{
    const dialogue=await page.locator('#chat-history .chat-line.elder').last().innerText();assert.match(dialogue,recall[fate]);
    const expectedExhibit=`authored:${authoredFocus[fate]}:${fate}`;
    await page.waitForFunction(value=>document.querySelector('#world-canvas canvas')?.dataset.causalExhibit===value,expectedExhibit);
+   const exhibitIdentity=await page.locator('#world-canvas canvas').evaluate(canvas=>({world:canvas.dataset.causalExhibitWorld,branch:canvas.dataset.causalExhibitBranch,draws:Number((document.querySelector('.world-perf-display')?.textContent||'').match(/(\d+) DRAWS/)?.[1])}));
+   assert.equal(exhibitIdentity.world,'self');assert.equal(exhibitIdentity.branch,'prime');
+   assert(exhibitIdentity.draws>0,'the canvas must report rendered scene draws, not only a metadata marker');
    const storyClose=page.locator('.story-panel .sheet-inline-close');
    if(await storyClose.isVisible())await clickUser(storyClose);
    await page.waitForFunction(()=>document.querySelector('.story-panel')?.hasAttribute('inert'));
    await page.screenshot({path:new URL(`fate-${fate}-authored-exhibit.png`,artifacts).pathname});
+   if(fate==='gift'){
+    const sameWorldBaseline=exhibitIdentity.draws;
+    await to('future');
+    await page.waitForFunction(()=>!document.querySelector('#world-canvas canvas')?.dataset.causalExhibit);
+    assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit-world'),null);
+    await to('self');
+    assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit'),null,'returning to the same world cannot retain the disposed exhibit marker');
+    await clickUser(page.locator('.hero-enter'));
+    const eldersBefore=await page.locator('#chat-history .chat-line.elder').count();
+    await page.locator('#chat-question').fill('After returning, what did our gift change?');await clickUser(page.locator('#chat-form button[type="submit"]'));
+    await page.waitForFunction(count=>document.querySelectorAll('#chat-history .chat-line.elder').length>count,eldersBefore);
+    await page.waitForFunction(value=>document.querySelector('#world-canvas canvas')?.dataset.causalExhibit===value,expectedExhibit);
+    await page.waitForFunction(base=>Number((document.querySelector('.world-perf-display')?.textContent||'').match(/(\d+) DRAWS/)?.[1])>base,sameWorldBaseline);
+    assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit-world'),'self');
+    assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit-branch'),'prime');
+    await page.screenshot({path:new URL('fate-gift-authored-exhibit-after-transition.png',artifacts).pathname});
+   }
    assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'fate demo must remain an unsaved guest run');
    assert.deepEqual(pageErrors,[]);assert.deepEqual(httpErrors,[]);assert.deepEqual(external,[]);
    console.log(JSON.stringify({result:'PASS',fate,visualOutcome:headline,sceneDraws:{before:baselineDraws,after:outcomeDraws},groundedDialogue:dialogue.replace(/\s+/g,' ').slice(0,180),authoredExhibit:expectedExhibit,guestVaultUntouched:true,errors:pageErrors,httpErrors,external}));

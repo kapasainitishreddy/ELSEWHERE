@@ -100,7 +100,7 @@ try {
   await clickUser(page.locator('#chat-form button[type="submit"]'));
   await page.locator('#chat-history .chat-line.elder').waitFor({state:'visible',timeout:30000});
   await waitForExhibit('authored:people:none');
-  assert.match(await page.locator('.chat-header').innerText(),/LOCAL · ENCRYPTED/,'offline conversation status must remain explicit');
+  assert.match(await page.locator('.privacy-sigil').innerText(),/GUEST · NOT SAVED/,'guest offline dialogue must not claim an encrypted save');
   assert.match(await page.locator('.chat-note').innerText(),/authored dialogue, no network AI/i,'the offline fallback must be described honestly');
   checkpoint('first authored future-self reply displayed');
   await page.screenshot({path:new URL('future-self-dialogue.png',artifactDir).pathname});

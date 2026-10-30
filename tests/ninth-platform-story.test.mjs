@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,travel,applyAction,askCharacter,dialogueFallback,loadState,SAVE_KEY,worldOptions} from '../src/game.js';
 import {availableChapters,chapterById,activeChapter} from '../src/story.js';
-import {storyCluesFound,storyAfterimage,narrativeOptions,STORY_CLUES} from '../src/story-thread.js';
+import {storyCluesFound,storyClueJournal,storyAfterimage,narrativeOptions,STORY_CLUES} from '../src/story-thread.js';
 const go=(s,w)=>{const r=travel(s,w);assert.equal(r.ok,true,r.error);return r.state};
 const act=(s,id)=>{const r=applyAction(s,id);assert.equal(r.ok,true,`${id}: ${r.error}`);return r.state};
 
@@ -90,13 +90,41 @@ test('clues, conversations and chapter access never leak between Prime and Echo'
  s=act(s,'find-shard');s=go(s,'future');s=act(s,'find-shard');
  s=act(s,'fork-parallel');
  s=act(s,'story-platform');assert.equal(storyCluesFound(s).includes('story-platform'),true);
+ assert.deepEqual(storyClueJournal(s).found.map(c=>c.id),['story-photograph','story-platform']);
+ assert.equal(storyClueJournal(s).branch,'echo');
  s=act(s,'switch-parallel');
  assert.equal(storyCluesFound(s).includes('story-platform'),false);
+ assert.equal(storyClueJournal(s).branch,'prime');
+ assert.equal(storyClueJournal(s).found.some(c=>c.id==='story-platform'),false);
  s=act(s,'story-platform');
  const saved=JSON.stringify(s);
  const reloaded=loadState({getItem:k=>k===SAVE_KEY?saved:null});
  assert.deepEqual(storyCluesFound(reloaded),storyCluesFound(s));
+ assert.deepEqual(storyClueJournal(reloaded),storyClueJournal(s));
  assert.equal(reloaded.parallel.active,'prime');
+});
+
+test('the journal reveals only found clue details and keeps final-chapter prerequisites spoiler-safe',()=>{
+ let s=go(initialState(),'self');
+ const empty=storyClueJournal(s);
+ assert.equal(empty.status,'LOCKED');assert.equal(empty.found.length,0);
+ assert.match(empty.hint,/Choose an invention in 1889/);
+ assert.doesNotMatch(JSON.stringify(empty),/invisible ink|empty seat|sealed black box|timetable/);
+ const credits=s.credits,hours=s.chronal.hours,stars=s.stars;
+ s=act(s,'story-photograph');
+ const one=storyClueJournal(s);
+ assert.deepEqual(one.found.map(c=>({world:c.world,title:c.title})),[{world:'self',title:'The photograph remembers an empty seat'}]);
+ assert.doesNotMatch(JSON.stringify(one),/invisible ink|sealed black box|Platform Nine appears/);
+ assert.equal(one.status,'LOCKED');assert.match(one.hint,/Choose an invention in 1889/);
+ assert.equal(s.credits,credits);assert.equal(s.chronal.hours,hours);assert.equal(s.stars,stars);
+ s=go(s,'past');s=act(s,'story-contract');s=act(s,'invent-cell');s=act(s,'gift');s=go(s,'future');s=act(s,'story-platform');
+ const ready=storyClueJournal(s);
+ assert.equal(ready.status,'READY');assert.equal(ready.ready,true);assert.equal(ready.found.length,3);
+ assert.match(ready.hint,/ready in Neo Elysium/);assert.equal(ready.final,null);
+ s=act(s,'story-unpriced');
+ const revealed=storyClueJournal(s);
+ assert.equal(revealed.status,'REVEALED');assert.match(revealed.final.title,/hour nobody could own/i);
+ assert.deepEqual(storyClueJournal(s),storyClueJournal(s),'inspection remains deterministic and read-only');
 });
 
 test('future self and cast acknowledge the clue only when it was discovered',()=>{
@@ -130,4 +158,17 @@ test('story UI surfaces the clue count and keeps all chapter prose escaped', asy
  assert.match(root.innerHTML,/1 \/ 5 CLUES/);
  assert.match(root.innerHTML,/THREE CLUES AND ONE INVENTION DECISION/);
  assert.equal(root.innerHTML.includes('<script>'),false);
+});
+
+test('timeline mystery tab exposes only discoveries in the active reality and viewing it is read-only',async()=>{
+ const {createInterface}=await import('../src/ui.js');
+ const listeners=[],root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(type,listener){if(type==='click')listeners.push(listener);},querySelector(){return null;}};
+ const ui=createInterface(root,{});let s=go(initialState(),'self');s=act(s,'story-photograph');
+ const snapshot=structuredClone(s);ui.render(s);
+ const dispatch=target=>{for(const listener of listeners)listener({target:{closest(selector){if(selector==='[data-cmd]'&&target.dataset.cmd)return target;if(selector==='[role="tab"][data-tab]'&&target.dataset.tab)return target;return null;}}});};
+ dispatch({dataset:{cmd:'journal'}});dispatch({dataset:{tab:'mystery'}});
+ assert.match(root.innerHTML,/id="timeline-panel" class="timeline-tabpanel" role="tabpanel" aria-labelledby="timeline-tab-mystery"/);
+ assert.match(root.innerHTML,/The photograph remembers an empty seat/);assert.match(root.innerHTML,/DISCOVERED IN The Other You/);
+ assert.match(root.innerHTML,/FINAL INQUIRY LOCKED/);assert.doesNotMatch(root.innerHTML,/invisible ink|sealed black box|Platform Nine appears in the timetable/);
+ assert.deepEqual(ui.getState(),snapshot,'opening the read-only clue journal cannot mutate rewards or story state');
 });

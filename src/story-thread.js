@@ -41,6 +41,29 @@ export const STORY_CHOICES = Object.freeze({
 });
 
 export function storyCluesFound(state){return STORY_CLUES.filter(id=>state?.flags?.[id]);}
+/** Read-only, spoiler-safe journal projection for the current canonical branch. */
+export function storyClueJournal(state){
+  const found=STORY_CLUES.filter(id=>state?.flags?.[id]===true).map(id=>{
+    const choice=STORY_CHOICES[id];
+    return Object.freeze({id,world:choice.world,title:choice.event.title,detail:choice.event.detail});
+  });
+  const hasInvention=['gift','patent','auction'].includes(state?.fate);
+  const revealed=state?.flags?.['story-unpriced']===true;
+  const ready=hasInvention&&found.length>=3;
+  const currentLead=narrativeOptions(state).some(option=>STORY_CLUES.includes(option.id));
+  const hint=revealed
+    ? 'The final inquiry is recorded in this reality.'
+    : ready
+      ? 'The final inquiry is ready in Neo Elysium, whenever you choose to return.'
+      : !hasInvention
+        ? 'Choose an invention in 1889 and discover any three clues to open the final inquiry.'
+        : currentLead
+          ? 'An optional lead is available in the world you are visiting.'
+          : `Discover ${Math.max(0,3-found.length)} more ${3-found.length===1?'clue':'clues'} in any of the five worlds. Unfound details stay hidden.`;
+  const final=revealed?Object.freeze({title:STORY_CHOICES['story-unpriced'].event.title,detail:STORY_CHOICES['story-unpriced'].event.detail}):null;
+  return Object.freeze({branch:state?.parallel?.active==='echo'?'echo':'prime',found:Object.freeze(found),required:3,
+    status:revealed?'REVEALED':ready?'READY':'LOCKED',hasInvention,ready,revealed,hint,final});
+}
 export function narrativeOptions(state){
   return Object.entries(STORY_CHOICES)
     .filter(([id,choice])=>choice.world===state?.world && choice.available(state) && !state.flags?.[id])

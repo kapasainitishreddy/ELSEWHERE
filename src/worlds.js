@@ -885,6 +885,9 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  function mount(next){
    const sameWorld=state?.world===next.world;if(!sameWorld)hasExplored=false;
    const lastPos=playerPos.clone();const lastCamera=camera.position.clone(),lastTarget=controls.target.clone();
+   delete renderer.domElement.dataset.causalExhibit;
+   delete renderer.domElement.dataset.causalExhibitWorld;
+   delete renderer.domElement.dataset.causalExhibitBranch;
    state=next;updateXRWatch();fx?.dispose();physicsStage?.dispose();physicsStage=null;physicsControl.dataset.ready='false';physicsControl.dataset.impulses='0';metaExhibit?.dispose();metaExhibit=null;scene.remove(world);world.traverse(o=>{
      if(o.isInstancedMesh)o.dispose();
      o.geometry?.dispose();
@@ -1082,6 +1085,8 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
    metaExhibit?.dispose();
    metaExhibit=installCausalExhibit(THREE,world,causalExhibitPlan(state,focus,provenance));
    renderer.domElement.dataset.causalExhibit=`${provenance}:${focus}:${state.fate||'none'}`;
+   renderer.domElement.dataset.causalExhibitWorld=state.world;
+   renderer.domElement.dataset.causalExhibitBranch=state.parallel?.active==='echo'?'echo':'prime';
    if(cue==='wonder'||cue==='resolve')setDialogueActivity('delighted',2);
  }
  function setComfort(id){
@@ -1114,6 +1119,6 @@ export function createExperience(container, onWorld, onAction, onOpenStillwater=
  }
  return {mount,resize,effect,interact,setDialogueActivity,reactToDialogue,setMove(code,on){if(on)pressed.add(code);else pressed.delete(code);},setComfort,vrSupported:()=>Boolean(navigator.xr),
    enterVR(){vrButton.click();},
-   dispose(){renderer.setAnimationLoop(null);fx?.dispose();physicsStage?.dispose();metaExhibit?.dispose();delete renderer.domElement.dataset.causalExhibit;xrNote.geometry.dispose();xrNote.material.dispose();noteTexture.dispose();xrWatch.geometry.dispose();xrWatch.material.dispose();watchTexture.dispose();scene.remove(focusReticle);focusReticle.geometry.dispose();focusReticle.material.dispose();renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);window.removeEventListener('blur',onBlur);controls.dispose();renderer.dispose();container.replaceChildren();}
+   dispose(){renderer.setAnimationLoop(null);fx?.dispose();physicsStage?.dispose();metaExhibit?.dispose();delete renderer.domElement.dataset.causalExhibit;delete renderer.domElement.dataset.causalExhibitWorld;delete renderer.domElement.dataset.causalExhibitBranch;xrNote.geometry.dispose();xrNote.material.dispose();noteTexture.dispose();xrWatch.geometry.dispose();xrWatch.material.dispose();watchTexture.dispose();scene.remove(focusReticle);focusReticle.geometry.dispose();focusReticle.material.dispose();renderer.domElement.removeEventListener('click',click);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('resize',resize);window.removeEventListener('blur',onBlur);controls.dispose();renderer.dispose();container.replaceChildren();}
  };
 }

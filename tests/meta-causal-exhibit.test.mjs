@@ -39,21 +39,45 @@ test('offline focus is deterministic and clearly distinguished from a Meta-selec
  }
  assert.equal(authoredCausalFocus({fate:'unknown'}),'people','unknown or unwritten outcomes use the safe authored default');
 });
-test('authored preview builds distinct real 3D forms and disposes each shared resource once',()=>{
- const scene=new THREE.Group();
- const plan=causalExhibitPlan({fate:'gift'},authoredCausalFocus({fate:'gift'}),'authored');
- const exhibit=installCausalExhibit(THREE,scene,plan),root=scene.children[0];
- assert.match(root.name,/AUTHORED PREVIEW/);
- assert.ok(root.children.length>=11,'the offline exhibit must contain its physical platform, people and display forms');
- const geometries=new Set(root.children.map(object=>object.geometry));
- const materials=new Set(root.children.map(object=>object.material));
- const geometryDisposals=new Map(),materialDisposals=new Map();
- for(const geometry of geometries)geometry.addEventListener('dispose',()=>geometryDisposals.set(geometry,(geometryDisposals.get(geometry)||0)+1));
- for(const material of materials)material.addEventListener('dispose',()=>materialDisposals.set(material,(materialDisposals.get(material)||0)+1));
- exhibit.dispose();exhibit.dispose();
- assert.equal(scene.children.length,0);
- assert.ok([...geometryDisposals.values()].every(count=>count===1),'unique exhibit geometries dispose exactly once');
- assert.ok([...materialDisposals.values()].every(count=>count===1),'shared exhibit materials dispose exactly once');
+test('all three authored forms use distinct Three.js meshes and dispose every expected geometry and shared material once',()=>{
+ const cases=[['gift','people'],['patent','infrastructure'],['auction','memory']];
+ for(const [fate,focus] of cases){
+  const scene=new THREE.Group(),plan=causalExhibitPlan({fate},focus,'authored');
+  const exhibit=installCausalExhibit(THREE,scene,plan),root=scene.children[0];
+  assert.match(root.name,/AUTHORED PREVIEW/);
+  assert.equal(root.children.length,11,`${focus} form has a platform, ring and 9 physical detail meshes`);
+  const geometries=new Set(root.children.map(object=>object.geometry));
+  const materials=new Set(root.children.map(object=>object.material));
+  assert.equal(geometries.size,11,'each physical mesh owns one geometry');assert.equal(materials.size,3,'the 11 meshes use exactly three shared materials');
+  const geometryDisposals=new Map(),materialDisposals=new Map();
+  for(const geometry of geometries)geometry.addEventListener('dispose',()=>geometryDisposals.set(geometry,(geometryDisposals.get(geometry)||0)+1));
+  for(const material of materials)material.addEventListener('dispose',()=>materialDisposals.set(material,(materialDisposals.get(material)||0)+1));
+  exhibit.dispose();exhibit.dispose();
+  assert.equal(scene.children.length,0);
+  assert.equal(geometryDisposals.size,geometries.size);assert.ok([...geometryDisposals.values()].every(count=>count===1),'all expected geometries dispose exactly once');
+  assert.equal(materialDisposals.size,materials.size);assert.ok([...materialDisposals.values()].every(count=>count===1),'all shared materials dispose exactly once');
+ }
+});
+test('DOM-capable authored exhibits dispose the expected readable label geometry, material, and texture',()=>{
+ const before=Object.getOwnPropertyDescriptor(globalThis,'document'),labels=[];
+ Object.defineProperty(globalThis,'document',{configurable:true,value:{createElement(tag){
+  assert.equal(tag,'canvas');
+  return{width:0,height:0,getContext(){return{fillRect(){},fillText(text){labels.push(text);}};}};
+ }}});
+ try{
+  for(const [fate,focus] of [['gift','people'],['patent','infrastructure'],['auction','memory']]){
+   const scene=new THREE.Group(),plan=causalExhibitPlan({fate},focus,'authored'),exhibit=installCausalExhibit(THREE,scene,plan),root=scene.children[0];
+   assert.equal(root.children.length,12,'the textured exhibit includes 11 physical forms and one label');
+   const geometries=new Set(root.children.map(object=>object.geometry)),materials=new Set(root.children.map(object=>object.material));
+   const textures=new Set([...materials].map(material=>material.map).filter(Boolean));
+   assert.equal(geometries.size,12);assert.equal(materials.size,4);assert.equal(textures.size,1);
+   const disposed={geometry:new Map(),material:new Map(),texture:new Map()};
+   for(const [items,kind] of [[geometries,'geometry'],[materials,'material'],[textures,'texture']])for(const item of items)item.addEventListener('dispose',()=>disposed[kind].set(item,(disposed[kind].get(item)||0)+1));
+   exhibit.dispose();exhibit.dispose();
+   for(const kind of Object.keys(disposed)){assert.equal(disposed[kind].size,kind==='geometry'?12:kind==='material'?4:1);assert.ok([...disposed[kind].values()].every(count=>count===1),`${kind} resources dispose exactly once`);}
+  }
+  assert.ok(labels.some(text=>text.includes('AUTHORED PREVIEW')));assert.ok(labels.includes('OPEN WORKSHOPS'));assert.ok(labels.includes('PATENTED TOWERS'));assert.ok(labels.includes('AN AUCTION RECORD'));
+ }finally{if(before)Object.defineProperty(globalThis,'document',before);else delete globalThis.document;}
 });
 test('focus flows through consented Meta handler into a reversible scene',()=>{
  const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -63,6 +87,8 @@ test('focus flows through consented Meta handler into a reversible scene',()=>{
  assert.match(main,/reactToDialogue\?\.\(visualCue,visualFocus\)/);
  assert.match(world,/installCausalExhibit\(THREE,world,causalExhibitPlan\(state,focus,provenance\)\)/);
  assert.match(world,/authoredCausalFocus\(state\)/);
+ const mountAt=world.indexOf('function mount(next){'),markerClearAt=world.indexOf('delete renderer.domElement.dataset.causalExhibit;',mountAt),stateMountAt=world.indexOf('state=next;',mountAt);
+ assert(mountAt>=0&&markerClearAt>mountAt&&markerClearAt<stateMountAt,'world mount clears rendered-exhibit metadata before rebuilding another world or branch');
  assert.match(world,/metaExhibit\?\.dispose\(\)/);
  assert.doesNotMatch(main,/if\(physicsPreview\)ui\.enterSandbox\(\);toast\('Remote conversations disabled/);
 });
