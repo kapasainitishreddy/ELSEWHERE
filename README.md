@@ -36,6 +36,8 @@ In this managed container, the default npm cache path was absent. The clean inst
 
 **External gates remain open:** no live Meta inference (the local mock is not Meta proof), public HTTPS preview/API, real demo video, current official eligibility confirmation, Quest/phone hardware run, screen-reader audit, human research, or submission. SwiftShader output is not hardware performance evidence. Do not describe this prototype as submission-ready.
 
+**Combat flow rechecked 2026-10-30:** Full Warden and Mech browser recovery journeys passed on Chromium 154 with SwiftShader after the responsive combat HUD change. The Mech path covered defeat, reboot, victory, exit/re-entry and the single-use mission reward. See [latest QA evidence](docs/QA_EVIDENCE_CURRENT.md). The current official page evidence and unresolved rule/score-weight gaps are recorded in [hackathon readiness](docs/HACKATHON_READINESS_CURRENT.md); historical score weights are not treated as current rules.
+
 For setup and first-run instructions, see [Run it](#run-it). The current playable worlds and controls are documented later in this README. The complete feature status is in the [feature ledger](docs/FEATURE_LEDGER.csv).
 
 ## Historical release notes

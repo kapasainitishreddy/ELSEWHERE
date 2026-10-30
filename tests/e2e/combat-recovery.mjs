@@ -16,8 +16,8 @@ assert(!layoutOnly||onlyCombat==='','layout-only mode cannot be combined with EL
 const vite=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(port),'--strictPort'],{cwd:root,stdio:'ignore',env:process.env});
 const config=await mkdtemp(join(tmpdir(),'elsewhere-combat-config-')),cache=await mkdtemp(join(tmpdir(),'elsewhere-combat-cache-'));
 let browser;
-const clickUser=async(page,locator)=>{
- await locator.scrollIntoViewIfNeeded();
+const clickUser=async(page,locator,{scroll=true}={})=>{
+ if(scroll)await locator.scrollIntoViewIfNeeded();
  const point=await locator.evaluate(node=>{const r=node.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);return{x,y,visible:r.width>0&&r.height>0&&getComputedStyle(node).visibility!=='hidden',enabled:!('disabled'in node&&node.disabled),hitWithin:!!hit&&(hit===node||node.contains(hit)),hit:hit?`${hit.tagName}.${typeof hit.className==='string'?hit.className:String(hit.className)}#${hit.id}`:null};});
  assert(point.visible&&point.enabled&&point.hitWithin,`user click must hit a visible control: ${JSON.stringify(point)}`);
  await page.mouse.click(point.x,point.y);
@@ -42,7 +42,7 @@ try{
   await page.waitForFunction(id=>document.querySelector('#app-ui')?.dataset.world===id,world);
  };
  const enter=async()=>{const target=page.locator('.hero-enter');if(await target.isVisible())await clickUser(page,target);};
- const choose=async id=>{const target=page.locator(`.choice-list [data-action="${id}"]`);await target.evaluate(node=>{const panel=node.closest('.story-panel');if(!panel)return;const row=node.getBoundingClientRect(),sheet=panel.getBoundingClientRect(),clearance=Math.max(90,(panel.clientHeight-row.height)/2);panel.scrollTop=Math.max(0,panel.scrollTop+row.top-sheet.top-clearance);});await clickUser(page,target);};
+ const choose=async id=>{const target=page.locator(`.choice-list [data-action="${id}"]`);await target.evaluate(node=>{const panel=node.closest('.story-panel');if(!panel)return;const row=node.getBoundingClientRect(),sheet=panel.getBoundingClientRect(),clearance=Math.max(90,(panel.clientHeight-row.height)/2);panel.scrollTop=Math.max(0,panel.scrollTop+row.top-sheet.top-clearance);});await clickUser(page,target,{scroll:false});};
  const combatButton=async id=>clickUser(page,page.locator(`.quick-combat [data-action="${id}"]`));
  const readPanel=()=>page.locator('.story-panel').innerText();
  const inspectCombatLayout=async label=>{
