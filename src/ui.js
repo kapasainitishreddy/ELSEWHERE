@@ -3,6 +3,7 @@ import {COMPASS_FOCI} from './compass.js';
 import { WORLDS, INVENTIONS, futureProfile, worldOptions, cityRipple, sealClue, echoMap, SHARD_NAMES, RUNES, applyAction } from './game.js';
 import { availableChapters, chapterById, activeChapter } from './story.js';
 import {storyCluesFound,storyClueJournal} from './story-thread.js';
+import {privacyIndicator} from './session-labels.js';
 import { worldDossier } from './characters.js';
 import {createStillwaterSession,progressStillwater} from './stillwater.js';
 import {renderStillwaterDialog} from './stillwater-ui.js';
@@ -77,9 +78,10 @@ export function createInterface(root, handlers){
     const w=WORLDS[state.world], p=worldPreview[state.world], future=futureProfile(state), ripple=cityRipple(state), activeStory=activeChapter(state);
     const chapters=availableChapters(state),chosenChapter=chapterById(state,selectedChapter)||activeStory;
     const passage=firstCrossing(state),receipt=crossingReceipt(state),clues=storyCluesFound(state),mystery=storyClueJournal(state);
-    const guestSession=Boolean(handlers.guestMode?.()),cloudSession=Boolean(handlers.cloudEnabled?.());
+    const guestSession=Boolean(handlers.guestMode?.()),cloudSession=Boolean(handlers.cloudEnabled?.()),localAiSession=Boolean(handlers.localAiEnabled?.());
+    const sessionPrivacyLabel=privacyIndicator({guestMode:guestSession,cloudEnabled:cloudSession,localAiEnabled:localAiSession});
     const privacyPanelMarkup=guestSession
-      ? `<div class="future-box"><span class="eyebrow">THE PRIVATE LAYER</span><strong>GUEST SESSION · NOT SAVED</strong><p>This guest timeline exists only in the current session. It is not written to an encrypted vault and will be lost when you leave. No local save is created in guest mode.</p></div>`
+      ? `<div class="future-box"><span class="eyebrow">THE PRIVATE LAYER</span><strong>${esc(sessionPrivacyLabel)}</strong><p>This guest timeline exists only in the current session. It is not written to an encrypted vault and will be lost when you leave. ${cloudSession?'Because Meta cloud is enabled, each submitted question and allowlisted fictional context leave this device; the guest timeline and its other private content are not sent.':'No local save is created in guest mode, and authored dialogue makes no network request.'}</p></div>`
       : `<div class="future-box"><span class="eyebrow">THE PRIVATE LAYER</span><strong>${cloudSession?'ENCRYPTED SAVE · META QUESTIONS LEAVE DEVICE':'DEVICE ONLY · ENCRYPTED'}</strong><p>Your saved game, letters, NPC memories and story history are encrypted in this browser vault with a passphrase-derived key. ${cloudSession?'After your consent, selected typed questions and allowlisted fictional context are sent to the Meta service; the vault itself is not sent.':'No account, tracking, default upload or cloud sync. Your passphrase is not recoverable by Syrava.'}</p></div>`;
     const persistenceHelp=guestSession?'Guest progress exists only in this session and is not saved. To keep choices between visits, create or unlock a private encrypted vault.':'Your choices and game progress are saved in your encrypted local vault. Exported backups require your passphrase to restore.';
     const causality=causalWorldAudit(state),comparison=compareParallelWorlds(state),previews=previewFates(state,applyAction);
@@ -95,7 +97,7 @@ export function createInterface(root, handlers){
       <div class="world-wash world-wash-${esc(state.world)}" aria-hidden="true"></div>
       <div class="grain" aria-hidden="true"></div><div class="edge-shade" aria-hidden="true"></div>
       <div class="combat-reticle" aria-hidden="true"><span class="reticle-corner n"></span><span class="reticle-corner e"></span><span class="reticle-corner s"></span><span class="reticle-corner w"></span><span class="reticle-center"></span><small>TARGET LOCK // SPACE TO STRIKE · Q TO GUARD</small></div>
-      <div class="privacy-sigil" aria-label="${handlers.guestMode?.()?'Guest demo; progress is not saved':handlers.cloudEnabled?.()?'Cloud dialogue active, selected text is transmitted':'Local encrypted game mode'}">${glyph('lock-keyhole')}<span>${handlers.guestMode?.()?'GUEST · NOT SAVED':handlers.cloudEnabled?.()?'META CLOUD · TEXT LEAVES DEVICE':handlers.localAiEnabled?.()?'ON-DEVICE MODEL · LOCAL ONLY':'PRIVATE LOCAL WORLD'}</span></div>
+      <div class="privacy-sigil" aria-label="${esc(sessionPrivacyLabel)}">${glyph('lock-keyhole')}<span>${esc(sessionPrivacyLabel)}</span></div>
       ${storyOpen||atlasOpen?'<button type="button" class="world-sheet-scrim" data-cmd="close-world-sheets" aria-label="Close panel"></button>':''}
       <header class="topbar">
         <button class="brand" type="button" data-cmd="atlas-toggle" aria-label="Open world atlas" aria-expanded="${atlasOpen}"><span class="brand-glyph">${glyph('orbit')}</span><span class="brand-type">ELSEWHERE<span class="brand-caption">YOUR UNWRITTEN UNIVERSE</span></span></button>

@@ -18,6 +18,7 @@
     "test:e2e:combat-recovery": "node tests/e2e/combat-recovery.mjs",
     "test:e2e:backup-recovery": "node tests/e2e/backup-recovery.mjs",
     "test:e2e:accessibility": "node tests/e2e/accessibility-journey.mjs",
+    "demo:record:authored": "node tools/demo/record-authored.mjs",
     "check": "npm run test && npm run build",
     "dev:api": "node server.mjs",
     "dev:meta": "node scripts/dev.mjs",

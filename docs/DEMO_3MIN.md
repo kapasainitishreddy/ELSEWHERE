@@ -1,6 +1,6 @@
 # ELSEWHERE — three-minute demo shot list (v1.4)
 
-**Status: shot list only; NOT RECORDED.** This is not a completed competition demo or an eligibility claim. Show real running gameplay, use synthetic data, and do not substitute concept art or generated imagery for the running application. Use the provenance comparison in `docs/HACKATHON_NEW_WORK_PROVENANCE.md`; timestamps alone do not establish eligible work.
+**Status: shot list plus a local rehearsal capture; NOT A SUBMISSION VIDEO.** A 119-second authored-offline browser capture exists under ignored `review-output/demo-local/elsewhere-authored-offline.mp4`. Its observed frame cadence is only about 0.73 fps, so it is choppy and not suitable as polished submission footage. It is not public, does not demonstrate live Meta, and does not establish event eligibility. See [the local demo runbook](DEMO_RUNBOOK_LOCAL.md) for exact capture and validation details. Use synthetic data, and do not substitute concept art or generated imagery for running gameplay. Use the provenance comparison in `docs/HACKATHON_NEW_WORK_PROVENANCE.md`; timestamps alone do not establish eligible work.
 
 | Time | What judges see | Why it matters |
 | --- | --- | --- |
@@ -18,8 +18,8 @@
 
 **Meta gate:** The current run has only mocked API contract tests and authored offline dialogue. Do not call this a Meta-powered demo or submit it as clearing Stage One. Replace the authored-preview segment only after an explicitly authorized, successful live synthetic request and capture the actual user-facing behavior. A live handler call alone still does not prove a public deployment works.
 
-**Recording:** `ffmpeg` 7.1.5 and system Chromium are installed, but no clip has been recorded. The recorded Chromium performance used SwiftShader and measured about 4 FPS, so this plan avoids treating that capture environment as polished footage or a hardware benchmark. No video is claimed complete.
+**Recording:** `npm run demo:record:authored` records an actual local Chromium journey using CDP frames and system `ffmpeg`. The existing clip was captured at 1280×720 in Chromium 154 with SwiftShader. It contains the recording-only label `LOCAL CAPTURE · AUTHORED OFFLINE · META DISABLED`; the label is not an in-game feature. `ffprobe` confirmed H.264, 1280×720, 119.16 seconds, 1,762,745 bytes. Chromium produced 87 frames (about 0.73 fps), which is visibly choppy. Treat it only as a reproducible local rehearsal and frame-review artifact, not the three-minute target video, a live Meta demonstration, hardware benchmark, or published deliverable. The capture recorded zero Meta requests, off-origin requests, page errors, console errors, HTTP errors, and guest vault writes. Three extracted frames were inspected at 1889, the 2087 consequence, and the beginning state; see the runbook. The earlier ~4 FPS sample is from a separate app sampler and is not the MP4 cadence.
 
 **Avoid:** “we cure depression”, “increase dopamine”, “predict your future”, “all your data is private even when Meta is enabled”, “live Meta” for mocked output, “Quest-tested” without a device, “production ready” without a verified deployment, or copying protected character designs.
 
-**Before recording:** run `npm run submission:check` and document which manual gates were actually passed. Follow the official guide for the exact submission endpoint and mandatory fields. Do not assume posting a video alone constitutes entry.
+**Before a final recording:** run `npm run submission:check` and document which manual gates were actually passed. Follow the official guide for the exact submission endpoint and mandatory fields. The current rules page and final rubric were not verified; do not assume posting a video alone constitutes entry.

@@ -93,7 +93,7 @@ try{
  }
 
  if(selected.includes('vault-cloud')){
-  const {context,page}=await makePage();let metaRequests=0,postedBody;
+  const {context,page}=await makePage();let metaRequests=0,localRequests=0,postedBody;
   try{
    page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')metaRequests++;});
    await page.goto(origin,{waitUntil:'networkidle'});await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();
@@ -146,14 +146,27 @@ try{
    await page.locator('#chat-question').fill('What changed in our possible future?');await page.locator('#chat-form button[type="submit"]').click();
    await page.locator('#chat-history .chat-line.elder').waitFor();assert.equal(metaRequests,callsBefore,'Meta disabled must produce zero API requests');
    console.log('vault-cloud: authored offline reply made zero Meta requests');
+   await page.route('**/api/local-dialogue/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({mode:'device-only',ready:true})}));
+   await page.route('**/api/local-dialogue',async route=>{localRequests++;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify('In another possible future, a small choice changes how the city is shared.')});});
+   await clickUser(page,page.locator('[data-cmd="local-ai-toggle"]'));
+   await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('ON-DEVICE MODEL'));
+   assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'ON-DEVICE MODEL · LOCAL ONLY');
+   await page.locator('#chat-question').fill('How might this city change?');await page.locator('#chat-form button[type="submit"]').click();
+   await page.locator('#chat-history .chat-line.elder').nth(1).waitFor();assert.equal(localRequests,1);
+   assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · ENCRYPTED SAVE');
+   await clickUser(page,page.locator('[data-cmd="local-ai-toggle"]'));
+   console.log('vault-cloud: mocked on-device reply header says encrypted save; no remote request');
    await page.route('**/api/character',async route=>{
     postedBody=route.request().postDataJSON();
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'The invention we shared supports a network of public workshops.',cue:'wonder',focus:'memory'})});
    });
    page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
    assert.match(await page.locator('.privacy-sigil').innerText(),/META CLOUD/);
+   assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD ENABLED · ENCRYPTED SAVE');
    await page.locator('#chat-question').fill('Tell me what became of the invention we shared.');await page.locator('#chat-form button[type="submit"]').click();
-   await page.locator('#chat-history .chat-line.elder').nth(1).waitFor();assert.equal(metaRequests,1);
+   await page.locator('#chat-history .chat-line.elder').nth(2).waitFor();assert.equal(metaRequests,1);
+   assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD RESPONSE · ENCRYPTED SAVE','saved-vault reply header must name both its transport and encrypted persistence');
+   assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'META CLOUD · TEXT LEAVES DEVICE');
    await page.waitForFunction(()=>document.querySelector('#world-canvas canvas')?.dataset.causalExhibit==='meta:memory:gift');
    assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit-world'),'self');
    assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit-branch'),'prime');
@@ -283,16 +296,32 @@ try{
  }
 
  if(selected.includes('guest-reset')){
-  const {context,page}=await makePage();let calls=0;page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')calls++;});
+  const {context,page}=await makePage();let calls=0,localCalls=0;page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')calls++;});
   try{
    await startGuest(page);await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
+   await page.route('**/api/local-dialogue/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({mode:'device-only',ready:true})}));
+   await page.route('**/api/local-dialogue',async route=>{localCalls++;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify('The city remains an imagined possibility; no invention choice has been made yet.')});});
+   await page.locator('[data-cmd="local-ai-toggle"]').click();
+   await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('ON-DEVICE MODEL'));
+   assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · ON-DEVICE MODEL');
+   assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · GUEST · NOT SAVED');
+   await page.locator('#chat-question').fill('What might this city become?');await page.locator('#chat-form button[type="submit"]').click();
+   await page.locator('#chat-history .chat-line.elder').waitFor();
+   assert.equal(localCalls,1);assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · GUEST · NOT SAVED');
+   await page.locator('[data-cmd="local-ai-toggle"]').click();
+   await page.route('**/api/character',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'This world has no chosen outcome so far; you can still decide what the discovery means.',cue:'quiet',focus:'people'})}));
    page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
-   assert.match(await page.locator('.privacy-sigil').innerText(),/META CLOUD/);
+   assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · META TEXT LEAVES DEVICE');
+   assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD ENABLED · GUEST · NOT SAVED');
+   await page.locator('#chat-question').fill('What might happen in this possible city?');await page.locator('#chat-form button[type="submit"]').click();
+   await page.locator('#chat-history .chat-line.elder').nth(1).waitFor();
+   assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD RESPONSE · GUEST · NOT SAVED');
+   assert.equal(calls,1,'the mock route, not a live provider, receives the consented synthetic guest question');
    await page.locator('[data-cmd="journal"]').click();page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="reset"]').click();
    assert.match(await page.locator('.privacy-sigil').innerText(),/GUEST · NOT SAVED/);
-   assert.equal(calls,0);assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null);
    assert.doesNotMatch(await page.locator('body').innerText(),/META CLOUD · TEXT LEAVES DEVICE/);
-   console.log(JSON.stringify({result:'PASS',scenario:'guest restart revoked consent, stayed unsaved, zero Meta requests'}));
+   console.log(JSON.stringify({result:'PASS',scenario:'guest offline, mocked on-device, mocked Meta and reset report true storage/transport labels; reset revokes consent and preserves guest no-save behavior',localModelMocks:localCalls,metaMocks:calls}));
   }finally{try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}await Promise.race([context.close(),delay(5000)]);}
  }
  assert.deepEqual(errors,[],'browser page or console errors');assert.deepEqual(httpErrors,[],'HTTP errors');assert.deepEqual(external,[],'off-origin requests');

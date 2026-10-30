@@ -18,6 +18,7 @@ import {isLoopbackHostname,localCharacterRequest,sanitizeLocalReply,LOCAL_AI_PAT
 import {storyCueFor,safeSceneCue,safeSceneFocus} from './scene-director.js';
 import {reviewGeneratedCharacterReply} from './conversation-coherence.js';
 import {updateMemoryCards} from './memory-cards.js';
+import {dialogueStatus} from './session-labels.js';
 
 const storage=window.localStorage;
 const vault=createLocalVault(storage);
@@ -147,7 +148,7 @@ async function localNpcReply(snapshot,id,question){
  }finally{clearTimeout(timer);pendingLocalRequests.delete(controller);}
 }
 async function toggleLocalAi(){
- if(localAiEnabled){invalidateOptionalInference();localAiEnabled=false;ui.render(state);ui.updateStatus('LOCAL · AUTHORED');toast('On-device language model disabled.');return;}
+ if(localAiEnabled){invalidateOptionalInference();localAiEnabled=false;ui.render(state);ui.updateStatus(dialogueStatus({guestMode,source:'authored'}));toast('On-device language model disabled.');return;}
  if(!onLocalMachine){toast('On-device AI can only be enabled from a local computer-hosted game.',false);return;}
  const epoch=sessionEpoch;
  // Read a non-private health endpoint first. No player content is sent here.
@@ -157,21 +158,21 @@ async function toggleLocalAi(){
   if(!response.ok||data.mode!=='device-only')throw new Error('Not running');
  }catch{toast('Start Ollama and run npm run dev:local-ai to unlock private generative dialogue.',false);return;}
  if(!started||sessionEpoch!==epoch)return;
- invalidateOptionalInference();localAiEnabled=true;cloudEnabled=false;ui.render(state);ui.updateStatus('ON-DEVICE AI · NO CLOUD');
+ invalidateOptionalInference();localAiEnabled=true;cloudEnabled=false;ui.render(state);ui.updateStatus(dialogueStatus({guestMode,source:'local-model'}));
  toast('Local model selected. Conversations stay on this computer.');
 }
 async function ask(question){
  // Local authored dialogue by default. Consent never survives a reload or vault lock.
  privateSpeech.stop();stopDictation();experience?.setDialogueActivity?.('listening');
- let reply=dialogueFallback(state,question), mode='LOCAL · ENCRYPTED';
+ let reply=dialogueFallback(state,question), mode=dialogueStatus({guestMode,source:'authored'});
  let visualCue=storyCueFor(question,state.world),visualFocus=null;
  const before=state, epoch=sessionEpoch;
  if(isUrgentSafetyMessage(question)){
-  mode='PRIVATE · SUPPORT INFORMATION';
+  mode=dialogueStatus({guestMode,source:'support'});
  }else if(localAiEnabled){
   const local=await localNpcReply(before,'elder',question);
   if(!started||sessionEpoch!==epoch||state!==before){toast('World changed. Old dialogue was discarded.',false);return;}
-  if(local){reply=local;mode='ON-DEVICE AI · ENCRYPTED SAVE';}else mode='LOCAL · AUTHORED FALLBACK';
+  if(local){reply=local;mode=dialogueStatus({guestMode,source:'local-model'});}else mode=dialogueStatus({guestMode,source:'authored'});
  }else if(cloudEnabled){
   mode='META REQUEST ATTEMPTED';
   try{
@@ -189,10 +190,10 @@ async function ask(question){
     if(!res.ok)throw new Error('Provider unavailable');
     const data=await res.json();if(typeof data?.reply!=='string'||!data.reply.trim())throw new Error('No AI dialogue');
     const safe=reviewGeneratedCharacterReply(before,'elder',data.reply);if(!safe.ok)throw new Error('Unreliable or repetitive generated claim');
-    reply=safe.reply;visualCue=safeSceneCue(data.cue,visualCue);visualFocus=safeSceneFocus(data.focus);mode='META · CLOUD RESPONSE';
+    reply=safe.reply;visualCue=safeSceneCue(data.cue,visualCue);visualFocus=safeSceneFocus(data.focus);mode=dialogueStatus({guestMode,source:'meta-response'});
    }finally{clearTimeout(timer);pendingCloudRequests.delete(controller);}
   }catch{
-   mode='META ATTEMPTED · LOCAL FALLBACK';
+   mode=dialogueStatus({guestMode,source:'meta-fallback'});
    toast('Meta unavailable. Continuing with local dialogue. A remote request may have been attempted.',false);
   }
  }
@@ -207,7 +208,7 @@ function toggleCloud(){
   toast('Remote conversations disabled.');return;}
  if(!window.confirm('Optional CLOUD MODE: Each submitted question and a small fictional game summary will be sent to Meta Model API. This is NOT completely local. Your passphrase, future letter, encrypted save, other timeline, and NPC memories will NOT be sent. Enable until you lock or reload?'))return;
  invalidateOptionalInference();
- cloudEnabled=true;localAiEnabled=false;ui.render(state);ui.updateStatus('META OPT-IN · CLOUD');toast('Cloud conversation is now enabled. Type only what you want to send.');
+ cloudEnabled=true;localAiEnabled=false;ui.render(state);ui.updateStatus(dialogueStatus({guestMode,source:'meta-enabled'}));toast('Cloud conversation is now enabled. Type only what you want to send.');
 }
 async function npcAsk(person,question){
  const before=state,epoch=sessionEpoch;
@@ -216,7 +217,7 @@ async function npcAsk(person,question){
  const answer=askCharacter(state,person,question,reply);
  if(!answer.ok){toast(answer.error,false);return;}
  publish(answer.state);
- ui.updateStatus(reply?'ON-DEVICE NPC · ENCRYPTED SAVE':'LOCAL · AUTHORED NPC');
+ ui.updateStatus(dialogueStatus({guestMode,source:reply?'local-model':'authored'}));
 }
 function forgetConversation(){
  stopPresence();
