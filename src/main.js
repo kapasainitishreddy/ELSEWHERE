@@ -221,9 +221,12 @@ async function npcAsk(person,question){
 }
 function forgetConversation(){
  stopPresence();
- if(!window.confirm('Erase the future-self conversation in this reality? An old encrypted export may still contain it.'))return;
+ const confirmMessage=guestMode
+  ?'Erase the future-self conversation from this unsaved guest session? It will be lost when you leave.'
+  :'Erase the future-self conversation in this reality? A previously exported encrypted backup may still contain it.';
+ if(!window.confirm(confirmMessage))return;
  state={...state,conversation:[],revision:state.revision+1};
- void persist();ui.render(state);toast('Conversation erased from the active encrypted timeline.');
+ void persist();ui.render(state);toast(guestMode?'Conversation erased from this unsaved guest session.':'Conversation erased from this reality’s encrypted local save.');
 }
 function compassAction(type,data={}){
  const result=updateCompass(state,type,data);

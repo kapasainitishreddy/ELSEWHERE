@@ -56,7 +56,7 @@ export function storyClueJournal(state){
     : ready
       ? 'The final inquiry is ready in Neo Elysium, whenever you choose to return.'
       : !hasInvention
-        ? 'Choose an invention in 1889 and discover any three clues to open the final inquiry.'
+        ? 'Build an invention in 1889, decide who owns it, and discover any three clues to open the final inquiry.'
         : currentLead
           ? 'An optional lead is available in the world you are visiting.'
           : `Discover ${Math.max(0,3-found.length)} more ${3-found.length===1?'clue':'clues'} in any of the five worlds. Unfound details stay hidden.`;

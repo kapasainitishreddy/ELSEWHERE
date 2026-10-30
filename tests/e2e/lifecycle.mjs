@@ -308,13 +308,17 @@ try{
    await page.locator('#chat-question').fill('What might this city become?');await page.locator('#chat-form button[type="submit"]').click();
    await page.locator('#chat-history .chat-line.elder').waitFor();
    assert.equal(localCalls,1);assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · GUEST · NOT SAVED');
+   let guestErasePrompt='';page.once('dialog',async dialog=>{guestErasePrompt=dialog.message();await dialog.accept();});
+   await clickUser(page,page.locator('[data-cmd="forget-conversation"]'));
+   assert.match(guestErasePrompt,/unsaved guest session/i);
+   assert.match(await page.locator('.toast').innerText(),/erased from this unsaved guest session/i);
    await page.locator('[data-cmd="local-ai-toggle"]').click();
    await page.route('**/api/character',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'This world has no chosen outcome so far; you can still decide what the discovery means.',cue:'quiet',focus:'people'})}));
    page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
    assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · META TEXT LEAVES DEVICE');
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD ENABLED · GUEST · NOT SAVED');
    await page.locator('#chat-question').fill('What might happen in this possible city?');await page.locator('#chat-form button[type="submit"]').click();
-   await page.locator('#chat-history .chat-line.elder').nth(1).waitFor();
+   await page.locator('#chat-history .chat-line.elder').waitFor();
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD RESPONSE · GUEST · NOT SAVED');
    assert.equal(calls,1,'the mock route, not a live provider, receives the consented synthetic guest question');
    await page.locator('[data-cmd="journal"]').click();page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="reset"]').click();

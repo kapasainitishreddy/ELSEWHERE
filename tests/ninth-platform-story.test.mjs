@@ -108,14 +108,14 @@ test('the journal reveals only found clue details and keeps final-chapter prereq
  let s=go(initialState(),'self');
  const empty=storyClueJournal(s);
  assert.equal(empty.status,'LOCKED');assert.equal(empty.found.length,0);
- assert.match(empty.hint,/Choose an invention in 1889/);
+ assert.match(empty.hint,/Build an invention in 1889, decide who owns it/);
  assert.doesNotMatch(JSON.stringify(empty),/invisible ink|empty seat|sealed black box|timetable/);
  const credits=s.credits,hours=s.chronal.hours,stars=s.stars;
  s=act(s,'story-photograph');
  const one=storyClueJournal(s);
  assert.deepEqual(one.found.map(c=>({world:c.world,title:c.title})),[{world:'self',title:'The photograph remembers an empty seat'}]);
  assert.doesNotMatch(JSON.stringify(one),/invisible ink|sealed black box|Platform Nine appears/);
- assert.equal(one.status,'LOCKED');assert.match(one.hint,/Choose an invention in 1889/);
+ assert.equal(one.status,'LOCKED');assert.match(one.hint,/Build an invention in 1889, decide who owns it/);
  assert.equal(s.credits,credits);assert.equal(s.chronal.hours,hours);assert.equal(s.stars,stars);
  s=go(s,'past');s=act(s,'story-contract');s=act(s,'invent-cell');s=act(s,'gift');s=go(s,'future');s=act(s,'story-platform');
  const ready=storyClueJournal(s);
