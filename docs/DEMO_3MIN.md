@@ -10,7 +10,7 @@
 | 01:00–01:25 | Return to 2087. Show the public-workshop environment and its deterministic causal receipt. | A visible consequence grounded in game state |
 | 01:25–01:45 | Re-enter the future-self conversation and show accurate recall of the Aether Cell gift. | State-grounded narrative continuity |
 | 01:45–02:10 | Compare the real captured gift, patent and auction receipts from separate verified browser sessions. Label them as browser captures if shown as stills; do not imply this is one continuous playthrough. | Replayability and three distinct outcomes |
-| 02:10–02:32 | Show the causal exhibit as **AUTHORED PREVIEW · META DISABLED** (a clearly identified video overlay; do not imply the current app renders that label). Explain that mocked output is not live model evidence. Do not present mock output as a Meta response. | Explain the model/state boundary without overstating proof |
+| 02:10–02:32 | Show the app's actual **AUTHORED PREVIEW** causal-exhibit label. The recorder may retain its separate `LOCAL CAPTURE · AUTHORED OFFLINE · META DISABLED` overlay. Explain that mocked output is not live model evidence; do not present a mock response as a Meta response. | Explain the model/state boundary without overstating proof |
 | 02:32–02:48 | Show the lock screen and source proof for bounded save/consent cleanup. Never show a passphrase, private letter or real personal text. | Privacy and implementation evidence |
 | 02:48–03:00 | Factual end card: repository, verified local test counts, intended user, and “public demo URL pending.” | Close honestly without claiming a public release |
 
@@ -22,4 +22,15 @@
 
 **Avoid:** “we cure depression”, “increase dopamine”, “predict your future”, “all your data is private even when Meta is enabled”, “live Meta” for mocked output, “Quest-tested” without a device, “production ready” without a verified deployment, or copying protected character designs.
 
-**Before a final recording:** run `npm run submission:check` and document which manual gates were actually passed. Follow the official guide for the exact submission endpoint and mandatory fields. The current rules page and final rubric were not verified; do not assume posting a video alone constitutes entry.
+## Contribution mapping for the proposed edit
+
+The owner-supplied participant guide (2026-10-31) calls for a public repository and a three-minute demo highlighting only work created during the hackathon, with new contributions clearly identified. The Git baseline and current diff are recorded in [the provenance manifest](HACKATHON_NEW_WORK_PROVENANCE.md); commit dates and diff size alone do not prove event-period authorship or eligibility. Use this mapping as an editing aid, not an eligibility determination:
+
+| Demo beat | Candidate work to show | Existing foundations to disclose | Proof and limit |
+| --- | --- | --- | --- |
+| Guest entry and movement | Unsaved first-run path and onboarding controls (`src/main.js`, `src/ui.js`, E2E browser runs) | Five-world 3D game and save foundation predate the measured baseline | Chromium/browser proof only; no physical phone/Quest or human study. |
+| 1889 choice to 2087 consequence | Choice receipts, outcome landmarks, and gift/patent/auction state (`src/game.js`, `src/future-outcomes.js`, `src/causal-proof.js`) | The base game and authored worlds are inherited work | Three-fate tests prove behavior in synthetic sessions, not eligibility or impact. |
+| Future-self recall and exhibit | Grounded authored dialogue/exhibit and Meta response boundary (`src/future-dialogue.js`, `src/causal-exhibit.js`, `src/scene-director.js`) | Original Meta bridge existed in the baseline | Show only `AUTHORED PREVIEW` in this rehearsal; mocks are not a live Meta call. |
+| Privacy/recovery and technical proof | Recent gate, consent, encrypted-save and interrupted-request tests (`src/vault.js`, `src/main.js`, `tests/e2e/lifecycle.mjs`) | Local encryption and consent boundaries partly predate this task | Test logs are current local evidence; no deployment, independent audit, or eligibility ruling. |
+
+**Before a final recording:** run `npm run submission:check`, capture the actual gameplay continuously at a usable cadence, and document which manual gates were actually passed. The supplied participant guide states the three-minute video requirement. The official judging weights are recorded separately in [readiness](HACKATHON_READINESS_CURRENT.md); exact portal fields and other entrant requirements have not been inspected. Do not infer that a video alone constitutes an entry, or claim any inherited feature as new event work without confirming the contribution record.

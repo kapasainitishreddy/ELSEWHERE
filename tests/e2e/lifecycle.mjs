@@ -22,7 +22,7 @@ try{
  const executablePath=process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined);
  const launchOptions={executablePath,headless:true,env:{...process.env,XDG_CONFIG_HOME:process.env.XDG_CONFIG_HOME||chromiumConfig,XDG_CACHE_HOME:process.env.XDG_CACHE_HOME||chromiumCache},args:['--no-sandbox','--disable-dev-shm-usage','--disable-breakpad','--disable-crash-reporter','--use-angle=swiftshader','--enable-webgl','--enable-unsafe-swiftshader']};
  browserServer=await chromium.launchServer(launchOptions);browser=await chromium.connect(browserServer.wsEndpoint());
- const selected=(process.env.ELSEWHERE_LIFECYCLE||'physics,vault-cloud,guest-reset').split(',');
+ const selected=(process.env.ELSEWHERE_LIFECYCLE||'physics,vault-cloud,guest-reset,gate-race').split(',');
  const errors=[],httpErrors=[],external=[];
  const makePage=async()=>{
   const context=await browser.newContext({viewport:{width:900,height:650},deviceScaleFactor:1});
