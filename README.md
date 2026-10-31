@@ -15,7 +15,7 @@ Verified local behavior includes:
 - Actual Rapier physics props that settle and stay within the tested collider cage through a ten-minute fixed-step simulation.
 - Locally authored causal exhibits derived from saved fictional outcomes; Meta direction is opt-in and the browser/API contract has mock coverage only.
 - Dialogue and privacy labels distinguish unsaved guest, encrypted-vault, on-device-model, and Meta transport states; local mock lifecycle coverage checks these modes.
-- Keyboard dialogue submission disables duplicate sends while pending, announces runtime/save status through a polite live region, and restores focus to the question field after the response.
+- Keyboard dialogue submission disables duplicate sends while pending, exposes the busy and polite status in Chromium’s accessibility tree, and restores focus to the question field after the response.
 - AES-GCM local saves, lock/reload/unlock, encrypted backup download, canceled replacement, malformed-file rejection and file-picker restore.
 - Keyboard entry and combat controls; a selected 200% viewport/scale emulation, visible focus, one primary-action contrast check and reduced-motion behavior.
 - Entering combat clears the opening-story overlay and collapses the long story sheet; a compact one-row HUD keeps attack, story and portal-atlas controls reachable. Story text remains available in a bounded scroll panel. The physics-sandbox button sits beside the scene and is hidden during combat; the movement prompt stays above the portal dock.

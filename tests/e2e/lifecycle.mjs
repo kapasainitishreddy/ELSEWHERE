@@ -296,7 +296,8 @@ try{
  }
 
  if(selected.includes('guest-reset')){
-  const {context,page}=await makePage();let calls=0,localCalls=0;page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')calls++;});
+  const {context,page}=await makePage();const cdp=await context.newCDPSession(page);let calls=0,localCalls=0;page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')calls++;});
+  const axFor=async selector=>{const {root}=await cdp.send('DOM.getDocument');const {nodeId}=await cdp.send('DOM.querySelector',{nodeId:root.nodeId,selector});assert(nodeId,`accessibility tree target exists: ${selector}`);const result=await cdp.send('Accessibility.getPartialAXTree',{nodeId,fetchRelatives:false});return result.nodes[0];};
   try{
    await startGuest(page);await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    await page.route('**/api/local-dialogue/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({mode:'device-only',ready:true})}));
@@ -308,9 +309,13 @@ try{
    await page.locator('#chat-question').fill('What might this city become?');await page.locator('#chat-form button[type="submit"]').click();
    await page.waitForFunction(()=>document.querySelector('#chat-form')?.getAttribute('aria-busy')==='true');
    assert.equal(await page.locator('#chat-form button[type="submit"]').isDisabled(),true,'submitting dialogue disables duplicate sends while the form is busy');
+   const formAX=await axFor('#chat-form'),busyAX=formAX.properties.find(property=>property.name==='busy');
+   assert([true,1].includes(busyAX?.value?.value),`Chromium accessibility tree exposes busy form state: ${JSON.stringify(busyAX)}`);
    await page.locator('#chat-history .chat-line.elder').waitFor();
    await page.waitForFunction(()=>document.activeElement?.id==='chat-question');
    assert.equal(await page.locator('[data-chat-status]').getAttribute('aria-live'),'polite');
+   const statusAX=await axFor('[data-chat-status]'),liveAX=statusAX.properties.find(property=>property.name==='live');
+   assert.equal(statusAX.role.value,'status');assert.equal(liveAX?.value?.value,'polite','Chromium accessibility tree exposes polite live status');
    assert.equal(await page.locator('#chat-form').getAttribute('aria-busy'),null,'the busy state clears when the reply completes');
    assert.equal(localCalls,1);assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · GUEST · NOT SAVED');
    let guestErasePrompt='';page.once('dialog',async dialog=>{guestErasePrompt=dialog.message();await dialog.accept();});
