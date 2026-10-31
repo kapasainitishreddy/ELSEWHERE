@@ -306,13 +306,14 @@ try{
    await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('ON-DEVICE MODEL'));
    assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · ON-DEVICE MODEL');
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · GUEST · NOT SAVED');
-   await page.locator('#chat-question').fill('What might this city become?');await page.locator('#chat-form button[type="submit"]').click();
+   await page.locator('#chat-question').fill('What might this city become?');await page.locator('#chat-question').press('Enter');
    await page.waitForFunction(()=>document.querySelector('#chat-form')?.getAttribute('aria-busy')==='true');
    assert.equal(await page.locator('#chat-form button[type="submit"]').isDisabled(),true,'submitting dialogue disables duplicate sends while the form is busy');
    const formAX=await axFor('#chat-form'),busyAX=formAX.properties.find(property=>property.name==='busy');
    assert([true,1].includes(busyAX?.value?.value),`Chromium accessibility tree exposes busy form state: ${JSON.stringify(busyAX)}`);
    await page.locator('#chat-history .chat-line.elder').waitFor();
    await page.waitForFunction(()=>document.activeElement?.id==='chat-question');
+   assert.equal(await page.locator('#chat-question').evaluate(input=>input.matches(':focus-visible')),true,'keyboard submission returns focus with a visible keyboard focus indicator');
    assert.equal(await page.locator('[data-chat-status]').getAttribute('aria-live'),'polite');
    const statusAX=await axFor('[data-chat-status]'),liveAX=statusAX.properties.find(property=>property.name==='live');
    assert.equal(statusAX.role.value,'status');assert.equal(liveAX?.value?.value,'polite','Chromium accessibility tree exposes polite live status');
@@ -321,7 +322,7 @@ try{
    let guestErasePrompt='';page.once('dialog',async dialog=>{guestErasePrompt=dialog.message();await dialog.accept();});
    await clickUser(page,page.locator('[data-cmd="forget-conversation"]'));
    assert.match(guestErasePrompt,/unsaved guest session/i);
-   assert.match(await page.locator('.toast').innerText(),/erased from this unsaved guest session/i);
+   assert.match(await page.locator('.toast').filter({hasText:/erased from this unsaved guest session/i}).innerText(),/erased from this unsaved guest session/i);
    await page.locator('[data-cmd="local-ai-toggle"]').click();
    await page.route('**/api/character',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'This world has no chosen outcome so far; you can still decide what the discovery means.',cue:'quiet',focus:'people'})}));
    page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
