@@ -61,6 +61,8 @@ try{
   assert(await guestPage.locator('.first-crossing').isVisible(),'story guide should resume by touch');
   await tap(guestPage.locator('.first-crossing [data-cmd="journey-skip"]'));
   const dpad=guestPage.locator('.mobile-dpad');await dpad.waitFor({state:'visible'});
+  const touchLayout=await guestPage.evaluate(()=>{const rect=selector=>{const element=document.querySelector(selector);if(!element)return null;const r=element.getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height,visible:getComputedStyle(element).display!=='none'&&getComputedStyle(element).visibility!=='hidden'};};const pad=rect('.mobile-dpad'),card=rect('.scene-postcard');return{pad,card,overlap:Boolean(pad?.visible&&card?.visible&&pad.x<card.right&&pad.right>card.x&&pad.y<card.bottom&&pad.bottom>card.y)};});
+  assert.equal(touchLayout.overlap,false,`touch movement pad must not cover the story invitation: ${JSON.stringify(touchLayout)}`);
   const mobileCDP=await guestContext.newCDPSession(guestPage);
   async function holdMove(code,milliseconds=1600){
    const button=guestPage.locator(`.mobile-dpad [data-move="${code}"]`),box=await button.boundingBox();
