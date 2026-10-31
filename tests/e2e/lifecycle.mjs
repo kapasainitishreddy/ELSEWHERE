@@ -296,14 +296,15 @@ try{
  }
 
  if(selected.includes('guest-reset')){
-  const {context,page}=await makePage();const cdp=await context.newCDPSession(page);let calls=0,localCalls=0;page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')calls++;});
+  const {context,page}=await makePage();const cdp=await context.newCDPSession(page);let calls=0,localCalls=0,releaseLocalReply;const localReplyGate=new Promise(resolve=>releaseLocalReply=resolve);page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')calls++;});
   const axFor=async selector=>{const {root}=await cdp.send('DOM.getDocument');const {nodeId}=await cdp.send('DOM.querySelector',{nodeId:root.nodeId,selector});assert(nodeId,`accessibility tree target exists: ${selector}`);const result=await cdp.send('Accessibility.getPartialAXTree',{nodeId,fetchRelatives:false});return result.nodes[0];};
   try{
    await startGuest(page);await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    await page.route('**/api/local-dialogue/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({mode:'device-only',ready:true})}));
-   await page.route('**/api/local-dialogue',async route=>{localCalls++;await delay(300);await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify('The city remains an imagined possibility; no invention choice has been made yet.')});});
+   await page.route('**/api/local-dialogue',async route=>{localCalls++;await localReplyGate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify('The city remains an imagined possibility; no invention choice has been made yet.')});});
    await page.locator('[data-cmd="local-ai-toggle"]').click();
    await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('ON-DEVICE MODEL'));
+   assert.equal((await page.locator('.server-status').innerText()).trim(),'ON-DEVICE AI · GUEST · NOT SAVED','world header reflects the selected on-device dialogue mode');
    assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · ON-DEVICE MODEL');
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · GUEST · NOT SAVED');
    await page.locator('#chat-question').fill('What might this city become?');await page.locator('#chat-question').press('Enter');
@@ -311,6 +312,7 @@ try{
    assert.equal(await page.locator('#chat-form button[type="submit"]').isDisabled(),true,'submitting dialogue disables duplicate sends while the form is busy');
    const formAX=await axFor('#chat-form'),busyAX=formAX.properties.find(property=>property.name==='busy');
    assert([true,1].includes(busyAX?.value?.value),`Chromium accessibility tree exposes busy form state: ${JSON.stringify(busyAX)}`);
+   await page.locator('#chat-question').fill('Keep this follow-up draft while the reply is pending.');releaseLocalReply();
    await page.locator('#chat-history .chat-line.elder').waitFor();
    await page.waitForFunction(()=>document.activeElement?.id==='chat-question');
    assert.equal(await page.locator('#chat-question').evaluate(input=>input.matches(':focus-visible')),true,'keyboard submission returns focus with a visible keyboard focus indicator');
@@ -318,6 +320,7 @@ try{
    const statusAX=await axFor('[data-chat-status]'),liveAX=statusAX.properties.find(property=>property.name==='live');
    assert.equal(statusAX.role.value,'status');assert.equal(liveAX?.value?.value,'polite','Chromium accessibility tree exposes polite live status');
    assert.equal(await page.locator('#chat-form').getAttribute('aria-busy'),null,'the busy state clears when the reply completes');
+   assert.equal(await page.locator('#chat-question').inputValue(),'Keep this follow-up draft while the reply is pending.','typing a follow-up while the model responds survives the dialogue rerender');
    assert.equal(localCalls,1);assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · GUEST · NOT SAVED');
    let guestErasePrompt='';page.once('dialog',async dialog=>{guestErasePrompt=dialog.message();await dialog.accept();});
    await clickUser(page,page.locator('[data-cmd="forget-conversation"]'));
@@ -327,17 +330,19 @@ try{
    await page.route('**/api/character',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'This world has no chosen outcome so far; you can still decide what the discovery means.',cue:'quiet',focus:'people'})}));
    page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
    assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · META TEXT LEAVES DEVICE');
+   assert.equal((await page.locator('.server-status').innerText()).trim(),'META CLOUD ENABLED · GUEST · NOT SAVED','world header updates when cloud consent changes');
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD ENABLED · GUEST · NOT SAVED');
    await page.locator('#chat-question').fill('What might happen in this possible city?');await page.locator('#chat-form button[type="submit"]').click();
    await page.locator('#chat-history .chat-line.elder').waitFor();
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD RESPONSE · GUEST · NOT SAVED');
+   assert.equal((await page.locator('.server-status').innerText()).trim(),'META CLOUD RESPONSE · GUEST · NOT SAVED','world header stays synchronized with the completed model response');
    assert.equal(calls,1,'the mock route, not a live provider, receives the consented synthetic guest question');
    await page.locator('[data-cmd="journal"]').click();page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="reset"]').click();
    assert.match(await page.locator('.privacy-sigil').innerText(),/GUEST · NOT SAVED/);
    assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null);
    assert.doesNotMatch(await page.locator('body').innerText(),/META CLOUD · TEXT LEAVES DEVICE/);
-   console.log(JSON.stringify({result:'PASS',scenario:'guest offline, mocked on-device, mocked Meta and reset report true storage/transport labels; reset revokes consent and preserves guest no-save behavior',localModelMocks:localCalls,metaMocks:calls}));
-  }finally{try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}await Promise.race([context.close(),delay(5000)]);}
+   console.log(JSON.stringify({result:'PASS',scenario:'guest offline, mocked on-device, delayed-reply draft preservation, synchronized world/chat mode labels, mocked Meta and reset privacy behavior',localModelMocks:localCalls,metaMocks:calls}));
+  }finally{releaseLocalReply();try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}await Promise.race([context.close(),delay(5000)]);}
  }
  assert.deepEqual(errors,[],'browser page or console errors');assert.deepEqual(httpErrors,[],'HTTP errors');assert.deepEqual(external,[],'off-origin requests');
 }finally{
