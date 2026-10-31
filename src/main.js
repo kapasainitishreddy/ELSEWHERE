@@ -35,6 +35,7 @@ const curtain=document.querySelector('#transition-curtain');
 const toastRoot=document.querySelector('#toast-region');
 const soundscape=createSoundscape();
 let state=initialState(), experience=null, started=false, guestMode=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
+let gateSubmissionPending=false;
 const pendingLocalRequests=new Set();
 const pendingCloudRequests=new Set();
 function abortPendingRequests(){
@@ -340,7 +341,6 @@ function begin(next,{guest=false,physicsPreview=false}={}){
  abortPendingRequests();
  document.querySelector('#app').inert=false;
  document.querySelector('#app-ui').inert=false;
- setGateBusy(false);
  guestMode=Boolean(guest);
  state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
  try{
@@ -356,16 +356,17 @@ function begin(next,{guest=false,physicsPreview=false}={}){
   document.querySelector('#loading-screen').innerHTML='<div class="loading-error"><strong>3D unavailable</strong><p>Explore the entire story with the accessible story controls.</p></div>';
  }
 }
-guestButton.addEventListener('click',()=>begin(initialState(),{guest:true}));
+guestButton.addEventListener('click',()=>{if(gateSubmissionPending)return;begin(initialState(),{guest:true});});
 physicsButton.addEventListener('click',()=>{
+ if(gateSubmissionPending)return;
  const preview=travel(initialState(),'dungeon');
  begin(preview.ok?preview.state:initialState(),{guest:true,physicsPreview:true});
 });
 gateForm.addEventListener('submit',async(event)=>{
- event.preventDefault();const pass=gateInput.value;gateInput.value='';gateButton.disabled=true;gateStatus.textContent='Securing your local world…';
+ event.preventDefault();if(gateSubmissionPending)return;gateSubmissionPending=true;setGateBusy(true);const pass=gateInput.value;gateInput.value='';gateStatus.textContent='Securing your local world…';
  try{const next=vault.present()?await vault.unlock(pass):await vault.create(pass);begin(next);}
- catch(e){showGate(e.message);}
- finally{gateButton.disabled=false;}
+ catch(e){gateStatus.textContent=e.message;}
+ finally{gateSubmissionPending=false;setGateBusy(false);if(!started)gateInput.focus();}
 });
 // Production shell only. Cache executable/static assets, never personal data.
 // In development the SW stays disabled so hot reload cannot serve stale game rules.

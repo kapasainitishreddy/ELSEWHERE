@@ -54,6 +54,49 @@ try{
   await travelTo(page,'future');
  };
 
+ if(selected.includes('gate-race')){
+  const {context,page}=await makePage();
+  try{
+   await page.goto(origin,{waitUntil:'networkidle'});
+   await page.evaluate(()=>{
+    const subtle=crypto.subtle,native=subtle.deriveKey.bind(subtle);
+    window.__vaultKdfCalls=0;window.__vaultKdfHold=false;window.__vaultKdfFail=false;
+    window.__armVaultKdfHold=()=>{window.__vaultKdfHold=true;};
+    Object.defineProperty(subtle,'deriveKey',{configurable:true,value:(...args)=>{
+     window.__vaultKdfCalls++;
+     if(window.__vaultKdfFail){window.__vaultKdfFail=false;return Promise.reject(new Error('Synthetic KDF failure'));}
+     if(!window.__vaultKdfHold)return native(...args);
+     window.__vaultKdfHold=false;
+     return new Promise((resolve,reject)=>{release=()=>native(...args).then(resolve,reject);window.__releaseVaultKdf=release;});
+    }});
+   });
+   const holdKdf=async(expectedKdfCalls)=>{await page.evaluate(()=>window.__armVaultKdfHold());await page.locator('#vault-passphrase').fill(PASS);await clickUser(page,page.locator('#vault-submit'));await page.waitForFunction(expected=>window.__vaultKdfCalls===expected,expectedKdfCalls,{timeout:15000});};
+   const assertGateLocked=async(label,expectedKdfCalls)=>{
+    assert.equal(await page.locator('#vault-gate').getAttribute('aria-busy'),'true',`${label}: gate reports pending encryption/decryption`);
+    for(const selector of ['#vault-passphrase','#vault-submit','#guest-play','#physics-play'])assert.equal(await page.locator(selector).isDisabled(),true,`${label}: ${selector} is unavailable while the vault operation is pending`);
+    await page.locator('#guest-play').evaluate(button=>button.click());await page.locator('#physics-play').evaluate(button=>button.click());
+    await page.locator('#vault-form').evaluate(form=>form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+    assert.equal(await page.evaluate(()=>window.__vaultKdfCalls),expectedKdfCalls,`${label}: synthetic duplicate actions cannot start another KDF operation`);
+    assert.equal(await page.locator('#vault-gate').isVisible(),true,`${label}: alternate entry cannot replace the pending vault session`);
+   };
+   await holdKdf(1);console.log('gate-race: delayed create KDF entered');await assertGateLocked('create',1);await page.evaluate(()=>window.__releaseVaultKdf());
+   await page.locator('#vault-gate').waitFor({state:'hidden'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+   assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'PRIVATE LOCAL WORLD');
+   await page.locator('[data-cmd="lock"]').click();await page.locator('#vault-gate').waitFor({state:'visible'});
+   await holdKdf(2);console.log('gate-race: delayed unlock KDF entered');await assertGateLocked('unlock',2);await page.evaluate(()=>window.__releaseVaultKdf());
+   await page.locator('#vault-gate').waitFor({state:'hidden'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+   assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'PRIVATE LOCAL WORLD');
+   await page.locator('[data-cmd="lock"]').click();await page.locator('#vault-gate').waitFor({state:'visible'});
+   await page.evaluate(()=>{window.__vaultKdfFail=true;});await page.locator('#vault-passphrase').fill(PASS);await clickUser(page,page.locator('#vault-submit'));
+   await page.waitForFunction(()=>document.querySelector('#vault-notice')?.innerText.includes('Could not unlock the vault'));
+   assert.equal(await page.locator('#vault-gate').getAttribute('aria-busy'),'false','failed unlock restores an interactive gate');
+   assert.equal(await page.locator('#vault-passphrase').isDisabled(),false);assert.equal(await page.locator('#guest-play').isDisabled(),false);assert.equal(await page.evaluate(()=>document.activeElement?.id),'vault-passphrase','focus returns to the passphrase after an unlock error');
+   await clickUser(page,page.locator('#guest-play'));await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+   assert.match(await page.locator('.privacy-sigil').innerText(),/GUEST · NOT SAVED/);
+   console.log(JSON.stringify({result:'PASS',scenario:'create and unlock hold the entire entry gate; duplicate submit, guest and physics actions are ignored; failed unlock restores focused passphrase and guest recovery',kdfOperations:await page.evaluate(()=>window.__vaultKdfCalls)}));
+  }finally{try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}await Promise.race([context.close(),delay(5000)]);}
+ }
+
  if(selected.includes('physics')){
   const {context,page}=await makePage();
   try{
