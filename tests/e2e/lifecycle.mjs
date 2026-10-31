@@ -300,13 +300,18 @@ try{
   try{
    await startGuest(page);await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    await page.route('**/api/local-dialogue/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({mode:'device-only',ready:true})}));
-   await page.route('**/api/local-dialogue',async route=>{localCalls++;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify('The city remains an imagined possibility; no invention choice has been made yet.')});});
+   await page.route('**/api/local-dialogue',async route=>{localCalls++;await delay(300);await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify('The city remains an imagined possibility; no invention choice has been made yet.')});});
    await page.locator('[data-cmd="local-ai-toggle"]').click();
    await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('ON-DEVICE MODEL'));
    assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · ON-DEVICE MODEL');
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · GUEST · NOT SAVED');
    await page.locator('#chat-question').fill('What might this city become?');await page.locator('#chat-form button[type="submit"]').click();
+   await page.waitForFunction(()=>document.querySelector('#chat-form')?.getAttribute('aria-busy')==='true');
+   assert.equal(await page.locator('#chat-form button[type="submit"]').isDisabled(),true,'submitting dialogue disables duplicate sends while the form is busy');
    await page.locator('#chat-history .chat-line.elder').waitFor();
+   await page.waitForFunction(()=>document.activeElement?.id==='chat-question');
+   assert.equal(await page.locator('[data-chat-status]').getAttribute('aria-live'),'polite');
+   assert.equal(await page.locator('#chat-form').getAttribute('aria-busy'),null,'the busy state clears when the reply completes');
    assert.equal(localCalls,1);assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'ON-DEVICE AI · GUEST · NOT SAVED');
    let guestErasePrompt='';page.once('dialog',async dialog=>{guestErasePrompt=dialog.message();await dialog.accept();});
    await clickUser(page,page.locator('[data-cmd="forget-conversation"]'));

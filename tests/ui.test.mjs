@@ -57,6 +57,10 @@ test('guest play shows a not-saved label while normal local mode stays private',
  assert.match(localRoot.innerHTML,/PRIVATE LOCAL WORLD/);
  assert.doesNotMatch(localRoot.innerHTML,/GUEST · NOT SAVED/);
 });
+test('future-self dialogue status uses a polite accessible live region',()=>{
+ const {root,ui}=makeUI();ui.render(go(initialState(),'self'));
+ assert.match(root.innerHTML,/data-chat-status role="status" aria-live="polite" aria-atomic="true">OFFLINE READY<\/span>/);
+});
 test('saved private journal exposes explicit browser-vault erasure and explains exported backups remain',()=>{
  const openJournal=guest=>{
   const listeners=[],root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(type,handler){if(type==='click')listeners.push(handler);},querySelector(){return null;}};

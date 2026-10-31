@@ -4,9 +4,9 @@
 
 ELSEWHERE is a privacy-first, browser-based 3D speculative game prototype. Players travel among five fictional eras, meet an imagined future self, invent technology in 1889, choose who owns it, and see the recorded choice alter 2087. The Warden and mech branches add recoverable combat. Game rules and rewards remain deterministic; dialogue may be authored/offline or explicitly optional, and model text cannot change game state. The future-self story is fiction, not prediction, therapy or financial advice.
 
-## Current tested checkpoint — 2026-10-30
+## Current tested checkpoint — 2026-10-31
 
-**Local development status: verified. External submission status: NO-GO.** On the current source, `npm test` passes 252/252 tests, `npm run build` passes, and `npm run review:agents` reports 11 PASS, 0 FAIL, 0 WARNING, 6 UNVERIFIED. The build still warns about large app and Rapier chunks. The last clean `npm ci` was run at an earlier checkpoint; this continuation added only a package script, not a dependency, and did not rerun installation.
+**Local development status: verified. External submission status: NO-GO.** On the current source, `npm test` passes 253/253 tests, `npm run build` passes, and `npm run review:agents` reports 11 PASS, 0 FAIL, 0 WARNING, 6 UNVERIFIED. The build still warns about large app and Rapier chunks. The last clean `npm ci` was run at an earlier checkpoint; recent changes add no dependencies.
 
 Verified local behavior includes:
 
@@ -15,6 +15,7 @@ Verified local behavior includes:
 - Actual Rapier physics props that settle and stay within the tested collider cage through a ten-minute fixed-step simulation.
 - Locally authored causal exhibits derived from saved fictional outcomes; Meta direction is opt-in and the browser/API contract has mock coverage only.
 - Dialogue and privacy labels distinguish unsaved guest, encrypted-vault, on-device-model, and Meta transport states; local mock lifecycle coverage checks these modes.
+- Keyboard dialogue submission disables duplicate sends while pending, announces runtime/save status through a polite live region, and restores focus to the question field after the response.
 - AES-GCM local saves, lock/reload/unlock, encrypted backup download, canceled replacement, malformed-file rejection and file-picker restore.
 - Keyboard entry and combat controls; a selected 200% viewport/scale emulation, visible focus, one primary-action contrast check and reduced-motion behavior.
 - Entering combat clears the opening-story overlay and collapses the long story sheet; a compact one-row HUD keeps attack, story and portal-atlas controls reachable. Story text remains available in a bounded scroll panel. The physics-sandbox button sits beside the scene and is hidden during combat; the movement prompt stays above the portal dock.
@@ -42,7 +43,7 @@ In this managed container, the default npm cache path was absent. The clean inst
 
 **External gates remain open:** no live Meta inference (the local mocks are not Meta proof), public HTTPS preview/API, polished real demo video, current official eligibility confirmation, Quest/phone hardware run, screen-reader audit, human research, or submission. SwiftShader output is not hardware performance evidence. Do not describe this prototype as submission-ready.
 
-**Combat flow rechecked 2026-10-30:** Full Warden and Mech browser recovery journeys passed on Chromium 154 with SwiftShader after the responsive combat HUD change. The Mech path covered defeat, reboot, victory, exit/re-entry and the single-use mission reward. See [latest QA evidence](docs/QA_EVIDENCE_CURRENT.md). The current official page evidence and unresolved rule/score-weight gaps are recorded in [hackathon readiness](docs/HACKATHON_READINESS_CURRENT.md); historical score weights are not treated as current rules.
+**Combat flow rechecked 2026-10-30:** Full Warden and Mech browser recovery journeys passed on Chromium 154 with SwiftShader after the responsive combat HUD change. The Mech path covered defeat, reboot, victory, exit/re-entry and the single-use mission reward. See [latest QA evidence](docs/QA_EVIDENCE_CURRENT.md). Official judging weights were verified from rules dated October 25 on October 30: Impact 30%, Meta AI tooling 25%, Technical execution 20%, Demo 25%. Startup representative eligibility and exact portal fields remain unverified; see [hackathon readiness](docs/HACKATHON_READINESS_CURRENT.md).
 
 For setup and first-run instructions, see [Run it](#run-it). The current playable worlds and controls are documented later in this README. The complete feature status is in the [feature ledger](docs/FEATURE_LEDGER.csv).
 

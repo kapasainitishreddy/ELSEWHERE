@@ -1,11 +1,11 @@
 # ELSEWHERE submission readiness and judge scorecard
 
-> **Historical planning document, not current rule authority.** Its deadline, weights, video length, eligibility, prize, Meta Stage One, and submission claims have not been freshly verified. Use [HACKATHON_READINESS_CURRENT.md](HACKATHON_READINESS_CURRENT.md) for the current evidence boundary; official pages were blocked by the enforced proxy on 2026-10-28. A project demo target is not an event requirement unless the current official materials confirm it.
+> **Use the readiness matrix for current gates.** The score weights below match the official rules/waiver dated October 25, browser-verified October 30, 2026: Impact 30%, Meta AI tooling 25%, Demo 25%, Technical execution 20%. This historical planning document still contains unverified video, eligibility, prize and submission claims; see [HACKATHON_READINESS_CURRENT.md](HACKATHON_READINESS_CURRENT.md) before relying on them. A project demo target is not an event requirement unless the official rules confirm it.
 
 **Event:** Meta Global AI Developer Hackathon (Oct 26–Nov 4, 2026)  
 **Track:** Startups | **Deadline:** Nov 4, 2026, 9:00 PM ET | **Prizes:** startup awards 1st $250k, 2nd $150k, 3rd $75k, 4th $50k, 5th $25k.
 
-From the participant guide supplied by the participant, not our own scoring formula:
+Verified from the official [rules/waiver](https://cerebralvalley.ai/e/meta-ai-developer-hackathon/waiver), dated October 25, 2026:
 
 | Criterion | Weight | Concrete ELSEWHERE evidence required |
 |---|---:|---|
