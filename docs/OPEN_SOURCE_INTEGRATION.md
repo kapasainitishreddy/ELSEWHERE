@@ -27,3 +27,5 @@ The isolated navigator tests use a minimal Yuka-compatible fake to exercise rout
 - More Kenney CC0 environment kits https://kenney.nl/assets : install as pinned same-origin files and verify source provenance.
 
 Do not copy copyrighted manhwa worlds, Pacific Rim designs, or other franchise characters. Preserve open-source notices. No asset or library integration by itself certifies a complete VR game, live Meta model use, or hackathon submission readiness. Full npm tests, Vite build, browser visual QA, Quest testing, and Meta API demo remain separate gates.
+
+- axe-core 4.10.3 (MPL-2.0): development-only automated accessibility checks in Chromium. https://github.com/dequelabs/axe-core . Automated scans do not replace manual assistive technology or device testing.

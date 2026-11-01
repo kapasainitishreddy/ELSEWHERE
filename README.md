@@ -34,6 +34,7 @@ npm run test:e2e:combat-recovery
 ELSEWHERE_COMBAT_LAYOUT_ONLY=1 npm run test:e2e:combat-recovery
 npm run test:e2e:backup-recovery
 npm run test:e2e:accessibility
+npm run test:e2e:axe
 node --test tests/physics-long-session.test.mjs
 npm run demo:record:authored
 ```

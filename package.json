@@ -42,7 +42,8 @@
     "review:agents": "node tools/review/run.mjs",
     "review:source": "node tools/review/run.mjs --source-only",
     "meta:probe": "node tools/review/meta-live-probe.mjs",
-    "meta:check": "node --test tests/meta-causal-exhibit.test.mjs tests/serverless-meta.test.mjs tests/scene-director.test.mjs tests/meta-request.test.mjs"
+    "meta:check": "node --test tests/meta-causal-exhibit.test.mjs tests/serverless-meta.test.mjs tests/scene-director.test.mjs tests/meta-request.test.mjs",
+    "test:e2e:axe": "node tests/e2e/axe-audit.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",
@@ -51,6 +52,7 @@
     "yuka": "^0.7.8"
   },
   "devDependencies": {
+    "axe-core": "4.10.3",
     "playwright": "1.62.1",
     "vite": "^7.1.0"
   },
