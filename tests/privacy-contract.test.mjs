@@ -8,9 +8,11 @@ test('default startup cannot enable a cloud backend without an explicit alternat
  assert.equal(pkg.scripts.dev,'vite --host 127.0.0.1');
  assert.equal(pkg.scripts['dev:api'],'node server.mjs');
  assert.equal(pkg.scripts['dev:meta'],'node scripts/dev.mjs');
+ assert.equal(pkg.scripts['dev:model'],'node scripts/dev.mjs');
  const source=load('src/main.js');
  assert.match(source,/cloudEnabled=false/);
- assert.match(source,/window\.confirm\('Optional CLOUD MODE/);
+ assert.match(source,/window\.confirm\(`Optional \$\{label\} cloud mode/);
+ assert.match(source,/fetch\('\/api\/health'/);
  assert.match(source,/if\(cloudEnabled\)/);
  assert.ok(!/SpeechRecognition|webkitSpeechRecognition/.test(source));
 });

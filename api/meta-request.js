@@ -1,10 +1,15 @@
-/** Keep one abort deadline active through both response headers and body parsing. */
-export async function fetchMetaJson(fetchImpl,url,init={},timeoutMs=12_000){
+/** Keep one abort deadline active through response headers and body parsing;
+ * propagate client disconnect cancellation without converting it to a retry. */
+export async function fetchModelJson(fetchImpl,url,init={},timeoutMs=12_000){
  const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),timeoutMs);
+ const external=init.signal,requestInit={...init};delete requestInit.signal;
+ const abortFromCaller=()=>controller.abort(external?.reason||new DOMException('Client disconnected','AbortError'));
+ if(external?.aborted)abortFromCaller();else external?.addEventListener('abort',abortFromCaller,{once:true});
+ const timeout=setTimeout(()=>controller.abort(new DOMException('Provider deadline exceeded','TimeoutError')),timeoutMs);
  try{
-  const response=await fetchImpl(url,{...init,signal:controller.signal});
+  const response=await fetchImpl(url,{...requestInit,signal:controller.signal});
   const data=await response.json();
   return {response,data};
- }finally{clearTimeout(timeout);}
+ }finally{clearTimeout(timeout);external?.removeEventListener('abort',abortFromCaller);}
 }
+export const fetchMetaJson=fetchModelJson;

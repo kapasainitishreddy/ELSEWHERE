@@ -1,10 +1,11 @@
 /**
- * Vercel serverless version of ELSEWHERE's consent-only Meta Model API bridge.
+ * Serverless version of ELSEWHERE's consent-only, server-selected model bridge.
  * No cookies, vault contents, private letters, identifying records or prompts
  * are logged or persisted by this handler. Remote Meta inference is NOT local.
  * The user must opt in for each browser session before the client calls it.
  */
 import {validRequest,getMessages} from '../server.mjs';
+import {buildChatRequest,getProviderConfig} from './provider-config.js';
 import {parseDirectedResponse,parseDirectedFocus} from '../src/scene-director.js';
 import {createInferenceLimiter} from './rate-limit.js';
 const sharedLimiter=createInferenceLimiter();
@@ -31,29 +32,40 @@ function safeInput(body){
  if(Object.keys(summary).some(k=>!['credits','fame','trust','invention','fate','power','ending'].includes(k)))return null;
  return body;
 }
-export function createCharacterHandler({key=()=>process.env.MODEL_API_KEY,model=()=>process.env.META_MODEL||'muse-spark-1.3',call=fetch,limiter=sharedLimiter}={}){
+export function createCharacterHandler({provider=()=>getProviderConfig(),key,model,call=fetch,limiter=sharedLimiter}={}){
  return async function handler(req,res){
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
   if(!sameOrigin(req))return reply(res,403,{error:'Origin not allowed'});
   const data=safeInput(req.body);
   if(!data)return reply(res,400,{error:'Invalid consent or conversation request'});
-  const apiKey=key();if(!apiKey)return reply(res,503,{error:'Meta is not configured. Local authored dialogue remains available.'});
+  let selected;
+  try{selected={...provider()};}catch{return reply(res,503,{error:'Model provider configuration is invalid. Local authored dialogue remains available.'});}
+  if(key)selected.apiKey=key();
+  if(model)selected.model=model();
+  selected.apiKey=String(selected.apiKey||'');selected.model=String(selected.model||'').trim();
+  selected.configured=Boolean(selected.endpoint&&selected.apiKey&&!/[\r\n]/.test(selected.apiKey)&&selected.model.length>0&&selected.model.length<=250&&!/[\r\n]/.test(selected.model));
+  if(!selected.configured)return reply(res,503,{error:'The selected model provider is not configured. Local authored dialogue remains available.'});
   const ip=String(req.headers?.['x-real-ip'] || req.socket?.remoteAddress || 'anonymous');
   const release=limiter.begin(ip);
   if(!release)return reply(res,429,{error:'Demo capacity reached. Continue with local authored dialogue.'});
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+  const controller=new AbortController();let timedOut=false,clientGone=Boolean(req.aborted||res.destroyed);
+  const timeout=Math.min(60_000,Math.max(10,Number(selected.timeoutMs)||12_000));
+  const onClientGone=()=>{if(!res.writableEnded){clientGone=true;if(!controller.signal.aborted)controller.abort(new DOMException('Client disconnected','AbortError'));}};
+  req.on?.('aborted',onClientGone);res.on?.('close',onClientGone);
+  const timer=setTimeout(()=>{timedOut=true;if(!controller.signal.aborted)controller.abort(new DOMException('Provider deadline exceeded','TimeoutError'));},timeout);
   try{
-   const response=await call('https://api.meta.ai/v1/chat/completions',{
+   if(clientGone)return;
+   const response=await call(selected.endpoint,{
     method:'POST',signal:controller.signal,
-    headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},
-    body:JSON.stringify({model:model(),messages:getMessages(data),max_tokens:260})
+    headers:{Authorization:`Bearer ${selected.apiKey}`,'Content-Type':'application/json'},
+    body:JSON.stringify(buildChatRequest(selected,getMessages(data)))
    });
-   if(!response.ok)return reply(res,502,{error:'Model is temporarily unavailable'});
+   if(!response.ok)return reply(res,502,{error:'Model is temporarily unavailable. Continue with local authored dialogue.'});
    const raw=await response.json();const safe=parseDirectedResponse(raw?.choices?.[0]?.message?.content);
    if(!safe)return reply(res,502,{error:'Response did not meet story safety requirements'});
-   return reply(res,200,{reply:safe.reply,cue:safe.cue,focus:parseDirectedFocus(raw?.choices?.[0]?.message?.content),provider:'Meta Model API'});
-  }catch{return reply(res,502,{error:'Model request failed. Continue with local authored dialogue.'});}
-  finally{clearTimeout(timer);release();}
+   return reply(res,200,{reply:safe.reply,cue:safe.cue,focus:parseDirectedFocus(raw?.choices?.[0]?.message?.content),provider:selected.label});
+  }catch{if(clientGone)return;if(timedOut)return reply(res,504,{error:'Model reply timed out. Continue with local authored dialogue.'});return reply(res,502,{error:'Model request failed. Continue with local authored dialogue.'});}
+  finally{clearTimeout(timer);req.off?.('aborted',onClientGone);req.removeListener?.('aborted',onClientGone);res.off?.('close',onClientGone);res.removeListener?.('close',onClientGone);release();}
  };
 }
 export default createCharacterHandler();

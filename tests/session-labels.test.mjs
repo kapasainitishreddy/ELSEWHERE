@@ -15,15 +15,18 @@ test('the visible privacy sigil and chat header distinguish storage from dialogu
   {name:'guest Meta response',guestMode:true,cloudEnabled:true,localAiEnabled:false,source:'meta-response',privacy:'GUEST · NOT SAVED · META TEXT LEAVES DEVICE',status:'META CLOUD RESPONSE · GUEST · NOT SAVED'},
   {name:'saved Meta response',guestMode:false,cloudEnabled:true,localAiEnabled:false,source:'meta-response',privacy:'META CLOUD · TEXT LEAVES DEVICE',status:'META CLOUD RESPONSE · ENCRYPTED SAVE'},
   {name:'guest attempted cloud fallback',guestMode:true,cloudEnabled:true,localAiEnabled:false,source:'meta-fallback',privacy:'GUEST · NOT SAVED · META TEXT LEAVES DEVICE',status:'META ATTEMPTED · LOCAL FALLBACK · GUEST · NOT SAVED'},
-  {name:'saved attempted cloud fallback',guestMode:false,cloudEnabled:true,localAiEnabled:false,source:'meta-fallback',privacy:'META CLOUD · TEXT LEAVES DEVICE',status:'META ATTEMPTED · LOCAL FALLBACK · ENCRYPTED SAVE'}
+  {name:'saved attempted cloud fallback',guestMode:false,cloudEnabled:true,localAiEnabled:false,source:'meta-fallback',privacy:'META CLOUD · TEXT LEAVES DEVICE',status:'META ATTEMPTED · LOCAL FALLBACK · ENCRYPTED SAVE'},
+  {name:'guest Baseten response',guestMode:true,cloudEnabled:true,localAiEnabled:false,remoteProviderLabel:'Baseten',source:'remote-response',privacy:'GUEST · NOT SAVED · BASETEN TEXT LEAVES DEVICE',status:'BASETEN CLOUD RESPONSE · GUEST · NOT SAVED'},
+  {name:'saved Fireworks enabled',guestMode:false,cloudEnabled:true,localAiEnabled:false,remoteProviderLabel:'Fireworks',source:'remote-enabled',privacy:'FIREWORKS CLOUD · TEXT LEAVES DEVICE',status:'FIREWORKS CLOUD ENABLED · ENCRYPTED SAVE'},
+  {name:'guest Modal fallback',guestMode:true,cloudEnabled:true,localAiEnabled:false,remoteProviderLabel:'Modal',source:'remote-fallback',privacy:'GUEST · NOT SAVED · MODAL TEXT LEAVES DEVICE',status:'MODAL ATTEMPTED · LOCAL FALLBACK · GUEST · NOT SAVED'}
  ];
  const state=travel(initialState(),'self').state;
  for(const mode of cases){
   assert.equal(privacyIndicator(mode),mode.privacy,`${mode.name}: persistent privacy indicator`);
-  const status=dialogueStatus({guestMode:mode.guestMode,source:mode.source});
+  const status=dialogueStatus({guestMode:mode.guestMode,source:mode.source,remoteProviderLabel:mode.remoteProviderLabel});
   assert.equal(status,mode.status,`${mode.name}: actual dialogue header status`);
   const root={dataset:{},innerHTML:'',parentElement:{classList:{toggle(){}}},addEventListener(){},querySelector(){return null;}};
-  const ui=createInterface(root,{guestMode:()=>mode.guestMode,cloudEnabled:()=>mode.cloudEnabled,localAiEnabled:()=>mode.localAiEnabled});
+  const ui=createInterface(root,{guestMode:()=>mode.guestMode,cloudEnabled:()=>mode.cloudEnabled,localAiEnabled:()=>mode.localAiEnabled,remoteProvider:()=>mode.remoteProviderLabel||'Meta Model API'});
   ui.render(state);ui.updateStatus(status);
   const sigil=root.innerHTML.match(/<div class="privacy-sigil"[^>]*>([\s\S]*?)<\/div>/)?.[1]||'';
   const header=root.innerHTML.match(/<div class="chat-header">([\s\S]*?)<\/div>/)?.[1]||'';

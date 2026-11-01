@@ -1,6 +1,6 @@
 /** Privacy-first runtime. All state is passphrase encrypted locally before persistence.
  * No HTTP API, cloud inference, third-party voice transcription, tracking, or analytics in default private mode.
- * Meta remote conversation is separately opt-in, visibly labeled and off every session.
+ * Remote provider conversation is separately opt-in, visibly labeled and off every session.
  */
 import './style.css';
 import './cinematic-shell.css';
@@ -35,6 +35,7 @@ const curtain=document.querySelector('#transition-curtain');
 const toastRoot=document.querySelector('#toast-region');
 const soundscape=createSoundscape();
 let state=initialState(), experience=null, started=false, guestMode=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
+let remoteProvider={id:'meta',label:'Meta Model API'};
 let gateSubmissionPending=false;
 const pendingLocalRequests=new Set();
 const pendingCloudRequests=new Set();
@@ -175,7 +176,7 @@ async function ask(question){
   if(!started||sessionEpoch!==epoch||state!==before){toast('World changed. Old dialogue was discarded.',false);return;}
   if(local){reply=local;mode=dialogueStatus({guestMode,source:'local-model'});}else mode=dialogueStatus({guestMode,source:'authored'});
  }else if(cloudEnabled){
-  mode='META REQUEST ATTEMPTED';
+   mode=remoteProvider.id==='meta'?'META REQUEST ATTEMPTED':`${remoteProvider.label.toUpperCase()} REQUEST ATTEMPTED`;
   try{
    const controller=new AbortController();
    pendingCloudRequests.add(controller);
@@ -191,11 +192,11 @@ async function ask(question){
     if(!res.ok)throw new Error('Provider unavailable');
     const data=await res.json();if(typeof data?.reply!=='string'||!data.reply.trim())throw new Error('No AI dialogue');
     const safe=reviewGeneratedCharacterReply(before,'elder',data.reply);if(!safe.ok)throw new Error('Unreliable or repetitive generated claim');
-    reply=safe.reply;visualCue=safeSceneCue(data.cue,visualCue);visualFocus=safeSceneFocus(data.focus);mode=dialogueStatus({guestMode,source:'meta-response'});
+    reply=safe.reply;visualCue=safeSceneCue(data.cue,visualCue);visualFocus=safeSceneFocus(data.focus);mode=dialogueStatus({guestMode,source:'remote-response',remoteProviderLabel:remoteProvider.label});
    }finally{clearTimeout(timer);pendingCloudRequests.delete(controller);}
   }catch{
-   mode=dialogueStatus({guestMode,source:'meta-fallback'});
-   toast('Meta unavailable. Continuing with local dialogue. A remote request may have been attempted.',false);
+   mode=dialogueStatus({guestMode,source:'remote-fallback',remoteProviderLabel:remoteProvider.label});
+   toast(`${remoteProvider.id==='meta'?'Meta':remoteProvider.label} unavailable. Continuing with local dialogue. A remote request may have been attempted.`,false);
   }
  }
  if(!started||sessionEpoch!==epoch||state!==before){experience?.setDialogueActivity?.('idle');return;}
@@ -204,12 +205,25 @@ async function ask(question){
  experience?.reactToDialogue?.(visualCue,visualFocus);
  if(!privateSpeech.speak(reply))experience?.setDialogueActivity?.('speaking',Math.min(5,1.6+reply.length/80));
 }
-function toggleCloud(){
+async function toggleCloud(){
  if(cloudEnabled){invalidateOptionalInference();cloudEnabled=false;ui.render(state);ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');
   toast('Remote conversations disabled.');return;}
- if(!window.confirm('Optional CLOUD MODE: Each submitted question and a small fictional game summary will be sent to Meta Model API. This is NOT completely local. Your passphrase, future letter, encrypted save, other timeline, and NPC memories will NOT be sent. Enable until you lock or reload?'))return;
+ const epoch=sessionEpoch,controller=new AbortController();pendingCloudRequests.add(controller);
+ let configuredProvider;
+ try{
+  const response=await fetch('/api/health',{method:'GET',credentials:'same-origin',cache:'no-store',signal:controller.signal});
+  if(!response.ok)throw new Error('Provider status unavailable');
+  const health=await response.json();
+  const labels={meta:'Meta Model API',baseten:'Baseten',fireworks:'Fireworks',modal:'Modal'};
+  if(health?.modelConfigured!==true||!labels[health.provider])throw new Error('Provider is not configured');
+  configuredProvider={id:health.provider,label:labels[health.provider]};
+ }catch{if(started&&sessionEpoch===epoch)toast('Remote model is not configured or available. Authored dialogue remains ready; no question was sent.',false);return;}
+ finally{pendingCloudRequests.delete(controller);}
+ if(!started||sessionEpoch!==epoch)return;
+ const label=configuredProvider.label;
+ if(!window.confirm(`Optional ${label} cloud mode: each submitted question and a small fictional game summary will be sent to ${label}. This is NOT completely local. Your passphrase, future letter, encrypted save, other timeline, and NPC memories will NOT be sent. Enable until you lock or reload?`))return;
  invalidateOptionalInference();
- cloudEnabled=true;localAiEnabled=false;ui.render(state);ui.updateStatus(dialogueStatus({guestMode,source:'meta-enabled'}));toast('Cloud conversation is now enabled. Type only what you want to send.');
+ remoteProvider=configuredProvider;cloudEnabled=true;localAiEnabled=false;ui.render(state);ui.updateStatus(dialogueStatus({guestMode,source:'remote-enabled',remoteProviderLabel:remoteProvider.label}));toast(`${label} cloud conversation is now enabled. Type only what you want to send.`);
 }
 async function npcAsk(person,question){
  const before=state,epoch=sessionEpoch;
@@ -333,7 +347,7 @@ function eraseVault(){
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,eraseVault,
  sound:toggleSound,forgetConversation,pinMemory:text=>memoryAction('pin',text),forgetMemory:index=>memoryAction('forget',index),compassSave,compassTried,compassClear,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
- privacyStatus:()=>true,guestMode:()=>guestMode,cloudEnabled:()=>cloudEnabled,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
+ privacyStatus:()=>true,guestMode:()=>guestMode,cloudEnabled:()=>cloudEnabled,remoteProvider:()=>remoteProvider.label,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
  voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus,comfort:id=>experience?.setComfort?.(id)
 });
 function begin(next,{guest=false,physicsPreview=false}={}){

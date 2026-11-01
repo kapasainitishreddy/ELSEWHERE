@@ -15,6 +15,8 @@ let browserServer;
 const chromiumConfig=await mkdtemp(join(tmpdir(),'elsewhere-chromium-config-'));
 const chromiumCache=await mkdtemp(join(tmpdir(),'elsewhere-chromium-cache-'));
 const PASS='Synthetic vault passphrase 42',PRIVATE_SENTINEL='SYNTHETIC_PRIVATE_LETTER_SENTINEL',ERASE_SENTINEL='SYNTHETIC_ERASE_RECOVERY_LETTER';
+let mockProviderHealth={provider:'meta',modelConfigured:true,metaConfigured:true};
+let mockProviderHealthReads=[];
 try{
  let ready=false;
  for(let n=0;n<80;n++){if(vite.exitCode!==null)throw new Error(`Vite exited (${vite.exitCode})`);try{if((await fetch(origin)).ok){ready=true;break;}}catch{}await delay(250);}
@@ -22,11 +24,12 @@ try{
  const executablePath=process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined);
  const launchOptions={executablePath,headless:true,env:{...process.env,XDG_CONFIG_HOME:process.env.XDG_CONFIG_HOME||chromiumConfig,XDG_CACHE_HOME:process.env.XDG_CACHE_HOME||chromiumCache},args:['--no-sandbox','--disable-dev-shm-usage','--disable-breakpad','--disable-crash-reporter','--use-angle=swiftshader','--enable-webgl','--enable-unsafe-swiftshader']};
  browserServer=await chromium.launchServer(launchOptions);browser=await chromium.connect(browserServer.wsEndpoint());
- const selected=(process.env.ELSEWHERE_LIFECYCLE||'physics,vault-cloud,guest-reset,gate-race').split(',');
+ const selected=(process.env.ELSEWHERE_LIFECYCLE||'physics,vault-cloud,guest-reset,gate-race,provider-consent').split(',');
  const errors=[],httpErrors=[],external=[];
  const makePage=async()=>{
   const context=await browser.newContext({viewport:{width:900,height:650},deviceScaleFactor:1});
   const page=await context.newPage();await page.emulateMedia({reducedMotion:'reduce'});page.setDefaultTimeout(60000);
+  await page.route('**/api/health',route=>{mockProviderHealthReads.push({...mockProviderHealth});return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(mockProviderHealth)});});
   page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
   page.on('response',response=>{if(response.status()>=400)httpErrors.push(`${response.status()} ${response.url()}`);});
   page.on('request',request=>{if(!request.url().startsWith(`${origin}/`))external.push(request.url());});
@@ -57,6 +60,7 @@ try{
  if(selected.includes('gate-race')){
   const {context,page}=await makePage();
   try{
+   mockProviderHealthReads=[];
    await page.goto(origin,{waitUntil:'networkidle'});
    await page.evaluate(()=>{
     const subtle=crypto.subtle,native=subtle.deriveKey.bind(subtle);
@@ -136,9 +140,10 @@ try{
  }
 
  if(selected.includes('vault-cloud')){
-  const {context,page}=await makePage();let metaRequests=0,localRequests=0,postedBody;
+  const {context,page}=await makePage();let metaRequests=0,localRequests=0,healthChecks=0,postedBody;
   try{
    page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')metaRequests++;});
+   await page.route('**/api/health',route=>{healthChecks++;return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({online:true,provider:'meta',modelConfigured:true,metaConfigured:true,mode:'opt-in-cloud-or-authored-local'})});});
    await page.goto(origin,{waitUntil:'networkidle'});await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();
    await page.locator('#vault-gate').waitFor({state:'hidden'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
    const readVault=()=>page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1'));
@@ -203,7 +208,10 @@ try{
     postedBody=route.request().postDataJSON();
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'The invention we shared supports a network of public workshops.',cue:'wonder',focus:'memory'})});
    });
-   page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
+   page.once('dialog',dialog=>dialog.accept());await page.locator('.chat-section [data-cmd="cloud-toggle"]').click();
+   try{await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('TEXT LEAVES DEVICE'),{timeout:10000});}
+   catch(error){const diagnostics=await page.evaluate(()=>({toast:document.querySelector('#toast-region')?.innerText,status:document.querySelector('.server-status')?.innerText,button:document.querySelector('.chat-section [data-cmd="cloud-toggle"]')?.outerHTML}));throw new Error(`remote consent did not activate after health preflight (${healthChecks} health checks): ${JSON.stringify(diagnostics)}; ${error.message}`);}
+   assert(healthChecks>0,'remote consent requires a successful same-origin provider health preflight');
    assert.match(await page.locator('.privacy-sigil').innerText(),/META CLOUD/);
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD ENABLED · ENCRYPTED SAVE');
    await page.locator('#chat-question').fill('Tell me what became of the invention we shared.');await page.locator('#chat-form button[type="submit"]').click();
@@ -233,19 +241,21 @@ try{
    // Hold a mocked response in flight and travel away. The transport should abort,
    // and the old reply must not enter either this session or a future reload.
    await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
-   page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
+   page.once('dialog',dialog=>dialog.accept());await page.locator('.chat-section [data-cmd="cloud-toggle"]').click();
+   await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('TEXT LEAVES DEVICE'),{timeout:10000});
    let delayedCalls=0;
    await page.unroute('**/api/character');
    await page.route('**/api/character',async route=>{delayedCalls++;await new Promise(resolve=>setTimeout(resolve,8000));try{await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'STALE MOCK MUST NEVER APPEAR',cue:'wonder',focus:'memory'})});}catch{}});
    const optOutRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/character');
    const optOutFailure=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/api/character'});
    await page.locator('#chat-question').fill('Opt-out cancellation sentinel.');await page.locator('#chat-form button[type="submit"]').click();await optOutRequest;
-   await page.locator('[data-cmd="cloud-toggle"]').click();const optOutError=await optOutFailure;
+   await page.locator('.chat-section [data-cmd="cloud-toggle"]').click();const optOutError=await optOutFailure;
    assert(optOutError.failure()?.errorText,'opt-out must abort the in-flight model request');
    assert.equal(await page.locator('.privacy-sigil').innerText(),'PRIVATE LOCAL WORLD');
    assert.doesNotMatch(await page.locator('#chat-history').innerText(),/Opt-out cancellation sentinel|STALE MOCK MUST NEVER APPEAR/);
    assert.equal(delayedCalls,1);
-   page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
+   page.once('dialog',dialog=>dialog.accept());await page.locator('.chat-section [data-cmd="cloud-toggle"]').click();
+   await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('TEXT LEAVES DEVICE'),{timeout:10000});
    const worldChangeRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/character');
    const worldChangeFailure=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/api/character'});
    await page.locator('#chat-question').fill('World transition cancellation sentinel.');await page.locator('#chat-form button[type="submit"]').click();await worldChangeRequest;
@@ -266,7 +276,8 @@ try{
    assert.equal(delayedCalls,3);
    // Lock while another response and the final encrypted save are pending.
    await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
-   page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
+   page.once('dialog',dialog=>dialog.accept());await page.locator('.chat-section [data-cmd="cloud-toggle"]').click();
+   await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('TEXT LEAVES DEVICE'),{timeout:10000});
    const lockRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/character');
    const lockFailure=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/api/character'});
    await page.locator('#chat-question').fill('Lock transition cancellation sentinel.');await page.locator('#chat-form button[type="submit"]').click();await lockRequest;
@@ -338,6 +349,40 @@ try{
   }finally{try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}await Promise.race([context.close(),delay(5000)]);}
  }
 
+ if(selected.includes('provider-consent')){
+  const {context,page}=await makePage();let characterCalls=0,consentText='';
+  try{
+   mockProviderHealth={provider:'baseten',modelConfigured:false,metaConfigured:false};
+   await startGuest(page);await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
+   await clickUser(page,page.locator('[data-cmd="journal"]'));await clickUser(page,page.locator('[data-tab="privacy"]'));
+   page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')characterCalls++;});
+   await clickUser(page,page.locator('.cloud-consent [data-cmd="cloud-toggle"]'));
+   await page.waitForFunction(()=>/not configured or available/i.test(document.querySelector('#toast-region')?.innerText||''));
+   assert.match(await page.locator('#toast-region').innerText(),/not configured or available/i);
+   assert.equal(characterCalls,0,'unconfigured remote provider does not send a conversation');
+   assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED');
+   mockProviderHealth.modelConfigured=true;
+   assert.deepEqual(await page.evaluate(()=>fetch('/api/health').then(response=>response.json())),{provider:'baseten',modelConfigured:true,metaConfigured:false},'same-origin health must identify the configured mock recipient');
+   const declinedConsent=page.waitForEvent('dialog');
+   await clickUser(page,page.locator('.cloud-consent [data-cmd="cloud-toggle"]'));
+   const declinedDialog=await declinedConsent;consentText=declinedDialog.message();await declinedDialog.dismiss();
+   assert.match(consentText,/Baseten/,`consent should name the provider (observed toast: ${await page.locator('#toast-region').innerText()}; health reads: ${JSON.stringify(mockProviderHealthReads)})`);assert.doesNotMatch(consentText,/Meta Model API/,'consent must name the actual configured recipient');
+   assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED');
+   const acceptedConsent=page.waitForEvent('dialog');
+   await clickUser(page,page.locator('.cloud-consent [data-cmd="cloud-toggle"]'));
+   const acceptedDialog=await acceptedConsent;assert.match(acceptedDialog.message(),/Baseten/);await acceptedDialog.accept();
+   assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · BASETEN TEXT LEAVES DEVICE');
+   assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'BASETEN CLOUD ENABLED · GUEST · NOT SAVED');
+   await clickUser(page,page.locator('[aria-label="Close timeline"]'));
+   await page.route('**/api/character',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'This world has no chosen outcome so far; you can still decide what the discovery means.',cue:'quiet',focus:'people',provider:'Baseten'})}));
+   await page.locator('#chat-question').fill('What could happen next?');await page.locator('#chat-form button[type="submit"]').click();
+   await page.locator('#chat-history .chat-line.elder').last().waitFor();assert.equal(characterCalls,1);
+   assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'BASETEN CLOUD RESPONSE · GUEST · NOT SAVED');
+   assert.match(await page.locator('#chat-history').innerText(),/This world has no chosen outcome/);
+   console.log('provider-consent: unavailable check, dismissed consent, recipient-specific Baseten consent/status and mocked reply verified');
+  }finally{mockProviderHealth={provider:'meta',modelConfigured:true,metaConfigured:true};await context.close();}
+ }
+
  if(selected.includes('guest-reset')){
   const {context,page}=await makePage();const cdp=await context.newCDPSession(page);let calls=0,localCalls=0,releaseLocalReply;const localReplyGate=new Promise(resolve=>releaseLocalReply=resolve);page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')calls++;});
   const axFor=async selector=>{const {root}=await cdp.send('DOM.getDocument');const {nodeId}=await cdp.send('DOM.querySelector',{nodeId:root.nodeId,selector});assert(nodeId,`accessibility tree target exists: ${selector}`);const result=await cdp.send('Accessibility.getPartialAXTree',{nodeId,fetchRelatives:false});return result.nodes[0];};
@@ -370,8 +415,10 @@ try{
    assert.match(guestErasePrompt,/unsaved guest session/i);
    assert.match(await page.locator('.toast').filter({hasText:/erased from this unsaved guest session/i}).innerText(),/erased from this unsaved guest session/i);
    await page.locator('[data-cmd="local-ai-toggle"]').click();
+   await page.route('**/api/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({online:true,provider:'meta',modelConfigured:true,metaConfigured:true,mode:'opt-in-cloud-or-authored-local'})}));
    await page.route('**/api/character',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'This world has no chosen outcome so far; you can still decide what the discovery means.',cue:'quiet',focus:'people'})}));
-   page.once('dialog',dialog=>dialog.accept());await page.locator('[data-cmd="cloud-toggle"]').click();
+   page.once('dialog',dialog=>dialog.accept());await page.locator('.chat-section [data-cmd="cloud-toggle"]').click();
+   await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('TEXT LEAVES DEVICE'),{timeout:10000});
    assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · META TEXT LEAVES DEVICE');
    assert.equal((await page.locator('.server-status').innerText()).trim(),'META CLOUD ENABLED · GUEST · NOT SAVED','world header updates when cloud consent changes');
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'META CLOUD ENABLED · GUEST · NOT SAVED');

@@ -1,16 +1,16 @@
 /**
- * Optional same-origin Meta Model API bridge for future-self conversations.
- * Never expose MODEL_API_KEY to frontend code. No request body is logged/stored.
+ * Optional same-origin model bridge for future-self conversations.
+ * Provider and credential are server-only. No request body is logged/stored.
  */
 import { parseDirectedResponse,parseDirectedFocus } from './src/scene-director.js';
-import {fetchMetaJson} from './api/meta-request.js';
+import {fetchModelJson} from './api/meta-request.js';
+import {buildChatRequest,getProviderConfig} from './api/provider-config.js';
 import { createServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 if (existsSync('.env')) { try { process.loadEnvFile('.env'); } catch { /* environment variable injection via host is also supported */ } }
-const KEY = process.env.MODEL_API_KEY || '';
-const MODEL = process.env.META_MODEL || 'muse-spark-1.3';
+const PROVIDER = getProviderConfig(process.env);
 const PORT = Number(process.env.PORT || 8787);
 // The bridge is local-only unless the operator explicitly configures another bind address.
 const HOST = process.env.HOST || '127.0.0.1';
@@ -35,27 +35,36 @@ export function getMessages(data){
     {role:'user',content:data.question.trim()}
   ];
 }
-export const server=createServer(async (req,res)=>{
-  if(req.method==='GET'&&req.url==='/api/health')return send(res,200,{online:true,metaConfigured:Boolean(KEY)});
+export function createModelProxyHandler({provider=PROVIDER,fetchImpl=fetch,limiter=limit}={}){return async (req,res)=>{
+  if(req.method==='GET'&&req.url==='/api/health')return send(res,200,{online:true,provider:provider.id,modelConfigured:provider.configured,metaConfigured:provider.id==='meta'&&provider.configured});
   if(req.url!=='/api/character')return send(res,404,{error:'Not found'});
   if(req.method!=='POST')return send(res,405,{error:'Method not allowed'});
-  if(limit(req.socket.remoteAddress || 'local'))return send(res,429,{error:'Rate limit reached'});
-  if(!KEY)return send(res,503,{error:'Meta not configured. Offline fallback available.'});
+  if(limiter(req.socket.remoteAddress || 'local'))return send(res,429,{error:'Rate limit reached'});
+  if(!provider.configured)return send(res,503,{error:'Selected model provider is not configured. Offline fallback available.'});
+  const clientController=new AbortController();let clientGone=Boolean(req.aborted||res.destroyed);
+  const onClientGone=()=>{if(!res.writableEnded){clientGone=true;if(!clientController.signal.aborted)clientController.abort(new DOMException('Client disconnected','AbortError'));}};
+  req.on('aborted',onClientGone);res.on('close',onClientGone);
   let body='';
   try {
     for await (const chunk of req) {body+=chunk.toString('utf8');if(body.length>8192)return send(res,413,{error:'Request too large'});}
+    if(clientGone)return;
     const data=JSON.parse(body);if(!validRequest(data))return send(res,400,{error:'Invalid conversation input'});
-    const {response:upstream,data:response}=await fetchMetaJson(fetch,'https://api.meta.ai/v1/chat/completions',{
+    const {response:upstream,data:response}=await fetchModelJson(fetchImpl,provider.endpoint,{
         method:'POST',
-        headers:{'Authorization':`Bearer ${KEY}`,'Content-Type':'application/json'},
-        body:JSON.stringify({model:MODEL,messages:getMessages(data),max_tokens:260})
-      },12000);
-    if(!upstream.ok)return send(res,502,{error:'Model temporarily unavailable'});
+        headers:{'Authorization':`Bearer ${provider.apiKey}`,'Content-Type':'application/json'},
+        body:JSON.stringify(buildChatRequest(provider,getMessages(data))),signal:clientController.signal
+      },provider.timeoutMs);
+    if(!upstream.ok)return send(res,502,{error:'Model temporarily unavailable. Offline fallback available.'});
     const reply=response?.choices?.[0]?.message?.content;
     const safeReply=parseDirectedResponse(reply);
     if(!safeReply)return send(res,502,{error:'Model output failed safety checks'});
-    return send(res,200,{reply:safeReply.reply,cue:safeReply.cue,focus:parseDirectedFocus(reply),model:MODEL});
-  }catch{return send(res,502,{error:'Dialogue request failed. Offline fallback available.'});}
-});
+    return send(res,200,{reply:safeReply.reply,cue:safeReply.cue,focus:parseDirectedFocus(reply),provider:provider.label});
+  }catch(error){
+    if(clientGone)return;
+    if(error?.name==='TimeoutError')return send(res,504,{error:'Model reply timed out. Offline fallback available.'});
+    return send(res,502,{error:'Dialogue request failed. Offline fallback available.'});
+  }finally{req.off?.('aborted',onClientGone);req.removeListener?.('aborted',onClientGone);res.off?.('close',onClientGone);res.removeListener?.('close',onClientGone);}
+};}
+export const server=createServer(createModelProxyHandler());
 const launchedDirectly=process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url);
-if (launchedDirectly && process.env.NODE_ENV !== 'test') server.listen(PORT,HOST,()=>console.log(`ELSEWHERE conversation bridge on ${HOST}:${PORT} (${KEY?'Meta enabled':'offline fallback'})`));
+if (launchedDirectly && process.env.NODE_ENV !== 'test') server.listen(PORT,HOST,()=>console.log(`ELSEWHERE conversation bridge on ${HOST}:${PORT} (${PROVIDER.configured?`${PROVIDER.id} enabled`:'offline fallback'})`));

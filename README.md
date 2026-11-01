@@ -264,9 +264,9 @@ There are glowing portals in the 3D scenes as well as text world selectors. Touc
 
 Full limitations: [Privacy model and threat boundaries](docs/PRIVACY.md).
 
-### Optional Meta demonstration (not private)
+### Optional remote model providers (not private)
 
-The game includes a **separately started**, opt-in Meta Model API bridge for hackathon demonstrations. This is **OFF** every session and not started by `npm run dev`. To use it, put a developer-only API key in `.env`, run `npm run dev:meta`, and explicitly turn on Meta cloud mode in My Timeline. The next typed prompt and a small fictional state summary leave the device for Meta; saved NPC memories, letters, keys, and other branch data do not. This mode **cannot** be described as completely local. The bridge and model must be verified with actual credentials before making a live capability claim.
+The game includes a **separately started**, consent-gated model bridge; normal authored play remains offline and `npm run dev` does not start this bridge. Set one `MODEL_PROVIDER` and only that provider's server-side secret/model values in a developer-owned `.env`, run `npm run dev:model`, and explicitly enable remote model mode in My Timeline. Before asking for consent, the game checks the same-origin health endpoint and names the configured recipient in its confirmation. The typed question and small allowlisted fictional summary leave the device after consent; private letters, keys, NPC memories and other branch data do not. Remote mode is not local or private from the selected provider. The bridge uses fixed Meta, Baseten and Fireworks URLs, and requires an operator-supplied Modal HTTPS endpoint restricted to a `modal.run` host. It never accepts a provider or endpoint from browser input. See [provider adapter configuration and evidence](docs/MODEL_PROVIDER_ADAPTERS.md). This is configuration and mocked-contract support only: no credentials or live inference are included or claimed.
 
 ## Open source and rights
 
@@ -300,7 +300,7 @@ The on-device roleplay bridge now includes the previously missing `local-server.
 
 See [TESTING_AND_QA.md](docs/TESTING_AND_QA.md) for step-by-step desktop and Meta Quest testing; [HACKATHON_SCORECARD.md](docs/HACKATHON_SCORECARD.md) for the official judging rubric and target evidence; and [FUTURE_SELF_RESEARCH.md](docs/FUTURE_SELF_RESEARCH.md) for the relevant research and limitations.
 
-To opt into local language-model roleplay on your computer, install [Ollama](https://ollama.com/) and download a compatible small model, e.g. `ollama pull qwen2.5:1.5b`; start Ollama and run `npm run dev:local-ai`. The model and its logs/process remain under your control, subject to the local computer's security. This is *not* the Meta API. If you enable the separate Meta cloud demo, selected typed questions and fictional context leave your device and no longer qualify as completely local.
+To opt into local language-model roleplay on your computer, install [Ollama](https://ollama.com/) and download a compatible small model, e.g. `ollama pull qwen2.5:1.5b`; start Ollama and run `npm run dev:local-ai`. The model and its logs/process remain under your control, subject to the local computer's security. This is separate from the remote model bridge. If you enable that mode, selected typed questions and fictional context leave your device and no longer qualify as completely local.
 
 
 ## Future Self Presence Lab (v0.8)

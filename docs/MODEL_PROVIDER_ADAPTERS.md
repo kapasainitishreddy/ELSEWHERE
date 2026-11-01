@@ -1,0 +1,29 @@
+# Optional remote model adapters
+
+**Status (2026-11-01):** adapter configuration and mocked HTTP-contract tests are implemented. No provider credential is configured and no live provider call has been made. This does not establish that any provider/model combination is hackathon-eligible or available to this account.
+
+## Runtime and privacy contract
+
+- Remote mode is off by default. The UI requests `/api/health` before asking for consent; it will not turn remote mode on unless the server reports a supported, configured provider. The confirmation names that provider. If unavailable, authored dialogue remains available and no question is sent.
+- `MODEL_PROVIDER` is server-only configuration (`meta`, `baseten`, `fireworks`, or `modal`). A browser request cannot choose a provider, model, URL, or key.
+- The same-origin conversation request remains limited to `cloudConsent`, world `self`, the typed question (350 characters maximum), and an allowlisted fictional timeline summary. It never includes a passphrase, save, private letter, NPC memories, or other branches.
+- Baseten, Fireworks, and Modal use a non-streaming chat-completions body with `model`, `messages`, `max_tokens`, and `stream:false`. The existing Meta adapter retains its prior body shape. The response must contain text at `choices[0].message.content`; ELSEWHERE parses and validates that text locally. No `response_format`/JSON-mode flag is sent. Invalid output, provider errors, timeout, or cancellation cannot change authoritative game state; the client uses authored fallback.
+- Partner calls use a 30-second overall deadline; Meta retains its existing 12-second deadline. Both local and serverless bridges keep the deadline active through body parsing and abort upstream work when the browser disconnects. No automatic retry is performed: transient 429/5xx conditions use the safe local fallback and the player can deliberately retry, avoiding hidden duplicate inference/billing. Cancellation is best effort and is not a billing guarantee.
+- Health responses expose only a provider ID and configuration booleans. Provider credentials remain in server environment variables and are never returned to the browser or included in logs.
+
+## Provider configuration
+
+| Provider | Server-only configuration | Endpoint and model behavior | Source |
+|---|---|---|---|
+| Meta | `MODEL_API_KEY`; optional `META_MODEL` (existing default retained) | Fixed `https://api.meta.ai/v1/chat/completions`. Current URL/model have not been independently reverified against current Meta API docs in this executor. | Existing repository integration; see [QA evidence](QA_EVIDENCE_CURRENT.md). |
+| Baseten | `BASETEN_API_KEY`; optional `BASETEN_MODEL` | Fixed `https://inference.baseten.co/v1/chat/completions`; model defaults to the supplied participant guide's `meta-models/muse-spark-open-1026`. Bearer authorization. Muse Spark Open does not support structured-output/JSON mode, so response validation stays local. | [Chat completions](https://docs.baseten.co/reference/inference-api/chat-completions), [model API overview](https://docs.baseten.co/inference/model-apis/overview), [errors](https://docs.baseten.co/inference/errors), [HTTP client configuration](https://docs.baseten.co/inference/http-client-configuration), plus owner-supplied participant guide (2026-10-31). |
+| Fireworks | `FIREWORKS_API_KEY`; **required** `FIREWORKS_MODEL` | Fixed `https://api.fireworks.ai/inference/v1/chat/completions`; no default model ID is guessed. Bearer authorization. | [Query text models](https://docs.fireworks.ai/guides/querying-text-models), [chat completions API](https://docs.fireworks.ai/api-reference/post-chatcompletions), [reliability](https://docs.fireworks.ai/guides/reliability). |
+| Modal | `MODAL_PROXY_TOKEN` in the documented `id.secret` form; **required** `MODAL_MODEL`; **required** `MODAL_CHAT_COMPLETIONS_URL` | Exact operator-supplied HTTPS `/v1/chat/completions` URL; validated to a `modal.run` host with no credentials, query, or fragment. No endpoint is guessed or provisioned by this project. Bearer authorization. | [Endpoints](https://modal.com/docs/guide/endpoints), [endpoint integrations](https://modal.com/docs/guide/endpoint-integrations). Shared and dedicated endpoint modes are documented; this project does not deploy either. |
+
+`.env.example` contains empty placeholders only. Do not create/configure credentials, publish an endpoint, or make a live call without the owner's specific authorization. `npm run dev:model` starts the same-origin local bridge plus Vite; `npm run dev` remains offline and does not start it. The legacy `npm run dev:meta` command remains available for compatibility.
+
+## Contract verification
+
+`tests/provider-config.test.mjs`, `tests/provider-contract.test.mjs`, `tests/local-provider-contract.test.mjs`, and `tests/meta-request.test.mjs` use synthetic credentials and mocked responses only. They verify fixed/validated endpoints, server-only selection, provider-specific model requirements, non-streaming partner request bodies, Bearer headers, response validation, safe failure, timeout and client-disconnect cancellation. Browser lifecycle coverage verifies unavailable-provider refusal, dismissed and accepted consent, the displayed Baseten recipient, and mocked dialogue. These tests are not live provider evidence.
+
+Modal and Fireworks account/model availability must be checked by an authorized operator before configuration. Baseten partner access and the named model ID do not prove competition eligibility or authorize spend. The live Meta/API and public-release gates in [hackathon readiness](HACKATHON_READINESS_CURRENT.md) remain unchanged.

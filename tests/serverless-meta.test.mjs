@@ -42,3 +42,13 @@ test('health reveals configuration status but not the credential',()=>{
  health(req,res);assert.equal(res.statusCode,200);
  assert.equal(typeof res.body.metaConfigured,'boolean');assert.doesNotMatch(JSON.stringify(res.body),/sk-|secret|password/);
 });
+
+test('health identifies the selected partner without exposing model ID or credential',()=>{
+ const names=['MODEL_PROVIDER','BASETEN_API_KEY','BASETEN_MODEL','MODEL_API_KEY','META_MODEL'];const previous=Object.fromEntries(names.map(name=>[name,process.env[name]]));
+ try{
+  process.env.MODEL_PROVIDER='baseten';process.env.BASETEN_API_KEY='synthetic-health-secret';process.env.BASETEN_MODEL='meta-models/muse-spark-open-1026';delete process.env.MODEL_API_KEY;delete process.env.META_MODEL;
+  const res=mockResponse();health({method:'GET'},res);
+  assert.equal(res.statusCode,200);assert.deepEqual(res.body,{online:true,provider:'baseten',modelConfigured:true,metaConfigured:false,mode:'opt-in-cloud-or-authored-local'});
+  assert.doesNotMatch(JSON.stringify(res.body),/synthetic-health-secret|muse-spark-open/);
+ }finally{for(const name of names)if(previous[name]===undefined)delete process.env[name];else process.env[name]=previous[name];}
+});

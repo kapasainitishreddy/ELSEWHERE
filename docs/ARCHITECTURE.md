@@ -25,7 +25,7 @@ Player enables local AI each session → bounded, selected NPC memory + fictiona
 OPTIONAL, explicitly non-private hackathon demonstration (not started by default):
 Player consents → only immediate typed question + allowlisted FICTIONAL summary
     → same-origin /api/character → 127.0.0.1-only bridge (server.mjs)
-    → Meta Model API → result (narrative only; cannot mutate game rules)
+    → server-selected remote provider → validated result (narrative only; cannot mutate game rules)
 ```
 
 ## Security invariants

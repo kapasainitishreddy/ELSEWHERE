@@ -29,7 +29,7 @@ test('default safe flow still starts only after vault unlock and model remains o
  const main=await source('src/main.js');
  assert.match(main,/gateForm\.addEventListener\('submit'/);
  assert.match(main,/createExperience\(document\.querySelector\('#world-canvas'\)/);
- assert.match(main,/window\.confirm\('Optional CLOUD MODE/);
+ assert.match(main,/window\.confirm\(`Optional \$\{label\} cloud mode/);
  const readme=await source('README.md');
  assert.match(readme,/physical Quest controls are not verified/);
 });

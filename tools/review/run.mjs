@@ -57,10 +57,10 @@ check('UX Agent','Guest launch and physics controls present',
 check('XR Agent','WebXR and comfort APIs present',
   worlds.includes('VRButton.createButton(renderer)')&&worlds.includes('comfortTurn('),
   'Source inspection only; not proof of a functioning headset');
-check('Runtime Agent','Meta server route and opt-in contract present',
-  api.includes('cloudConsent')&&api.includes('api.meta.ai/v1/chat/completions')&&
-  bridge.includes('muse-spark-1.3'),
-  'Static wiring only. A successful live Meta request is a separate stage-one gate');
+check('Runtime Agent','Server-selected model route and opt-in contract present',
+  api.includes('cloudConsent')&&api.includes('getProviderConfig')&&
+  bridge.includes('createModelProxyHandler')&&present('api/provider-config.js'),
+  'Static wiring only. Partner contract mocks are not a successful live Meta request or Stage One proof');
 check('Privacy Agent','Private mode and optional cloud separation',
   main.includes('cloudEnabled=false')&&api.includes('safeInput(')&&
   html.includes("script-src 'self'"),
