@@ -4,9 +4,11 @@
 
 ELSEWHERE is a privacy-first, browser-based 3D speculative game prototype. Players travel among five fictional eras, meet an imagined future self, invent technology in 1889, choose who owns it, and see the recorded choice alter 2087. The Warden and mech branches add recoverable combat. Game rules and rewards remain deterministic; dialogue may be authored/offline or explicitly optional, and model text cannot change game state. The future-self story is fiction, not prediction, therapy or financial advice.
 
-## Current tested checkpoint — 2026-10-31
+## Current tested checkpoint — 2026-11-01
 
-**Local development status: verified. External submission status: NO-GO.** On the current source, `npm test` passes 253/253 tests, `npm run build` passes, and `npm run review:agents` reports 11 PASS, 0 FAIL, 0 WARNING, 6 UNVERIFIED. The build still warns about large app and Rapier chunks. The last clean `npm ci` was run at an earlier checkpoint; recent changes add no dependencies.
+**Local development status: verified. External submission status: NO-GO.** On the current source, `npm test` passes 287/287 tests, `npm run build` passes, and `npm run review:agents` reports 11 PASS, 0 FAIL, 0 WARNING, 6 UNVERIFIED. The build still warns about large app and Rapier chunks. The last clean `npm ci` was run at an earlier checkpoint; recent changes add no dependencies.
+
+The synthetic provider probe now supports the server-selected Meta, Baseten, Fireworks, and Modal adapters, including configuration-bound consent and sanitized one-call receipts. Its offline contract tests pass; no live inference is established. See [provider setup and verification](docs/MODEL_PROVIDER_ADAPTERS.md).
 
 Verified local behavior includes:
 

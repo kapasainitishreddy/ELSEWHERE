@@ -27,3 +27,11 @@
 `tests/provider-config.test.mjs`, `tests/provider-contract.test.mjs`, `tests/local-provider-contract.test.mjs`, and `tests/meta-request.test.mjs` use synthetic credentials and mocked responses only. They verify fixed/validated endpoints, server-only selection, provider-specific model requirements, non-streaming partner request bodies, Bearer headers, response validation, safe failure, timeout and client-disconnect cancellation. Browser lifecycle coverage verifies unavailable-provider refusal, dismissed and accepted consent, the displayed Baseten recipient, and mocked dialogue. These tests are not live provider evidence.
 
 Modal and Fireworks account/model availability must be checked by an authorized operator before configuration. Baseten partner access and the named model ID do not prove competition eligibility or authorize spend. The live Meta/API and public-release gates in [hackathon readiness](HACKATHON_READINESS_CURRENT.md) remain unchanged.
+
+## Prepared single-request verification
+
+`npm run meta:probe` is safe without `--live`: it reports NOT RUN and makes no request or receipt. After separate credential and cost authorization, the operator can run `npm run meta:probe -- --live` with the approved server environment already supplied. It uses the same selected provider and consent-version contract as the serverless handler; it sends only one fixed fictional question/summary and never reads a vault or chat history. No credential setup or live request was performed during this implementation.
+
+The ignored `review-output/meta-live-check.json` receipt records provider/configured model, timestamp, handler status, upstream status if received, attempt count, dialogue validity, directed cue/focus validity, and response length. It retains no prompt, reply, key, endpoint or raw error. A plain safe-text fallback may validate dialogue but fails the full directed-focus schema gate. A passing local handler receipt still requires separate evidence of eligible Meta model identity and a deployed user experience; Fireworks/Modal model names are operator configuration, not eligibility verification.
+
+`node --test tests/meta-live-probe.test.mjs` exercises all four handlers with injected synthetic responses, missing configuration, no-live refusal, text-only fallback and auth/rate/network failures. These are mocks and make no external requests.
