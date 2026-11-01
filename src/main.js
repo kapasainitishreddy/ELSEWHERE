@@ -18,7 +18,7 @@ import {isLoopbackHostname,localCharacterRequest,sanitizeLocalReply,LOCAL_AI_PAT
 import {storyCueFor,safeSceneCue,safeSceneFocus} from './scene-director.js';
 import {reviewGeneratedCharacterReply} from './conversation-coherence.js';
 import {updateMemoryCards} from './memory-cards.js';
-import {dialogueStatus} from './session-labels.js';
+import {dialogueStatus,remoteRequestTimeout} from './session-labels.js';
 
 const storage=window.localStorage;
 const vault=createLocalVault(storage);
@@ -35,7 +35,7 @@ const curtain=document.querySelector('#transition-curtain');
 const toastRoot=document.querySelector('#toast-region');
 const soundscape=createSoundscape();
 let state=initialState(), experience=null, started=false, guestMode=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
-let remoteProvider={id:'meta',label:'Meta Model API'};
+let remoteProvider={id:'meta',label:'Meta Model API',configurationVersion:'',timeoutMs:12_000};
 let gateSubmissionPending=false;
 const pendingLocalRequests=new Set();
 const pendingCloudRequests=new Set();
@@ -177,26 +177,28 @@ async function ask(question){
   if(local){reply=local;mode=dialogueStatus({guestMode,source:'local-model'});}else mode=dialogueStatus({guestMode,source:'authored'});
  }else if(cloudEnabled){
    mode=remoteProvider.id==='meta'?'META REQUEST ATTEMPTED':`${remoteProvider.label.toUpperCase()} REQUEST ATTEMPTED`;
+  let recipientChanged=false;
   try{
    const controller=new AbortController();
    pendingCloudRequests.add(controller);
-   const timer=setTimeout(()=>controller.abort(),11000);
+   const timer=setTimeout(()=>controller.abort(),remoteRequestTimeout(remoteProvider.timeoutMs));
    try{
     // Share only the player-typed question and an explicit, allowlisted *fictional* game summary.
     // Never transmit saved NPC memories, the future letter, other branches, personal saves or the passphrase.
-    const body={cloudConsent:true,world:'self',question:question.slice(0,350),timeline:{
+    const body={cloudConsent:true,world:'self',providerConfigVersion:remoteProvider.configurationVersion,question:question.slice(0,350),timeline:{
      credits:state.credits,fame:state.fame,trust:state.trust,invention:state.invention,
      fate:state.fate,power:state.power,ending:state.ending
     }};
     const res=await fetch('/api/character',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal,credentials:'same-origin',cache:'no-store'});
+    if(res.status===409){recipientChanged=true;throw new Error('Recipient consent is stale');}
     if(!res.ok)throw new Error('Provider unavailable');
     const data=await res.json();if(typeof data?.reply!=='string'||!data.reply.trim())throw new Error('No AI dialogue');
     const safe=reviewGeneratedCharacterReply(before,'elder',data.reply);if(!safe.ok)throw new Error('Unreliable or repetitive generated claim');
     reply=safe.reply;visualCue=safeSceneCue(data.cue,visualCue);visualFocus=safeSceneFocus(data.focus);mode=dialogueStatus({guestMode,source:'remote-response',remoteProviderLabel:remoteProvider.label});
    }finally{clearTimeout(timer);pendingCloudRequests.delete(controller);}
   }catch{
-   mode=dialogueStatus({guestMode,source:'remote-fallback',remoteProviderLabel:remoteProvider.label});
-   toast(`${remoteProvider.id==='meta'?'Meta':remoteProvider.label} unavailable. Continuing with local dialogue. A remote request may have been attempted.`,false);
+   if(recipientChanged){cloudEnabled=false;reply=dialogueFallback(before,question);mode=dialogueStatus({guestMode,source:'authored'});toast('The configured remote recipient changed. No question was sent. Review and enable consent again.',false);}
+   else{mode=dialogueStatus({guestMode,source:'remote-fallback',remoteProviderLabel:remoteProvider.label});toast(`${remoteProvider.id==='meta'?'Meta':remoteProvider.label} unavailable. Continuing with local dialogue. A remote request may have been attempted.`,false);}
   }
  }
  if(!started||sessionEpoch!==epoch||state!==before){experience?.setDialogueActivity?.('idle');return;}
@@ -215,8 +217,8 @@ async function toggleCloud(){
   if(!response.ok)throw new Error('Provider status unavailable');
   const health=await response.json();
   const labels={meta:'Meta Model API',baseten:'Baseten',fireworks:'Fireworks',modal:'Modal'};
-  if(health?.modelConfigured!==true||!labels[health.provider])throw new Error('Provider is not configured');
-  configuredProvider={id:health.provider,label:labels[health.provider]};
+  if(health?.modelConfigured!==true||!labels[health.provider]||typeof health.configurationVersion!=='string'||!/^[a-f0-9]{64}$/.test(health.configurationVersion))throw new Error('Provider is not configured');
+  configuredProvider={id:health.provider,label:labels[health.provider],configurationVersion:health.configurationVersion,timeoutMs:Number(health.timeoutMs)||12_000};
  }catch{if(started&&sessionEpoch===epoch)toast('Remote model is not configured or available. Authored dialogue remains ready; no question was sent.',false);return;}
  finally{pendingCloudRequests.delete(controller);}
  if(!started||sessionEpoch!==epoch)return;

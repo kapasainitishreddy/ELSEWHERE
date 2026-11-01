@@ -35,7 +35,7 @@ Player consents → only immediate typed question + allowlisted FICTIONAL summar
 3. Prime/Echo snapshots do not transfer wealth, NPC memory, hidden flags or endings. Fork costs are paid before snapshotting both realities.
 4. The Web Crypto passphrase is never persisted; salt and IV are unsecret, ciphertext authenticated. Secure context is required. Old plaintext saves are deleted **only after** the new encrypted record is written.
 5. Local UI text is escaped before insertion into HTML. Public service-worker caches exclude `/api/` and `/private/` requests. In production a SW may cache application code, not vault payloads.
-6. Optional Meta bridge requires explicit `cloudConsent:true` and sends no stored letters, previous chat turns, full timeline, NPC memories, alternate branch snapshots or passphrases. A real question/summary still crosses the network if enabled.
+6. Optional remote-model bridge requires explicit consent for the configured provider/model, bound by a server-issued configuration fingerprint that invalidates stale tabs. It sends no stored letters, previous chat turns, full timeline, NPC memories, alternate branch snapshots or passphrases. A real question/summary still crosses the network if enabled.
 7. Default authored dialogue is deterministic and reactive. The separately enabled Ollama adapter uses a local general-purpose language model for fictional speech only. It does not make NPCs continuously autonomous.
 
 ## XR and interaction

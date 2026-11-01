@@ -5,7 +5,7 @@
  * The user must opt in for each browser session before the client calls it.
  */
 import {validRequest,getMessages} from '../server.mjs';
-import {buildChatRequest,getProviderConfig} from './provider-config.js';
+import {buildChatRequest,getProviderConfig,providerConfigurationVersion} from './provider-config.js';
 import {parseDirectedResponse,parseDirectedFocus} from '../src/scene-director.js';
 import {createInferenceLimiter} from './rate-limit.js';
 const sharedLimiter=createInferenceLimiter();
@@ -26,8 +26,9 @@ function sameOrigin(req){
 }
 function safeInput(body){
  if(!body||typeof body!=='object'||Array.isArray(body))return null;
- const fields=Object.keys(body);if(fields.some(x=>!['world','question','timeline','cloudConsent'].includes(x)))return null;
+ const fields=Object.keys(body);if(fields.some(x=>!['world','question','timeline','cloudConsent','providerConfigVersion'].includes(x)))return null;
  if(JSON.stringify(body).length>4096 || !validRequest(body))return null;
+ if(typeof body.providerConfigVersion!=='string'||!/^[a-f0-9]{64}$/.test(body.providerConfigVersion))return null;
  const summary=body.timeline;
  if(Object.keys(summary).some(k=>!['credits','fame','trust','invention','fate','power','ending'].includes(k)))return null;
  return body;
@@ -43,8 +44,10 @@ export function createCharacterHandler({provider=()=>getProviderConfig(),key,mod
   if(key)selected.apiKey=key();
   if(model)selected.model=model();
   selected.apiKey=String(selected.apiKey||'');selected.model=String(selected.model||'').trim();
-  selected.configured=Boolean(selected.endpoint&&selected.apiKey&&!/[\r\n]/.test(selected.apiKey)&&selected.model.length>0&&selected.model.length<=250&&!/[\r\n]/.test(selected.model));
+  selected.configured=Boolean(selected.endpoint&&selected.apiKey&&!/[\r\n]/.test(selected.apiKey)&&selected.model.length>0&&selected.model.length<=250&&!/[\r\n]/.test(selected.model)&&(selected.id!=='modal'||/^[^.]+\..+$/.test(selected.apiKey)));
+  selected.configurationVersion=providerConfigurationVersion(selected);
   if(!selected.configured)return reply(res,503,{error:'The selected model provider is not configured. Local authored dialogue remains available.'});
+  if(data.providerConfigVersion!==selected.configurationVersion)return reply(res,409,{error:'The configured remote recipient changed. Review and enable remote consent again; no question was sent.'});
   const ip=String(req.headers?.['x-real-ip'] || req.socket?.remoteAddress || 'anonymous');
   const release=limiter.begin(ip);
   if(!release)return reply(res,429,{error:'Demo capacity reached. Continue with local authored dialogue.'});
@@ -57,7 +60,7 @@ export function createCharacterHandler({provider=()=>getProviderConfig(),key,mod
    if(clientGone)return;
    const response=await call(selected.endpoint,{
     method:'POST',signal:controller.signal,
-    headers:{Authorization:`Bearer ${selected.apiKey}`,'Content-Type':'application/json'},
+    headers:{Authorization:`Bearer ${selected.apiKey}`,'Content-Type':'application/json'},redirect:'error',
     body:JSON.stringify(buildChatRequest(selected,getMessages(data)))
    });
    if(!response.ok)return reply(res,502,{error:'Model is temporarily unavailable. Continue with local authored dialogue.'});

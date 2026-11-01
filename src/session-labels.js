@@ -1,5 +1,6 @@
 /** Honest labels for where a session lives and where optional dialogue travels. */
 const providerName=label=>label==='Meta Model API'?'META':String(label||'REMOTE MODEL').toUpperCase();
+export function remoteRequestTimeout(providerTimeoutMs){return Math.min(65_000,Math.max(12_000,Number(providerTimeoutMs)||12_000)+5_000);}
 export function privacyIndicator({guestMode=false,cloudEnabled=false,localAiEnabled=false,remoteProviderLabel='Meta Model API'}={}){
  if(cloudEnabled){const name=providerName(remoteProviderLabel);return guestMode?`GUEST · NOT SAVED · ${name} TEXT LEAVES DEVICE`:`${name} CLOUD · TEXT LEAVES DEVICE`;}
  if(localAiEnabled)return guestMode?'GUEST · NOT SAVED · ON-DEVICE MODEL':'ON-DEVICE MODEL · LOCAL ONLY';

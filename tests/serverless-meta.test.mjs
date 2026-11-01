@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCharacterHandler} from '../api/character.js';
 import health from '../api/health.js';
+import {getProviderConfig} from '../api/provider-config.js';
 function mockResponse(){return {statusCode:null,headers:{},body:null,status(n){this.statusCode=n;return this},setHeader(k,v){this.headers[k]=v;return this},json(v){this.body=v;return this}};}
-const good={cloudConsent:true,world:'self',question:'How was the imaginary city changed?',timeline:{credits:900,fame:14,trust:22,invention:'rail',fate:'gift',power:null,ending:null}};
+const good={cloudConsent:true,world:'self',providerConfigVersion:getProviderConfig({}).configurationVersion,question:'How was the imaginary city changed?',timeline:{credits:900,fame:14,trust:22,invention:'rail',fate:'gift',power:null,ending:null}};
 test('cloud endpoint refuses missing consent and private extra data',async()=>{
  let outbound=0;const handler=createCharacterHandler({key:()=> 'secret',call:async()=>{outbound++;throw Error('Should not call')}});
  for(const bad of [
@@ -48,7 +49,7 @@ test('health identifies the selected partner without exposing model ID or creden
  try{
   process.env.MODEL_PROVIDER='baseten';process.env.BASETEN_API_KEY='synthetic-health-secret';process.env.BASETEN_MODEL='meta-models/muse-spark-open-1026';delete process.env.MODEL_API_KEY;delete process.env.META_MODEL;
   const res=mockResponse();health({method:'GET'},res);
-  assert.equal(res.statusCode,200);assert.deepEqual(res.body,{online:true,provider:'baseten',modelConfigured:true,metaConfigured:false,mode:'opt-in-cloud-or-authored-local'});
+  assert.equal(res.statusCode,200);assert.deepEqual(res.body,{online:true,provider:'baseten',modelConfigured:true,metaConfigured:false,configurationVersion:getProviderConfig(process.env).configurationVersion,timeoutMs:30000,mode:'opt-in-cloud-or-authored-local'});
   assert.doesNotMatch(JSON.stringify(res.body),/synthetic-health-secret|muse-spark-open/);
  }finally{for(const name of names)if(previous[name]===undefined)delete process.env[name];else process.env[name]=previous[name];}
 });

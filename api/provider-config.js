@@ -1,3 +1,5 @@
+import {createHash} from 'node:crypto';
+
 /** Server-only allowlist for chat-completions providers. Never accept URLs or
  * provider selection from a browser request; provider choice is operator config. */
 const PROVIDERS=Object.freeze({
@@ -26,7 +28,13 @@ export function getProviderConfig(env=process.env){
  const safeKey=apiKey.length>0&&!/[\r\n]/.test(apiKey);
  const safeModel=model.length>0&&model.length<=250&&!/[\r\n]/.test(model);
  const modalTokenValid=id!=='modal'||/^[^.]+\..+$/.test(apiKey);
- return {id,label:spec.label,endpoint,model,apiKey,configured:Boolean(safeKey&&safeModel&&endpoint&&modalTokenValid),timeoutMs:spec.timeoutMs};
+ const configurationVersion=providerConfigurationVersion({id,endpoint,model});
+ return {id,label:spec.label,endpoint,model,apiKey,configured:Boolean(safeKey&&safeModel&&endpoint&&modalTokenValid),timeoutMs:spec.timeoutMs,configurationVersion};
+}
+
+/** Public opaque version binds a consented request to its provider, endpoint and model. */
+export function providerConfigurationVersion({id,endpoint,model}){
+ return createHash('sha256').update(JSON.stringify([id,endpoint,model])).digest('hex');
 }
 
 /** Build the shared bounded request. Partner endpoints require explicit non-streaming chat completions. */

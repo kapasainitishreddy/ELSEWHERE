@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
 import {fetchModelJson} from '../api/meta-request.js';
 
 test('local Meta proxy timeout remains active while the upstream body is stalled',async()=>{
@@ -27,4 +28,18 @@ test('provider proxy propagates caller cancellation through response-body parsin
  client.abort(new DOMException('caller left','AbortError'));
  await assert.rejects(pending,{name:'AbortError'});
  assert.equal(observedSignal.aborted,true);
+});
+
+test('provider redirects fail closed without sending the conversation to a second recipient',async()=>{
+ let redirectedRequests=0;
+ const target=createServer((_req,res)=>{redirectedRequests++;res.end('unexpected');});
+ await new Promise(resolve=>target.listen(0,'127.0.0.1',resolve));
+ const targetUrl=`http://127.0.0.1:${target.address().port}/capture`;
+ const source=createServer((_req,res)=>{res.writeHead(307,{Location:targetUrl});res.end();});
+ await new Promise(resolve=>source.listen(0,'127.0.0.1',resolve));
+ try{
+  const sourceUrl=`http://127.0.0.1:${source.address().port}/chat`;
+  await assert.rejects(fetchModelJson(fetch,sourceUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:'synthetic question'})},2000));
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(redirectedRequests,0);
+ }finally{await Promise.all([new Promise(resolve=>source.close(resolve)),new Promise(resolve=>target.close(resolve))]);}
 });

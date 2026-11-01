@@ -15,8 +15,9 @@ let browserServer;
 const chromiumConfig=await mkdtemp(join(tmpdir(),'elsewhere-chromium-config-'));
 const chromiumCache=await mkdtemp(join(tmpdir(),'elsewhere-chromium-cache-'));
 const PASS='Synthetic vault passphrase 42',PRIVATE_SENTINEL='SYNTHETIC_PRIVATE_LETTER_SENTINEL',ERASE_SENTINEL='SYNTHETIC_ERASE_RECOVERY_LETTER';
-let mockProviderHealth={provider:'meta',modelConfigured:true,metaConfigured:true};
+let mockProviderHealth={provider:'meta',modelConfigured:true,metaConfigured:true,configurationVersion:'a'.repeat(64),timeoutMs:12000};
 let mockProviderHealthReads=[];
+let expectedStaleConsent409=false;
 try{
  let ready=false;
  for(let n=0;n<80;n++){if(vite.exitCode!==null)throw new Error(`Vite exited (${vite.exitCode})`);try{if((await fetch(origin)).ok){ready=true;break;}}catch{}await delay(250);}
@@ -143,7 +144,7 @@ try{
   const {context,page}=await makePage();let metaRequests=0,localRequests=0,healthChecks=0,postedBody;
   try{
    page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')metaRequests++;});
-   await page.route('**/api/health',route=>{healthChecks++;return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({online:true,provider:'meta',modelConfigured:true,metaConfigured:true,mode:'opt-in-cloud-or-authored-local'})});});
+   await page.route('**/api/health',route=>{healthChecks++;return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({online:true,provider:'meta',modelConfigured:true,metaConfigured:true,configurationVersion:'a'.repeat(64),timeoutMs:12000,mode:'opt-in-cloud-or-authored-local'})});});
    await page.goto(origin,{waitUntil:'networkidle'});await page.locator('#vault-passphrase').fill(PASS);await page.locator('#vault-submit').click();
    await page.locator('#vault-gate').waitFor({state:'hidden'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
    const readVault=()=>page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1'));
@@ -222,7 +223,7 @@ try{
    assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit-world'),'self');
    assert.equal(await page.locator('#world-canvas canvas').getAttribute('data-causal-exhibit-branch'),'prime');
    console.log('vault-cloud: consented mocked Meta reply and allowlisted request validated');
-   assert.deepEqual(Object.keys(postedBody).sort(),['cloudConsent','question','timeline','world']);
+   assert.deepEqual(Object.keys(postedBody).sort(),['cloudConsent','providerConfigVersion','question','timeline','world']);
    assert.doesNotMatch(JSON.stringify(postedBody),new RegExp(`${PASS}|${PRIVATE_SENTINEL}`));
    await page.unroute('**/api/character');
    await page.route('**/api/character',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({error:'synthetic malformed reply'})}));
@@ -350,9 +351,9 @@ try{
  }
 
  if(selected.includes('provider-consent')){
-  const {context,page}=await makePage();let characterCalls=0,consentText='';
+  const {context,page}=await makePage();let characterCalls=0,upstreamMocks=0,consentText='',staleConfiguration=false;
   try{
-   mockProviderHealth={provider:'baseten',modelConfigured:false,metaConfigured:false};
+   mockProviderHealth={provider:'baseten',modelConfigured:false,metaConfigured:false,configurationVersion:null,timeoutMs:30000};
    await startGuest(page);await travelTo(page,'self');await clickUser(page,page.locator('.hero-enter'));
    await clickUser(page,page.locator('[data-cmd="journal"]'));await clickUser(page,page.locator('[data-tab="privacy"]'));
    page.on('request',request=>{if(new URL(request.url()).pathname==='/api/character')characterCalls++;});
@@ -362,7 +363,8 @@ try{
    assert.equal(characterCalls,0,'unconfigured remote provider does not send a conversation');
    assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED');
    mockProviderHealth.modelConfigured=true;
-   assert.deepEqual(await page.evaluate(()=>fetch('/api/health').then(response=>response.json())),{provider:'baseten',modelConfigured:true,metaConfigured:false},'same-origin health must identify the configured mock recipient');
+   mockProviderHealth.configurationVersion='b'.repeat(64);
+   assert.deepEqual(await page.evaluate(()=>fetch('/api/health').then(response=>response.json())),{provider:'baseten',modelConfigured:true,metaConfigured:false,configurationVersion:'b'.repeat(64),timeoutMs:30000},'same-origin health must identify the configured mock recipient');
    const declinedConsent=page.waitForEvent('dialog');
    await clickUser(page,page.locator('.cloud-consent [data-cmd="cloud-toggle"]'));
    const declinedDialog=await declinedConsent;consentText=declinedDialog.message();await declinedDialog.dismiss();
@@ -374,13 +376,24 @@ try{
    assert.equal((await page.locator('.privacy-sigil').innerText()).trim(),'GUEST · NOT SAVED · BASETEN TEXT LEAVES DEVICE');
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'BASETEN CLOUD ENABLED · GUEST · NOT SAVED');
    await clickUser(page,page.locator('[aria-label="Close timeline"]'));
-   await page.route('**/api/character',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'This world has no chosen outcome so far; you can still decide what the discovery means.',cue:'quiet',focus:'people',provider:'Baseten'})}));
+   await page.route('**/api/character',route=>{
+    if(staleConfiguration)return route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'The configured remote recipient changed. Review and enable remote consent again; no question was sent.'})});
+    upstreamMocks++;return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'This world has no chosen outcome so far; you can still decide what the discovery means.',cue:'quiet',focus:'people',provider:'Baseten'})});
+   });
    await page.locator('#chat-question').fill('What could happen next?');await page.locator('#chat-form button[type="submit"]').click();
-   await page.locator('#chat-history .chat-line.elder').last().waitFor();assert.equal(characterCalls,1);
+   await page.locator('#chat-history .chat-line.elder').last().waitFor();assert.equal(characterCalls,1);assert.equal(upstreamMocks,1);
    assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'BASETEN CLOUD RESPONSE · GUEST · NOT SAVED');
    assert.match(await page.locator('#chat-history').innerText(),/This world has no chosen outcome/);
-   console.log('provider-consent: unavailable check, dismissed consent, recipient-specific Baseten consent/status and mocked reply verified');
-  }finally{mockProviderHealth={provider:'meta',modelConfigured:true,metaConfigured:true};await context.close();}
+   mockProviderHealth.configurationVersion='c'.repeat(64);staleConfiguration=true;expectedStaleConsent409=true;
+   const priorElders=await page.locator('#chat-history .chat-line.elder').count();
+   await page.locator('#chat-question').fill('Do not send this after the recipient changes.');await page.locator('#chat-form button[type="submit"]').click();
+   await page.locator('#chat-history .chat-line.elder').nth(priorElders).waitFor();
+   assert.equal(characterCalls,2);assert.equal(upstreamMocks,1,'stale consent must not reach the provider mock');
+   assert.equal(await page.locator('.privacy-sigil').innerText(),'GUEST · NOT SAVED');
+   assert.equal((await page.locator('.chat-header').innerText()).split('\n').at(-1),'LOCAL · AUTHORED · GUEST · NOT SAVED');
+   assert.match(await page.locator('#toast-region').innerText(),/recipient changed.*No question was sent/i);
+   console.log('provider-consent: unavailable check, recipient-specific opt-in, stale-config rejection and authored fallback verified');
+  }finally{mockProviderHealth={provider:'meta',modelConfigured:true,metaConfigured:true,configurationVersion:'a'.repeat(64),timeoutMs:12000};await context.close();}
  }
 
  if(selected.includes('guest-reset')){
@@ -415,7 +428,7 @@ try{
    assert.match(guestErasePrompt,/unsaved guest session/i);
    assert.match(await page.locator('.toast').filter({hasText:/erased from this unsaved guest session/i}).innerText(),/erased from this unsaved guest session/i);
    await page.locator('[data-cmd="local-ai-toggle"]').click();
-   await page.route('**/api/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({online:true,provider:'meta',modelConfigured:true,metaConfigured:true,mode:'opt-in-cloud-or-authored-local'})}));
+   await page.route('**/api/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({online:true,provider:'meta',modelConfigured:true,metaConfigured:true,configurationVersion:'a'.repeat(64),timeoutMs:12000,mode:'opt-in-cloud-or-authored-local'})}));
    await page.route('**/api/character',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reply:'This world has no chosen outcome so far; you can still decide what the discovery means.',cue:'quiet',focus:'people'})}));
    page.once('dialog',dialog=>dialog.accept());await page.locator('.chat-section [data-cmd="cloud-toggle"]').click();
    await page.waitForFunction(()=>document.querySelector('.privacy-sigil')?.innerText.includes('TEXT LEAVES DEVICE'),{timeout:10000});
@@ -434,7 +447,14 @@ try{
    console.log(JSON.stringify({result:'PASS',scenario:'guest offline, mocked on-device, delayed-reply draft preservation, synchronized world/chat mode labels, mocked Meta and reset privacy behavior',localModelMocks:localCalls,metaMocks:calls}));
   }finally{releaseLocalReply();try{await Promise.race([page.goto(origin,{waitUntil:'domcontentloaded'}),delay(5000)]);}catch{}await Promise.race([context.close(),delay(5000)]);}
  }
- assert.deepEqual(errors,[],'browser page or console errors');assert.deepEqual(httpErrors,[],'HTTP errors');assert.deepEqual(external,[],'off-origin requests');
+ const expectedConflictConsole=errors.filter(message=>/Failed to load resource: the server responded with a status of 409 \(Conflict\)/.test(message));
+ const unexpectedConsole=errors.filter(message=>!/Failed to load resource: the server responded with a status of 409 \(Conflict\)/.test(message));
+ assert.equal(expectedConflictConsole.length,expectedStaleConsent409?1:0,'only the explicitly exercised stale-consent rejection may appear as a browser console error');
+ assert.deepEqual(unexpectedConsole,[],'unexpected browser page or console errors');
+ const expectedConflictResponse=httpErrors.filter(entry=>entry===`409 ${origin}/api/character`);
+ const unexpectedHttp=httpErrors.filter(entry=>entry!==`409 ${origin}/api/character`);
+ assert.equal(expectedConflictResponse.length,expectedStaleConsent409?1:0,'the stale-consent response is the only accepted HTTP conflict');
+ assert.deepEqual(unexpectedHttp,[],'unexpected HTTP errors');assert.deepEqual(external,[],'off-origin requests');
 }finally{
  if(browser)await Promise.race([browser.close(),delay(4000)]);
  if(browserServer){const child=browserServer.process();if(child?.exitCode===null){child.kill('SIGKILL');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),delay(1000)]);}}

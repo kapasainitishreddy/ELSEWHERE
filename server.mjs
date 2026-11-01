@@ -36,7 +36,7 @@ export function getMessages(data){
   ];
 }
 export function createModelProxyHandler({provider=PROVIDER,fetchImpl=fetch,limiter=limit}={}){return async (req,res)=>{
-  if(req.method==='GET'&&req.url==='/api/health')return send(res,200,{online:true,provider:provider.id,modelConfigured:provider.configured,metaConfigured:provider.id==='meta'&&provider.configured});
+  if(req.method==='GET'&&req.url==='/api/health')return send(res,200,{online:true,provider:provider.id,modelConfigured:provider.configured,metaConfigured:provider.id==='meta'&&provider.configured,configurationVersion:provider.configured?provider.configurationVersion:null,timeoutMs:provider.timeoutMs});
   if(req.url!=='/api/character')return send(res,404,{error:'Not found'});
   if(req.method!=='POST')return send(res,405,{error:'Method not allowed'});
   if(limiter(req.socket.remoteAddress || 'local'))return send(res,429,{error:'Rate limit reached'});
@@ -48,11 +48,13 @@ export function createModelProxyHandler({provider=PROVIDER,fetchImpl=fetch,limit
   try {
     for await (const chunk of req) {body+=chunk.toString('utf8');if(body.length>8192)return send(res,413,{error:'Request too large'});}
     if(clientGone)return;
-    const data=JSON.parse(body);if(!validRequest(data))return send(res,400,{error:'Invalid conversation input'});
+    const data=JSON.parse(body);if(!validRequest(data)||typeof data.providerConfigVersion!=='string'||!/^[a-f0-9]{64}$/.test(data.providerConfigVersion))return send(res,400,{error:'Invalid conversation input'});
+    if(data.providerConfigVersion!==provider.configurationVersion)return send(res,409,{error:'The configured remote recipient changed. Review and enable remote consent again; no question was sent.'});
+    if(!provider.configured||provider.id==='modal'&&!/^[^.]+\..+$/.test(provider.apiKey||''))return send(res,503,{error:'Selected model provider is not configured. Offline fallback available.'});
     const {response:upstream,data:response}=await fetchModelJson(fetchImpl,provider.endpoint,{
         method:'POST',
         headers:{'Authorization':`Bearer ${provider.apiKey}`,'Content-Type':'application/json'},
-        body:JSON.stringify(buildChatRequest(provider,getMessages(data))),signal:clientController.signal
+        body:JSON.stringify(buildChatRequest(provider,getMessages(data))),signal:clientController.signal,redirect:'error'
       },provider.timeoutMs);
     if(!upstream.ok)return send(res,502,{error:'Model temporarily unavailable. Offline fallback available.'});
     const reply=response?.choices?.[0]?.message?.content;

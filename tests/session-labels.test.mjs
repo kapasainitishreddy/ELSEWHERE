@@ -2,7 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createInterface} from '../src/ui.js';
 import {initialState,travel} from '../src/game.js';
-import {dialogueStatus,privacyIndicator} from '../src/session-labels.js';
+import {dialogueStatus,privacyIndicator,remoteRequestTimeout} from '../src/session-labels.js';
+
+test('browser timeout allows the configured provider deadline plus bounded response grace',()=>{
+ assert.equal(remoteRequestTimeout(12000),17000);
+ assert.equal(remoteRequestTimeout(30000),35000);
+ assert.equal(remoteRequestTimeout(60000),65000);
+});
 
 test('the visible privacy sigil and chat header distinguish storage from dialogue transport in every session mode',()=>{
  const cases=[
@@ -30,7 +36,13 @@ test('the visible privacy sigil and chat header distinguish storage from dialogu
   ui.render(state);ui.updateStatus(status);
   const sigil=root.innerHTML.match(/<div class="privacy-sigil"[^>]*>([\s\S]*?)<\/div>/)?.[1]||'';
   const header=root.innerHTML.match(/<div class="chat-header">([\s\S]*?)<\/div>/)?.[1]||'';
+  const chatNote=root.innerHTML.match(/<div class="chat-note">([\s\S]*?)<\/div>/)?.[1]||'';
   assert.ok(sigil.includes(mode.privacy),`${mode.name}: rendered privacy sigil must disclose both storage and transport`);
   assert.ok(header.includes(mode.status),`${mode.name}: rendered chat header must disclose both storage and transport`);
+  if(mode.cloudEnabled){
+   assert.ok(chatNote.includes(mode.remoteProviderLabel||'Meta Model API'),`${mode.name}: dialogue footer names the actual recipient`);
+   if(mode.remoteProviderLabel)assert.doesNotMatch(chatNote,/go to Meta\./,`${mode.name}: partner disclosure must not name Meta as recipient`);
+  }
+  assert.match(root.innerHTML,/never sent to any remote provider/i);
  }
 });
