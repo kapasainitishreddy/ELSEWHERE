@@ -58,7 +58,7 @@ try{
  assert.doesNotMatch(await page.locator('#timeline-panel').innerText(),/The photograph remembers an empty seat|invisible ink|sealed black box/,'undiscovered clue text remains hidden');
  await page.screenshot({path:new URL('a11y-ninth-platform-guest.png',artifacts).pathname,timeout:30000});
  await page.keyboard.press('ArrowLeft');await page.waitForFunction(()=>document.activeElement?.id==='timeline-tab-privacy');assert.equal(await page.evaluate(()=>document.activeElement?.id),'timeline-tab-privacy');
- const guestPrivacy=await page.locator('#timeline-panel').innerText();assert.match(guestPrivacy,/GUEST SESSION · NOT SAVED/);assert.doesNotMatch(guestPrivacy,/DEVICE ONLY · ENCRYPTED|All saves.*AES-256-GCM/);
+ const guestPrivacy=await page.locator('#timeline-panel').innerText();assert.match(guestPrivacy,/GUEST · NOT SAVED/);assert.match(guestPrivacy,/Guest progress has no encrypted backup/);assert.doesNotMatch(guestPrivacy,/DEVICE ONLY · ENCRYPTED|All saves.*AES-256-GCM/);
  const afterJournal=await page.evaluate(()=>({world:document.querySelector('#app-ui')?.dataset.world,branch:document.querySelector('.branch-tag')?.textContent.trim(),hours:document.querySelector('.artifact-tracker')?.innerText.trim(),vault:localStorage.getItem('syrava.elsewhere.private-v1')}));
  assert.deepEqual(afterJournal,beforeJournal,'viewing timeline tabs must not mutate game state or create a guest vault');
  await page.keyboard.press('Escape');await page.waitForFunction(()=>document.activeElement?.id==='timeline-open');assert.equal(await page.evaluate(()=>document.activeElement?.id),'timeline-open','Escape restores focus to the timeline opener');
