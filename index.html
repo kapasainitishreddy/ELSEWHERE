@@ -14,6 +14,10 @@
     <main id="app" aria-label="ELSEWHERE experience">
       <div id="world-canvas" role="region" aria-label="Interactive 3D world"></div>
       <div id="app-ui"></div>
+      <aside id="scene-recovery" class="scene-recovery" hidden aria-label="3D scene recovery">
+        <span id="scene-recovery-status" role="status" aria-live="polite">The 3D scene is unavailable. Story mode remains playable.</span>
+        <button id="scene-retry-text" type="button">RETRY 3D</button>
+      </aside>
       <div id="interaction-hint" aria-hidden="true"></div>
       <div id="toast-region" aria-live="polite"></div>
       <div id="transition-curtain" aria-hidden="true"><i>◌</i><span>ANOTHER WORLD</span></div>

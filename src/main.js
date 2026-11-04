@@ -32,10 +32,15 @@ const guestButton=gate.querySelector('#guest-play');
 const physicsButton=gate.querySelector('#physics-play');
 const curtain=document.querySelector('#transition-curtain');
 const toastRoot=document.querySelector('#toast-region');
+const loadingScreen=document.querySelector('#loading-screen');
+const sceneRecovery=document.querySelector('#scene-recovery');
+const sceneRecoveryStatus=document.querySelector('#scene-recovery-status');
+const sceneRetryText=document.querySelector('#scene-retry-text');
+const sceneChunkUrl='__ELSEWHERE_SCENE_CHUNK_URL__';
 const soundscape=createSoundscape();
-let state=initialState(), experience=null, started=false, guestMode=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
+let state=initialState(), experience=null, sceneRuntime=null, sceneImportAttempt=0, started=false, guestMode=false, previousWorld=state.world, cloudEnabled=false, localAiEnabled=false, sessionEpoch=0;
 let remoteProvider={id:'meta',label:'Meta Model API',configurationVersion:'',timeoutMs:12_000};
-let gateSubmissionPending=false;
+let gateSubmissionPending=false,sceneLoadPending=false;
 const pendingLocalRequests=new Set();
 const pendingCloudRequests=new Set();
 function abortPendingRequests(){
@@ -300,7 +305,7 @@ async function lock(){
  let saveError=null,timedOut=false;
  // Close the private interaction surface before awaiting storage. The key stays
  // available only for this bounded final save attempt; input is disabled meanwhile.
- gate.hidden=false;setGateBusy(true);gateStatus.textContent='Locking your private world…';
+ gate.hidden=false;sceneRecovery.hidden=true;loadingScreen.removeAttribute('aria-hidden');setGateBusy(true);gateStatus.textContent='Locking your private world…';
  gateTitle.textContent='LOCKING YOUR PRIVATE WORLD';
  document.querySelector('#app').inert=true;
  document.querySelector('#app-ui').inert=true;
@@ -334,7 +339,7 @@ function eraseVault(){
  catch(error){notice='The key was cleared, but browser storage could not confirm all ELSEWHERE data was erased. Some local data may remain. Exported backups are separate.';}
  sessionEpoch++;abortPendingRequests();cloudEnabled=false;localAiEnabled=false;
  stopPresence();privateSpeech.disable();ui.resetEphemeral();soundscape.toggle(false);
- gate.hidden=false;setGateBusy(true);gateTitle.textContent='ERASING YOUR PRIVATE WORLD';gateStatus.textContent='Closing this private world…';
+ gate.hidden=false;sceneRecovery.hidden=true;loadingScreen.removeAttribute('aria-hidden');setGateBusy(true);gateTitle.textContent='ERASING YOUR PRIVATE WORLD';gateStatus.textContent='Closing this private world…';
  document.querySelector('#app').inert=true;document.querySelector('#app-ui').inert=true;
  let sceneCleanupFailed=false;
  try{experience?.dispose?.();}catch{sceneCleanupFailed=true;}
@@ -351,34 +356,81 @@ const ui=createInterface(document.querySelector('#app-ui'),{
  privacyStatus:()=>true,guestMode:()=>guestMode,cloudEnabled:()=>cloudEnabled,remoteProvider:()=>remoteProvider.label,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
  voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus,comfort:id=>experience?.setComfort?.(id)
 });
-async function begin(next,{guest=false,physicsPreview=false}={}){
- stopPresence();privateSpeech.disable();
- abortPendingRequests();
- document.querySelector('#app').inert=false;
- document.querySelector('#app-ui').inert=false;
- guestMode=Boolean(guest);
- state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;document.querySelector('#app').setAttribute('aria-busy','true');
- const loading=document.querySelector('#loading-screen');
- if(loading){loading.innerHTML='<span class="loading-mark" aria-hidden="true">◌</span><div>BUILDING YOUR WORLDS</div><small>Preparing this experience on your device.</small>';loading.classList.remove('hidden');}
- ui.resetEphemeral();
- try{
-  // Three.js and the scene runtime are only needed after someone chooses to play.
-  // Keep the encrypted-vault gate and its controls light on the first page load.
-  const {createExperience}=await import('./worlds.js');
-  started=true;
-  experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater(),message=>toast(message),()=>ui.enterWorld(),{spawnNearPhysics:physicsPreview});
-  experience.mount(state);document.querySelector('#app').dataset.sceneReady='true';ui.render(state);ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');
-  if(physicsPreview)ui.enterSandbox();
-  document.querySelector('#app').removeAttribute('aria-busy');loading?.classList.add('hidden');
- }catch(error){
-  console.error('3D initialization failed:',error?.message);
-  started=true;
-  document.querySelector('#app').dataset.sceneReady='false';
-  experience={mount(){},dispose(){}};
-  ui.render(state);ui.updateStatus('LOCAL · TEXT MODE');
-  document.querySelector('#app').removeAttribute('aria-busy');
-  loading.innerHTML='<div class="loading-error"><strong>3D unavailable</strong><p>Explore the entire story with the accessible story controls.</p></div>';
+function focusStoryEntry(){const target=document.querySelector('#app-ui .first-crossing-actions button:first-child')||document.querySelector('#app-ui .hero-enter');target?.focus?.();}
+function setSceneBackgroundInert(inert){
+ for(const node of [document.querySelector('#world-canvas'),document.querySelector('#app-ui')]){
+  if(!node)continue;node.inert=inert;
+  if(inert)node.setAttribute('aria-hidden','true');else node.removeAttribute('aria-hidden');
  }
+}
+async function loadSceneRuntime(){
+ if(sceneRuntime)return sceneRuntime;
+ if(sceneImportAttempt===0){sceneImportAttempt++;sceneRuntime=await import('./worlds.js');return sceneRuntime;}
+ sceneImportAttempt++;
+ const url=import.meta.url.includes('/src/main.js')
+  ? `${window.location.origin}/src/worlds.js?scene-retry=${sceneImportAttempt}`
+  : `${sceneChunkUrl}?scene-retry=${sceneImportAttempt}`;
+ const retryModule=await import(/* @vite-ignore */ url);sceneRuntime=retryModule.worlds||retryModule;return sceneRuntime;
+}
+function showSceneLoadError(error,mode='overlay'){
+ const app=document.querySelector('#app');app.dataset.sceneReady='false';app.removeAttribute('aria-busy');
+ experience={mount(){},dispose(){}};started=true;ui.render(state);ui.updateStatus(guestMode?'GUEST · TEXT MODE':'LOCAL · TEXT MODE');
+ if(mode==='banner'){
+  loadingScreen.classList.add('hidden');sceneRecovery.hidden=false;
+  sceneRecoveryStatus.textContent='The 3D scene could not load. Your story is still playable; retry when ready.';
+  sceneRetryText.disabled=false;sceneRetryText.textContent='RETRY 3D';return;
+ }
+ setSceneBackgroundInert(true);
+ loadingScreen.setAttribute('aria-hidden','false');loadingScreen.innerHTML='<div class="loading-error" role="alertdialog" aria-modal="true" aria-labelledby="scene-load-title" aria-describedby="scene-load-description"><h2 id="scene-load-title">The 3D scene could not load</h2><p id="scene-load-description">Your story progress is safe. Retry the scene, or continue with the accessible story controls.</p><div class="loading-error-actions"><button id="scene-retry-overlay" type="button">RETRY 3D</button><button id="scene-continue-text" type="button">CONTINUE IN STORY MODE</button></div></div>';
+ loadingScreen.classList.remove('hidden');
+ loadingScreen.querySelector('#scene-retry-overlay').addEventListener('click',async event=>{
+  const button=event.currentTarget;button.disabled=true;button.textContent='RETRYING…';
+  if(!await initializeScene(false,'overlay'))loadingScreen.querySelector('#scene-retry-overlay')?.focus();
+ });
+ loadingScreen.querySelector('#scene-continue-text').addEventListener('click',()=>{
+  loadingScreen.classList.add('hidden');loadingScreen.setAttribute('aria-hidden','true');sceneRecovery.hidden=false;
+  sceneRecoveryStatus.textContent='3D is unavailable. Story mode is ready; you can retry the scene at any time.';setSceneBackgroundInert(false);focusStoryEntry();
+ });
+ loadingScreen.querySelector('#scene-retry-overlay')?.focus();
+}
+loadingScreen.addEventListener('keydown',event=>{
+ if(event.key!=='Tab'||!loadingScreen.querySelector('[role="alertdialog"]'))return;
+ const buttons=[...loadingScreen.querySelectorAll('button:not([disabled])')],first=buttons[0],last=buttons.at(-1);
+ if(event.shiftKey&&event.target===first){event.preventDefault();last?.focus();}
+ else if(!event.shiftKey&&event.target===last){event.preventDefault();first?.focus();}
+});
+async function initializeScene(physicsPreview=false,failureMode='overlay'){
+ if(sceneLoadPending)return false;sceneLoadPending=true;
+ const app=document.querySelector('#app');app.setAttribute('aria-busy','true');
+ let sceneCandidate=null;
+ try{
+  // The scene module is fetched only after the player starts or explicitly retries.
+  // A unique URL lets the browser retry a chunk request whose first fetch failed.
+  const {createExperience}=await loadSceneRuntime();
+  sceneCandidate=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater(),message=>toast(message),()=>ui.enterWorld(),{spawnNearPhysics:physicsPreview});
+  experience=sceneCandidate;started=true;setSceneBackgroundInert(false);sceneCandidate.mount(state);
+  app.dataset.sceneReady='true';ui.render(state);ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');
+  if(physicsPreview)ui.enterSandbox();
+  app.removeAttribute('aria-busy');loadingScreen.innerHTML='<span class="loading-mark" aria-hidden="true">◌</span><div>CONNECTING TO ELSEWHERE</div><small>One life is never enough.</small>';loadingScreen.classList.add('hidden');loadingScreen.setAttribute('aria-hidden','true');sceneRecovery.hidden=true;
+  return true;
+ }catch(error){
+  try{sceneCandidate?.dispose?.();}catch{}
+  console.error('3D initialization failed:',error?.message);showSceneLoadError(error,failureMode);return false;
+ }finally{sceneLoadPending=false;}
+}
+async function retrySceneFromStory(){
+ if(sceneLoadPending)return;sceneRetryText.disabled=true;sceneRetryText.textContent='RETRYING…';
+ sceneRecoveryStatus.textContent='Retrying the 3D scene. You can keep using story mode.';
+ await initializeScene(false,'banner');
+}
+sceneRetryText.addEventListener('click',()=>{void retrySceneFromStory();});
+async function begin(next,{guest=false,physicsPreview=false}={}){
+ stopPresence();privateSpeech.disable();abortPendingRequests();
+ document.querySelector('#app').inert=false;document.querySelector('#app-ui').inert=false;
+ guestMode=Boolean(guest);state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;
+ gate.hidden=true;sceneRecovery.hidden=true;setSceneBackgroundInert(true);loadingScreen.innerHTML='<span class="loading-mark" aria-hidden="true">◌</span><div>BUILDING YOUR WORLDS</div><small>Preparing this experience on your device.</small>';
+ loadingScreen.setAttribute('aria-hidden','false');loadingScreen.classList.remove('hidden');ui.resetEphemeral();
+ await initializeScene(physicsPreview,'overlay');
 }
 async function startGuest({next=initialState(),...options}={}){
  if(gateSubmissionPending)return;gateSubmissionPending=true;setGateBusy(true);

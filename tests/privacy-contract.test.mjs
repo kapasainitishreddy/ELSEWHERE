@@ -46,6 +46,6 @@ test('consent revocation, restart, world travel and lock invalidate in-flight op
  assert.match(source,/if\(cloudEnabled\)\{invalidateOptionalInference\(\);cloudEnabled=false/);
  assert.match(source,/if\(changed\)\{stopPresence\(\);abortPendingRequests\(\);\}/);
  assert.match(source,/sessionEpoch\+\+;abortPendingRequests\(\);cloudEnabled=false;localAiEnabled=false/);
- assert.match(source,/async function lock\(\)\{[\s\S]*?gate\.hidden=false;setGateBusy\(true\)[\s\S]*?document\.querySelector\('#app'\)\.inert=true;[\s\S]*?Promise\.race\(\[finalSave,[\s\S]*?vault\.lock\(\);/);
+ assert.match(source,/async function lock\(\)\{[\s\S]*?gate\.hidden=false;sceneRecovery\.hidden=true;loadingScreen\.removeAttribute\('aria-hidden'\);setGateBusy\(true\)[\s\S]*?document\.querySelector\('#app'\)\.inert=true;[\s\S]*?Promise\.race\(\[finalSave,[\s\S]*?vault\.lock\(\);/);
  assert.match(vault,/function lock\(\)\{lifecycle\+\+;key=null;salt=null;queue=Promise\.resolve\(\);\}/);
 });

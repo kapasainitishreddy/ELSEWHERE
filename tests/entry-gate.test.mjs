@@ -19,7 +19,7 @@ test('guest demo is memory-only and cannot mutate the persistent vault',()=>{
  const vault=read('src/vault.js');
  assert.match(code,/if\(guestMode\)return Promise\.resolve\(true\)/);
  assert.match(code,/sessionEpoch\+\+;abortPendingRequests\(\);cloudEnabled=false;localAiEnabled=false/);
- assert.match(code,/async function lock\(\)\{[\s\S]*?gate\.hidden=false;setGateBusy\(true\)[\s\S]*?document\.querySelector\('#app'\)\.inert=true;[\s\S]*?Promise\.race\(\[finalSave,[\s\S]*?vault\.lock\(\);/,'lock blocks the private world immediately, bounds final persistence, then revokes the key');
+ assert.match(code,/async function lock\(\)\{[\s\S]*?gate\.hidden=false;sceneRecovery\.hidden=true;loadingScreen\.removeAttribute\('aria-hidden'\);setGateBusy\(true\)[\s\S]*?document\.querySelector\('#app'\)\.inert=true;[\s\S]*?Promise\.race\(\[finalSave,[\s\S]*?vault\.lock\(\);/,'lock blocks the private world immediately, clears recovery UI, bounds final persistence, then revokes the key');
  assert.match(code,/setTimeout\(\(\)=>\{timedOut=true;resolve\(false\);\},5000\)/,'a stalled storage operation must not hold the world open indefinitely');
  assert.match(vault,/function lock\(\)\{lifecycle\+\+;key=null;salt=null;queue=Promise\.resolve\(\);\}/,'vault key revocation and invalidation of pending async operations must be synchronous');
  assert.match(code,/async function startGuest\(\{next=initialState\(\),\.\.\.options\}=\{\}\)/);

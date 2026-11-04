@@ -285,3 +285,13 @@
 .world-perf-display[hidden]{display:none}
 @media(max-width:1050px){.world-perf-display{left:105px}}
 @media(max-width:760px){.world-perf-display{left:7px;bottom:calc(50% + 4px);font-size:8px}}
+
+.loading-error h2{font-size:clamp(22px,4vw,34px);letter-spacing:.02em;margin:10px 0}
+.loading-error p{max-width:520px;margin:10px auto 20px;color:#c5d4df}
+.loading-error-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.loading-error-actions button,.scene-recovery button{min-height:44px;padding:10px 16px;border:1px solid #72cbd8;border-radius:6px;background:#102c37;color:#e5fbff;font-weight:700;letter-spacing:.04em}
+.loading-error-actions button:hover,.scene-recovery button:hover{background:#194352}
+.scene-recovery{position:absolute;z-index:60;left:50%;bottom:14px;transform:translateX(-50%);width:min(660px,calc(100% - 24px));display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border:1px solid rgba(160,203,218,.5);border-radius:9px;background:rgba(6,17,26,.97);color:#f3f5f7;box-shadow:0 10px 34px rgba(0,0,0,.42);font:500 13px/1.45 system-ui,sans-serif}
+.scene-recovery[hidden]{display:none}
+.scene-recovery button{flex:none}
+@media(max-width:520px){.scene-recovery{align-items:stretch;flex-direction:column;gap:9px}.scene-recovery button{width:100%}}
