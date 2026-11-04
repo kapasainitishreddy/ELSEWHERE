@@ -8,7 +8,6 @@ import './director-cut.css';
 import './submission-polish.css';
 import './causal-proof.css';
 import {initialState, travel, applyAction, addConversation, dialogueFallback, writeLetter, askCharacter, updateCompass} from './game.js';
-import {createExperience} from './worlds.js';
 import {createInterface} from './ui.js';
 import {createSoundscape} from './audio.js';
 import {createLocalVault} from './vault.js';
@@ -352,35 +351,49 @@ const ui=createInterface(document.querySelector('#app-ui'),{
  privacyStatus:()=>true,guestMode:()=>guestMode,cloudEnabled:()=>cloudEnabled,remoteProvider:()=>remoteProvider.label,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
  voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus,comfort:id=>experience?.setComfort?.(id)
 });
-function begin(next,{guest=false,physicsPreview=false}={}){
+async function begin(next,{guest=false,physicsPreview=false}={}){
  stopPresence();privateSpeech.disable();
  abortPendingRequests();
  document.querySelector('#app').inert=false;
  document.querySelector('#app-ui').inert=false;
  guestMode=Boolean(guest);
- state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;started=true;ui.resetEphemeral();
+ state=next;previousWorld=state.world;cloudEnabled=false;localAiEnabled=false;sessionEpoch++;gate.hidden=true;document.querySelector('#app').setAttribute('aria-busy','true');
+ const loading=document.querySelector('#loading-screen');
+ if(loading){loading.innerHTML='<span class="loading-mark" aria-hidden="true">◌</span><div>BUILDING YOUR WORLDS</div><small>Preparing this experience on your device.</small>';loading.classList.remove('hidden');}
+ ui.resetEphemeral();
  try{
+  // Three.js and the scene runtime are only needed after someone chooses to play.
+  // Keep the encrypted-vault gate and its controls light on the first page load.
+  const {createExperience}=await import('./worlds.js');
+  started=true;
   experience=createExperience(document.querySelector('#world-canvas'),chooseWorld,chooseAction,()=>ui.openStillwater(),message=>toast(message),()=>ui.enterWorld(),{spawnNearPhysics:physicsPreview});
   experience.mount(state);document.querySelector('#app').dataset.sceneReady='true';ui.render(state);ui.updateStatus(guestMode?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED');
   if(physicsPreview)ui.enterSandbox();
-  document.querySelector('#loading-screen')?.classList.add('hidden');
+  document.querySelector('#app').removeAttribute('aria-busy');loading?.classList.add('hidden');
  }catch(error){
   console.error('3D initialization failed:',error?.message);
+  started=true;
   document.querySelector('#app').dataset.sceneReady='false';
   experience={mount(){},dispose(){}};
   ui.render(state);ui.updateStatus('LOCAL · TEXT MODE');
-  document.querySelector('#loading-screen').innerHTML='<div class="loading-error"><strong>3D unavailable</strong><p>Explore the entire story with the accessible story controls.</p></div>';
+  document.querySelector('#app').removeAttribute('aria-busy');
+  loading.innerHTML='<div class="loading-error"><strong>3D unavailable</strong><p>Explore the entire story with the accessible story controls.</p></div>';
  }
 }
-guestButton.addEventListener('click',()=>{if(gateSubmissionPending)return;begin(initialState(),{guest:true});});
-physicsButton.addEventListener('click',()=>{
+async function startGuest({next=initialState(),...options}={}){
+ if(gateSubmissionPending)return;gateSubmissionPending=true;setGateBusy(true);
+ try{await begin(next,{guest:true,...options});}
+ finally{gateSubmissionPending=false;setGateBusy(false);}
+}
+guestButton.addEventListener('click',()=>{void startGuest();});
+physicsButton.addEventListener('click',async()=>{
  if(gateSubmissionPending)return;
  const preview=travel(initialState(),'dungeon');
- begin(preview.ok?preview.state:initialState(),{guest:true,physicsPreview:true});
+ await startGuest({next:preview.ok?preview.state:initialState(),physicsPreview:true});
 });
 gateForm.addEventListener('submit',async(event)=>{
  event.preventDefault();if(gateSubmissionPending)return;gateSubmissionPending=true;setGateBusy(true);const pass=gateInput.value;gateInput.value='';gateStatus.textContent='Securing your local world…';
- try{const next=vault.present()?await vault.unlock(pass):await vault.create(pass);begin(next);}
+ try{const next=vault.present()?await vault.unlock(pass):await vault.create(pass);await begin(next);}
  catch(e){gateStatus.textContent=e.message;}
  finally{gateSubmissionPending=false;setGateBusy(false);if(!started)gateInput.focus();}
 });

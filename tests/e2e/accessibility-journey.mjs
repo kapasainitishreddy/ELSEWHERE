@@ -20,9 +20,10 @@ try{
  browser=await chromium.launch({executablePath,headless:true,env:{...process.env,XDG_CONFIG_HOME:process.env.XDG_CONFIG_HOME||config,XDG_CACHE_HOME:process.env.XDG_CACHE_HOME||cache},args:['--no-sandbox','--disable-dev-shm-usage','--disable-breakpad','--disable-crash-reporter','--use-angle=swiftshader','--enable-webgl','--enable-unsafe-swiftshader']});
  let context=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1}),page=await context.newPage();
  await page.emulateMedia({reducedMotion:'reduce'});page.setDefaultTimeout(15000);
- const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ const errors=[],worldModuleRequests=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(request.url().includes('/src/worlds.js'))worldModuleRequests.push(request.url());});
  const tabTo=async id=>{for(let step=0;step<90;step++){if(await page.evaluate(()=>document.activeElement?.id)===id)return;await page.keyboard.press('Tab');}throw new Error(`keyboard tab order did not reach #${id}`);};
  await page.goto(origin,{waitUntil:'networkidle'});assert.equal(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches),true);
+ assert.equal(worldModuleRequests.length,0,'the 3D scene module stays unloaded on the encrypted-vault gate');
  const tabPath=[];
  for(let step=0;step<20;step++){
   const active=await page.evaluate(()=>({id:document.activeElement?.id||'',tag:document.activeElement?.tagName||'',cmd:document.activeElement?.dataset?.cmd||''}));
@@ -35,6 +36,7 @@ try{
  assert.equal(focusStyle.matches,true);assert.notEqual(focusStyle.style,'none');assert(parseFloat(focusStyle.width)>=2,`entry focus outline should be clearly visible: ${JSON.stringify(focusStyle)}`);
  await page.screenshot({path:new URL('a11y-keyboard-entry.png',artifacts).pathname});
  await page.keyboard.press('Enter');await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true');
+ assert(worldModuleRequests.length>0,'choosing guest play loads the 3D scene module on demand');
  await page.waitForSelector('.first-crossing');
  assert.equal(await page.locator('.first-crossing-progress i').count(),6,'the guided-story progress indicators must render as six valid sibling elements');
  assert.equal(await page.locator('.first-crossing-progress').evaluate(node=>node.children.length),6,'progress markup must not absorb adjacent story content');

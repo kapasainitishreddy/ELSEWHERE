@@ -22,7 +22,9 @@ test('guest demo is memory-only and cannot mutate the persistent vault',()=>{
  assert.match(code,/async function lock\(\)\{[\s\S]*?gate\.hidden=false;setGateBusy\(true\)[\s\S]*?document\.querySelector\('#app'\)\.inert=true;[\s\S]*?Promise\.race\(\[finalSave,[\s\S]*?vault\.lock\(\);/,'lock blocks the private world immediately, bounds final persistence, then revokes the key');
  assert.match(code,/setTimeout\(\(\)=>\{timedOut=true;resolve\(false\);\},5000\)/,'a stalled storage operation must not hold the world open indefinitely');
  assert.match(vault,/function lock\(\)\{lifecycle\+\+;key=null;salt=null;queue=Promise\.resolve\(\);\}/,'vault key revocation and invalidation of pending async operations must be synchronous');
- assert.match(code,/begin\(initialState\(\),\{guest:true\}\)/);
+ assert.match(code,/async function startGuest\(\{next=initialState\(\),\.\.\.options\}=\{\}\)/);
+ assert.match(code,/await begin\(next,\{guest:true,\.\.\.options\}\)/);
+ assert.match(code,/await import\('\.\/worlds\.js'\)/,'the large 3D runtime loads only after the player leaves the entry gate');
  assert.match(code,/if\(guestMode\)\{toast\('Guest runs are not saved or exported/);
  assert.match(code,/if\(guestMode\)\{toast\('Leave guest mode to import/);
  assert.match(code,/guestMode\?'GUEST · NOT SAVED':'LOCAL · ENCRYPTED'/);
