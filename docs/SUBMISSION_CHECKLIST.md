@@ -1,6 +1,12 @@
 # ELSEWHERE: truthful release and hackathon checklist
 
-**Track:** Startup. **Theme:** Build for Your World. **Submission deadline:** Nov 4, 2026, 9:00 PM ET. **Current status:** PREVIEW / NOT VERIFIED READY.
+**Track:** Indie Developer (owner-selected; eligibility not independently verified). **Theme:** Build for Your World (proposed). **Submission deadline:** Nov 4, 2026, 9:00 PM ET. **Current status:** PREVIEW / NOT VERIFIED READY.
+
+## Portal inspection — November 4, 2026
+
+The organizer's reminder links to the [submission form](https://cerebralvalley.ai/e/meta-ai-developer-hackathon/hackathon/submit). The signed-in participant could open the form on November 4; no submission was made. An organizer notification dated October 20 reported participant status APPROVED; that does not establish project or track eligibility. The form asks for a team name and members, track, problem statement, project description, public repository, three-minute video, description of Meta product use and why its models matter. It also asks for two required personal opinions about Meta Model API and includes a marketing-permission checkbox. Other survey questions and an X link appear on the form. The entrant must verify eligibility, contributor and event-period disclosures, answer personal questions and decide whether to grant permission. The documented Startup track is a proposal, not verified eligibility.
+
+The public repository is available, but the tested branch `codex/elsewhere-completion-20261027` (commit `463a45c`) is not on `main`. The app has no verified live Meta request, public HTTPS product or submission-ready three-minute video. A Meta Model API account was found at onboarding; continuing requires acceptance of its terms by the account owner. The owner reports submitting the credit-claim form; the organizer says credits are distributed in batches and must be checked on Billing. A mailbox search found no credit-award confirmation. The owner authorized a Vercel static preview with remote AI off, but the connected account rejected project creation (403) and CLI authentication had expired. No public deployment, account credentials, or live model call resulted.
 
 This document separates source evidence from physical headset, external-service and human usability tests. No test passing locally is a substitute for real footage. Always follow the latest official participant guide if instructions change.
 
