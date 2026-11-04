@@ -6,7 +6,7 @@ import {getProviderConfig} from '../api/provider-config.js';
 
 const payload={cloudConsent:true,world:'self',question:'How did the invention change the city?',timeline:{credits:5,fame:1,trust:2,invention:'cell',fate:'gift',power:'none',ending:'unwritten'}};
 const modelBody={choices:[{message:{content:JSON.stringify({reply:'The workshop stayed open.',cue:'warmth',focus:'people'})}}]};
-class Req extends EventEmitter{constructor(body){super();this.method='POST';this.url='/api/character';this.socket={remoteAddress:'127.0.0.1'};this.body=body;this.aborted=false;}async *[Symbol.asyncIterator](){yield Buffer.from(JSON.stringify(this.body));}}
+class Req extends EventEmitter{constructor(body){super();this.method='POST';this.url='/api/character';this.headers={origin:'http://127.0.0.1:5173',host:'127.0.0.1:5173','content-type':'application/json'};this.socket={remoteAddress:'127.0.0.1'};this.body=body;this.aborted=false;}async *[Symbol.asyncIterator](){yield Buffer.from(JSON.stringify(this.body));}}
 class Res extends EventEmitter{constructor(){super();this.headers={};this.writableEnded=false;this.destroyed=false;}writeHead(status,headers){this.status=status;this.headers=headers;}end(body){this.writableEnded=true;this.body=JSON.parse(body);}}
 
 for(const [providerEnv,endpoint,model,authorization,label] of [

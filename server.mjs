@@ -22,6 +22,12 @@ function limit(ip){
   entry.count++;access.set(ip,entry);if(access.size>2000)for(const [k,v] of access){if(now-v.since>600000)access.delete(k);}
   return entry.count>30;
 }
+function localGameOrigin(req){
+  const origin=req.headers?.origin;
+  // Vite can rewrite Host while proxying; validate the browser Origin itself.
+  // An explicit loopback allowlist also rejects DNS-rebinding domains.
+  return typeof origin==='string'&&/^http:\/\/(?:localhost|127\.0\.0\.1):(?:517[3-9]|518\d)$/.test(origin);
+}
 export function validRequest(data){return Boolean(data && data.cloudConsent===true && typeof data.question === 'string' && data.question.trim().length >= 1 && data.question.trim().length <= 350 && data.world === 'self' && data.timeline && typeof data.timeline === 'object' && !Array.isArray(data.timeline));}
 export function getMessages(data){
   const raw=data.timeline;
@@ -39,6 +45,9 @@ export function createModelProxyHandler({provider=PROVIDER,fetchImpl=fetch,limit
   if(req.method==='GET'&&req.url==='/api/health')return send(res,200,{online:true,provider:provider.id,modelConfigured:provider.configured,metaConfigured:provider.id==='meta'&&provider.configured,configurationVersion:provider.configured?provider.configurationVersion:null,timeoutMs:provider.timeoutMs});
   if(req.url!=='/api/character')return send(res,404,{error:'Not found'});
   if(req.method!=='POST')return send(res,405,{error:'Method not allowed'});
+  if(!localGameOrigin(req))return send(res,403,{error:'Local game origin required'});
+  const contentType=req.headers?.['content-type'];
+  if(typeof contentType!=='string'||contentType.split(';',1)[0].trim().toLowerCase()!=='application/json')return send(res,415,{error:'JSON content type required'});
   if(limiter(req.socket.remoteAddress || 'local'))return send(res,429,{error:'Rate limit reached'});
   if(!provider.configured)return send(res,503,{error:'Selected model provider is not configured. Offline fallback available.'});
   const clientController=new AbortController();let clientGone=Boolean(req.aborted||res.destroyed);
