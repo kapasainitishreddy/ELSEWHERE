@@ -193,7 +193,24 @@ export function createInterface(root, handlers){
         if(panel&&chat)panel.scrollTop=Math.max(0,chat.offsetTop-panel.offsetTop-22);
         root.querySelector('#chat-question')?.focus?.();return;
       }
-      if(next.command==='story-toggle'){storyOpen=true;atlasOpen=false;focus=false;root.parentElement?.classList.toggle('cinematic',false);render(state);return;}
+      if(next.command==='story-toggle'){
+        storyOpen=true;atlasOpen=false;focus=false;root.parentElement?.classList.toggle('cinematic',false);
+        const passage=firstCrossing(state),guidedChoice=passage.id==='invent';
+        if(guidedChoice)choiceFilter='world';
+        render(state);
+        if(guidedChoice){
+          const panel=root.querySelector('.story-panel'),decision=panel?.querySelector('.decision-section');
+          const target='.choice[data-action^="invent-"]:not([disabled])';
+          const firstChoice=decision?.querySelector(target)||decision?.querySelector('.choice:not([disabled])');
+          if(panel&&firstChoice){
+            const panelRect=panel.getBoundingClientRect(),headerRect=panel.querySelector('.sheet-topbar')?.getBoundingClientRect(),choiceRect=firstChoice.getBoundingClientRect();
+            const targetTop=Math.max(panelRect.top+14,(headerRect?.bottom||panelRect.top)+14);
+            panel.scrollTop+=choiceRect.top-targetTop;
+            firstChoice.focus?.({preventScroll:true});
+          }
+        }
+        return;
+      }
       atlasOpen=true;render(state);return;
     }
     if(cmd.dataset.cmd==='journey-skip'){journeyVisible=false;render(state);return;}
