@@ -9,7 +9,7 @@
 - [x] Real gameplay video published at https://elsewhere-demo-video.vercel.app/ . Updated duration is 177.64 seconds; H.264/AAC full decode passed. It includes the milestone workflow and labels authored offline dialogue. Earlier footage retains uneven frame rates.
 - [x] Source, tests and docs are pushed on `codex/elsewhere-completion-20261027` (feature checkpoint `f9eff3c`); the entry points directly at this branch. This is not a merge into main.
 - [x] At that feature checkpoint: 291 tests and production build passed, mobile emulation passed, and the public guest workflow was observed. These do not establish physical phone or Quest performance.
-- [ ] Live end-to-end Meta integration: three separate synthetic playground tests do not establish it. No existing local `MODEL_API_KEY` is configured. The prior three-call authorization is exhausted; further paid inference requires renewed authorization.
+- [x] Local live Meta integration: the actual serverless handler and the browser consent/conversation path both returned complete HTTP 200 responses using synthetic data. See [local evidence](META_LIVE_LOCAL_EVIDENCE_20261104.md). Two newly approved requests used 643 input / 716 output tokens, estimated $0.00384675 before credits. Public hosted inference remains unavailable. The renewed authorization is exhausted.
 - [ ] Participant eligibility, contributor rights, event-period provenance, real consenting-user feedback and physical Quest operation remain unverified. No positive claims about them are made in the entry.
 
 The local QA aspirations below are not all automatically official entry requirements. In particular, a physical headset test or user study cannot be fabricated or inferred from software emulation. The official rubric scores impact (30%), Meta tooling (25%), technical execution (20%) and demo (25%); it does not promise a win for passing a checklist.
@@ -30,7 +30,7 @@ This document separates source evidence from physical headset, external-service 
 
 - [x] Public GitHub repository and an accessible live product. The live static demo was smoke-tested as above; confirm the tested feature branch and required judge access with the organizer.
 - [ ] New work during the event is identified and distinguished from earlier versions. Existing startup code is permitted only with explicit disclosure. Keep dated Git commits and a change log; do not represent v0.1-v1.1 as created during the official building window without checking the organizer's dates.
-- [ ] Integrate an eligible **Meta** AI model and prove actual usage. Authored local dialogue and Ollama alone do not satisfy the Meta-model gate.
+- [x] Demonstrate actual Muse Spark 1.3 usage through the local application, with fictional data and per-session consent. The organizer determines eligibility; this does not claim a public inference service.
 - [x] Record and publish a working gameplay demo under three minutes. Verify event-period contribution provenance separately; it is not established by publication.
 - [ ] All third-party assets comply with their individual licenses. No copyrighted manhwa characters, Pacific Rim IP or unlicensed sound effects.
 - [ ] No therapeutic, dopamine, serotonin, depression-cure, medical-advice or guaranteed-result claims.
