@@ -177,6 +177,7 @@ try{
   const readCipher=()=>vaultPage.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1'));
   const initialCipher=await readCipher();assert(initialCipher,'touch-created vault should persist its encrypted envelope');
   assert.doesNotMatch(initialCipher,new RegExp(PASS));
+  await tap(vaultPage.locator('.first-crossing [data-cmd="journey-skip"]'));
   await tap(vaultPage.locator('.hero-enter'));
   await tap(vaultPage.locator('.story-panel [data-cmd="story-toggle"]'));
   await vaultPage.waitForFunction(()=>document.querySelector('#app-ui')?.dataset.storyOpen==='false');
@@ -197,6 +198,7 @@ try{
   await vaultPage.locator('#vault-passphrase').fill(PASS);await tap(vaultPage.locator('#vault-submit'));
   await vaultPage.locator('#vault-gate').waitFor({state:'hidden'});
   await vaultPage.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true',{timeout:60000});
+  await tap(vaultPage.locator('.first-crossing [data-cmd="journey-skip"]'));
   await tap(vaultPage.locator('.hero-enter'));
   assert.match(await vaultPage.locator('.chronal-hud').innerText(),/16 HOURS/,'reopened mobile vault should resume the exact saved time balance');
   assert.doesNotMatch(await readCipher(),new RegExp(PASS));

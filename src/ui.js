@@ -90,6 +90,7 @@ export function createInterface(root, handlers){
     const causality=causalWorldAudit(state),comparison=compareParallelWorlds(state),previews=previewFates(state,applyAction);
     root.dataset.world=state.world;
     root.dataset.storyOpen=storyOpen?'true':'false';
+    root.parentElement?.classList.toggle('story-panel-open',storyOpen);
     root.dataset.focus=focus?'true':'false';
     root.dataset.atlasOpen=atlasOpen?'true':'false';
     root.dataset.journey=journeyVisible && !storyOpen && !atlasOpen?'true':'false';
