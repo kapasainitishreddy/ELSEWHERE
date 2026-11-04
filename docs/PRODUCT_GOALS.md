@@ -2,7 +2,7 @@
 
 **Status:** proposed product outcomes and research plans only. No participant study, recruitment, user recording, paid-conversion test, or customer research has been conducted or authorized by this document. It contains no private user, participant, or journal data.
 
-**Code checkpoint:** branch `codex/elsewhere-completion-20261027`, latest verified checkpoint `f2c0b75ecb501fccbdf4542536314b02eab2b19d`. The 1280×720 Chromium/SwiftShader vertical slice passed; the default 1440×900 run still times out on the 1889 gift click. Release remains **NO-GO**. See [`QA_EVIDENCE_CURRENT.md`](QA_EVIDENCE_CURRENT.md), [`HACKATHON_READINESS_CURRENT.md`](HACKATHON_READINESS_CURRENT.md), and [`PERFORMANCE_PROFILE_CURRENT.md`](PERFORMANCE_PROFILE_CURRENT.md) for current executed evidence and limitations.
+**Code checkpoint:** branch `codex/elsewhere-completion-20261027`, latest verified code `31a575d6999daeb4ef47c1151937c3c35510b900`. On 2026-11-04 the default 1440×900 Chromium/SwiftShader journey passed, including a 67 ms 1889 gift click and the grounded 2087 outcome. A 390×844 touch journey and keyboard/accessibility journey also passed. These are software-rendered browser tests, not physical-device performance evidence. External release remains **NO-GO**. See [`QA_EVIDENCE_CURRENT.md`](QA_EVIDENCE_CURRENT.md), [`HACKATHON_READINESS_CURRENT.md`](HACKATHON_READINESS_CURRENT.md), and [`PERFORMANCE_PROFILE_CURRENT.md`](PERFORMANCE_PROFILE_CURRENT.md) for current evidence and limits.
 
 ## Goal card
 
