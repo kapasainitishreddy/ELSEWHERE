@@ -93,6 +93,7 @@ export function createInterface(root, handlers){
     root.dataset.focus=focus?'true':'false';
     root.dataset.atlasOpen=atlasOpen?'true':'false';
     root.dataset.journey=journeyVisible && !storyOpen && !atlasOpen?'true':'false';
+    root.dataset.journeyStep=journeyVisible && !storyOpen && !atlasOpen?String(passage.step):'none';
     root.dataset.combat=combatActive?'active':'inactive';
     root.innerHTML=`
       <div class="world-vista" aria-hidden="true"><img src="/assets/vistas/${esc(state.world)}.svg" alt="" fetchpriority="high" decoding="async"><span class="vista-film"></span><span class="vista-bloom"></span></div>

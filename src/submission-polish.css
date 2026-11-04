@@ -1,5 +1,7 @@
 /* ELSEWHERE Release: story guidance remains a part of the world, not another dashboard. */
 #app-ui[data-journey="true"] .scene-postcard{display:none}
+/* One strong next step at a time: the guided card owns the primary action. */
+#app-ui[data-journey="true"][data-journey-step="0"] .world-heading .hero-enter{display:none}
 .first-crossing{position:absolute;right:clamp(22px,3.7vw,68px);bottom:clamp(128px,16vh,184px);width:min(355px,calc(100vw - 48px));z-index:5;pointer-events:auto;padding:24px 25px 23px;border-radius:18px;border:1px solid rgba(236,217,191,.20);background:linear-gradient(136deg,rgba(20,32,42,.98),rgba(8,16,23,.96));box-shadow:0 24px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,244,221,.08);color:#f5eddd}
 .first-crossing::before{content:'';position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,#deb992,transparent);opacity:.65}
 .first-crossing-top{display:flex;align-items:center;gap:8px;color:#eac5a0;font-size:9px;letter-spacing:.18em;font-weight:750}

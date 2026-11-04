@@ -84,6 +84,8 @@ try {
   assert.match(await page.locator('.privacy-sigil').innerText(),/GUEST · NOT SAVED/,'guest mode must be labeled honestly');
   assert.match(await page.locator('.first-crossing').innerText(),/1889.*2087/s,'the opening guide should explain the invention-to-future goal');
   assert.match(await page.locator('.first-crossing-controls').innerText(),/WASD.*arrows.*E to interact.*touch/i,'the opening guide should explain keyboard and touch controls');
+  assert.equal(await page.locator('.world-heading .hero-enter').isVisible(),false,'the guided card should be the single primary next action during first play');
+  assert.equal(await page.locator('.world-heading .hero-secondary').isVisible(),true,'world exploration should remain available beside the guide');
   assert.equal(await page.locator('.first-crossing').evaluate(node=>getComputedStyle(node).backdropFilter),'none','the opaque opening guide should not incur backdrop blur');
   await page.waitForFunction(()=>/\d+ DRAWS/.test(document.querySelector('.world-perf-display')?.textContent||''));
   const firstSceneDraws=Number((await page.locator('.world-perf-display').innerText()).match(/(\d+) DRAWS/)?.[1]);
@@ -169,6 +171,7 @@ try {
   assert.equal(await page.locator('.world-first-play').isVisible(),false,'desktop movement hint must not cover mobile journey controls');
   await page.keyboard.press('Escape');
   await clickUser(page.locator('.first-crossing [data-cmd="journey-skip"]'));
+  assert.equal(await page.locator('.world-heading .hero-enter').isVisible(),true,'the world action should return after dismissing the guide');
   const mobileDpad=page.locator('.mobile-dpad [data-move="KeyW"]');
   await mobileDpad.waitFor({state:'visible'});
   await mobileDpad.hover();await page.mouse.down();await delay(350);await page.mouse.up();
