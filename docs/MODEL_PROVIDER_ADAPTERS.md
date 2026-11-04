@@ -1,6 +1,6 @@
 # Optional remote model adapters
 
-**Status (2026-11-01):** adapter configuration and mocked HTTP-contract tests are implemented. No provider credential is configured and no live provider call has been made. This does not establish that any provider/model combination is hackathon-eligible or available to this account.
+**Status (2026-11-04):** adapter configuration and mocked HTTP-contract tests are implemented. No provider credential is configured and no live provider call has been made. Meta's current first-party docs now confirm this code's `https://api.meta.ai/v1/chat/completions` endpoint and `muse-spark-1.3` model. This does not establish that the account has access/credits or that the entrant/project is eligible.
 
 ## Runtime and privacy contract
 
@@ -15,7 +15,7 @@
 
 | Provider | Server-only configuration | Endpoint and model behavior | Source |
 |---|---|---|---|
-| Meta | `MODEL_API_KEY`; optional `META_MODEL` (existing default retained) | Fixed `https://api.meta.ai/v1/chat/completions`. Current URL/model have not been independently reverified against current Meta API docs in this executor. | Existing repository integration; see [QA evidence](QA_EVIDENCE_CURRENT.md). |
+| Meta | `MODEL_API_KEY`; optional `META_MODEL` (default `muse-spark-1.3`) | Fixed `https://api.meta.ai/v1/chat/completions`; current official Chat Completions docs list this exact endpoint and model. | [Meta Chat Completions](https://dev.meta.ai/docs/api-reference/chat-completions/create-chat-completion), [pricing](https://dev.meta.ai/docs/pricing-rate-limits), and [model data-use modes](https://dev.meta.ai/docs/models). |
 | Baseten | `BASETEN_API_KEY`; optional `BASETEN_MODEL` | Fixed `https://inference.baseten.co/v1/chat/completions`; model defaults to the supplied participant guide's `meta-models/muse-spark-open-1026`. Bearer authorization. Muse Spark Open does not support structured-output/JSON mode, so response validation stays local. | [Chat completions](https://docs.baseten.co/reference/inference-api/chat-completions), [model API overview](https://docs.baseten.co/inference/model-apis/overview), [errors](https://docs.baseten.co/inference/errors), [HTTP client configuration](https://docs.baseten.co/inference/http-client-configuration), plus owner-supplied participant guide (2026-10-31). |
 | Fireworks | `FIREWORKS_API_KEY`; **required** `FIREWORKS_MODEL` | Fixed `https://api.fireworks.ai/inference/v1/chat/completions`; no default model ID is guessed. Bearer authorization. | [Query text models](https://docs.fireworks.ai/guides/querying-text-models), [chat completions API](https://docs.fireworks.ai/api-reference/post-chatcompletions), [reliability](https://docs.fireworks.ai/guides/reliability). |
 | Modal | `MODAL_PROXY_TOKEN` in the documented `id.secret` form; **required** `MODAL_MODEL`; **required** `MODAL_CHAT_COMPLETIONS_URL` | Exact operator-supplied HTTPS `/v1/chat/completions` URL; validated to a `modal.run` host with no credentials, query, or fragment. No endpoint is guessed or provisioned by this project. Bearer authorization. | [Endpoints](https://modal.com/docs/guide/endpoints), [endpoint integrations](https://modal.com/docs/guide/endpoint-integrations). Shared and dedicated endpoint modes are documented; this project does not deploy either. |
@@ -35,3 +35,5 @@ Modal and Fireworks account/model availability must be checked by an authorized 
 The ignored `review-output/meta-live-check.json` receipt records provider/configured model, timestamp, handler status, upstream status if received, attempt count, dialogue validity, directed cue/focus validity, and response length. It retains no prompt, reply, key, endpoint or raw error. A plain safe-text fallback may validate dialogue but fails the full directed-focus schema gate. A passing local handler receipt still requires separate evidence of eligible Meta model identity and a deployed user experience; Fireworks/Modal model names are operator configuration, not eligibility verification.
 
 `node --test tests/meta-live-probe.test.mjs` exercises all four handlers with injected synthetic responses, missing configuration, no-live refusal, text-only fallback and auth/rate/network failures. These are mocks and make no external requests.
+
+For the current exact payload boundary, one-call cost estimate, provider choice, entrant/approval blockers and safe preview steps, see [Live Meta check and preview plan](META_LIVE_PREVIEW_PLAN.md). It is preparation only; it does not authorize keys, spending, live requests or deployment.
