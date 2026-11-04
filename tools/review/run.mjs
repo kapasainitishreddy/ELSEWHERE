@@ -31,7 +31,7 @@ function run(title,args,timeout=180000) {
   const result=spawnSync(process.platform==='win32'?'npm.cmd':'npm',args,{
     cwd:root,timeout,encoding:'utf8',
     env:{...process.env,MODEL_API_KEY:'',META_MODEL:'muse-spark-1.3',NODE_ENV:'test'},
-    shell:false,maxBuffer:1024*1024*3
+    shell:process.platform==='win32',maxBuffer:1024*1024*3
   });
   const output=String(result.stderr||'')+'\n'+String(result.stdout||'');
   const last=output.slice(-850).replace(/\x1b\[[0-9;]*m/g,'');

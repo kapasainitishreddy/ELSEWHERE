@@ -5,6 +5,7 @@ import {mkdir, mkdtemp, rm} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {setTimeout as delay} from 'node:timers/promises';
 import {chromium} from 'playwright';
 
@@ -48,7 +49,7 @@ try{
   assert.equal(await guestPage.evaluate(()=>({width:innerWidth,touch:navigator.maxTouchPoints})).then(v=>v.width),390,'test must use a 390 CSS-pixel mobile viewport');
   assert((await guestPage.evaluate(()=>navigator.maxTouchPoints))>0,'browser context must have touch input enabled');
   assert.equal(await guestPage.evaluate(()=>document.documentElement.scrollWidth),390,'mobile entry screen must not overflow horizontally');
-  await guestPage.screenshot({path:new URL('mobile-journey-entry.png',artifacts).pathname,fullPage:true});
+  await guestPage.screenshot({path:fileURLToPath(new URL('mobile-journey-entry.png',artifacts)),fullPage:true});
   await tap(guestPage.locator('#guest-play'));
   await guestPage.locator('#vault-gate').waitFor({state:'hidden'});
   await guestPage.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true',{timeout:60000});
@@ -113,7 +114,7 @@ try{
   await guestPage.waitForFunction(()=>getComputedStyle(document.querySelector('#toast-region')).opacity==='0');
   assert.equal(await guestPage.locator('#toast-region').evaluate(node=>getComputedStyle(node).opacity),'0','a recent mobile transition toast must not cover the open conversation title');
   assert.equal(await guestPage.locator('#toast-region').getAttribute('aria-live'),'polite','the visually suppressed transition toast must remain in the live region');
-  await guestPage.screenshot({path:new URL('mobile-future-self-authored.png',artifacts).pathname,fullPage:true});
+  await guestPage.screenshot({path:fileURLToPath(new URL('mobile-future-self-authored.png',artifacts)),fullPage:true});
   checkpoint('future-self authored dialogue replied without network');
 
   // Close the focused story sheet before using the persistent time tracker.
@@ -155,7 +156,7 @@ try{
   await tap(guestPage.locator('.hero-enter'));
   assert.match((await guestPage.locator('.story-panel').innerText()).toLowerCase(),/city of open workshops/);
   assert.equal(await guestPage.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'guest mutations remain unsaved after touch journey');
-  await guestPage.screenshot({path:new URL('mobile-2087-gift-outcome.png',artifacts).pathname,fullPage:true});
+  await guestPage.screenshot({path:fileURLToPath(new URL('mobile-2087-gift-outcome.png',artifacts)),fullPage:true});
   assert.equal(await guestPage.evaluate(()=>document.documentElement.scrollWidth),390,'story panels must not cause horizontal overflow on mobile');
 
   const reset=guestPage.locator('[data-cmd="reset"]');await tap(guestPage.locator('[data-cmd="journal"]'));await reset.waitFor({state:'visible'});
@@ -212,7 +213,7 @@ try{
  assert.deepEqual(httpErrors,[],'mobile journey HTTP failures');
  assert.deepEqual(external,[],'mobile journey off-origin requests');
  assert.equal(characterRequests.length,0,'mock/live Meta requests are not used in this authored mobile journey');
- console.log(JSON.stringify({result:'PASS',browser:await browser.version(),mobileEmulation:'390x844 CSS px · touch enabled · Chromium',journey:'guest onboarding → touch-pad 3D portal to 2046 → authored future-self dialogue → one-time fictional hour trade → 1889 Aether Cell gift → 2046 grounded recall → 2087 public workshops',vault:'encrypted create → fictional time mutation → lock → reload → unlock resumed 16 hours',guestReset:'cancel preserved outcome; confirm restarted unsaved story',characterRequests:characterRequests.length,errors:browserErrors,httpErrors,external,screenshots:artifacts.pathname,note:'software-rendered mobile emulation; not a physical phone, live Meta call, or Quest measurement'},null,2));
+ console.log(JSON.stringify({result:'PASS',browser:await browser.version(),mobileEmulation:'390x844 CSS px · touch enabled · Chromium',journey:'guest onboarding → touch-pad 3D portal to 2046 → authored future-self dialogue → one-time fictional hour trade → 1889 Aether Cell gift → 2046 grounded recall → 2087 public workshops',vault:'encrypted create → fictional time mutation → lock → reload → unlock resumed 16 hours',guestReset:'cancel preserved outcome; confirm restarted unsaved story',characterRequests:characterRequests.length,errors:browserErrors,httpErrors,external,screenshots:fileURLToPath(artifacts),note:'software-rendered mobile emulation; not a physical phone, live Meta call, or Quest measurement'},null,2));
 }finally{
  if(browser)await Promise.race([browser.close(),delay(4000)]);
  if(browserServer){const child=browserServer.process();if(child?.exitCode===null){child.kill('SIGKILL');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),delay(1000)]);}}

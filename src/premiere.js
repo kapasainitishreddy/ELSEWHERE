@@ -22,7 +22,8 @@ export function firstCrossing(state){
  if(state.fate)step=4;
  if(state.flags?.['premiere-return-chat'])step=5;
  if(step===5 && state.world==='future')step=6;
- return {...FIRST_CROSSING[step],step,total:FIRST_CROSSING.length-1,completed:step===6};
+ const passage=FIRST_CROSSING[step];
+ return {...passage,label:passage.id==='invent'&&state.world==='past'?'CHOOSE AN INVENTION':passage.label,step,total:FIRST_CROSSING.length-1,completed:step===6};
 }
 export function crossingReceipt(state){
  if(!state?.invention || !state.fate)return null;

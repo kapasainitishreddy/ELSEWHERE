@@ -20,7 +20,7 @@ test('full tour is playable: future -> conversation -> 1889 invention -> ownersh
  assert.deepEqual(crossingAction(firstCrossing(state),'self'),{command:'talk-to-future'});
  state=addConversation(state,'How did we spend an ordinary Sunday?','We spent it with people and made tea.');
  assert.equal(firstCrossing(state).step,2);
- state=cross(state,'past');assert.equal(firstCrossing(state).step,2);
+ state=cross(state,'past');assert.equal(firstCrossing(state).step,2);assert.equal(firstCrossing(state).label,'CHOOSE AN INVENTION');
  state=act(state,'invent-cell');assert.equal(firstCrossing(state).step,3);
  state=act(state,'gift');assert.equal(firstCrossing(state).step,4);
  const receipt=crossingReceipt(state);

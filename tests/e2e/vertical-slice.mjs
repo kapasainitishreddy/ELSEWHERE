@@ -4,6 +4,7 @@ import {mkdir, mkdtemp, rm} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {setTimeout as delay} from 'node:timers/promises';
 import {chromium} from 'playwright';
 
@@ -61,7 +62,7 @@ try {
     try{await page.waitForFunction(value=>document.querySelector('#world-canvas canvas')?.dataset.causalExhibit===value,expected,{timeout:10000});}
     catch(error){
       const diagnostic=await page.evaluate(()=>({world:document.querySelector('#app-ui')?.dataset.world,sceneReady:document.querySelector('#app')?.dataset.sceneReady,canvases:[...document.querySelectorAll('#world-canvas canvas')].map(canvas=>({dataset:{...canvas.dataset},width:canvas.width,height:canvas.height})),status:document.querySelector('.chat-header')?.innerText,elder:document.querySelector('#chat-history .chat-line.elder')?.innerText,pageErrors:window.__elsewherePageErrors||[]})).catch(()=>({pageUnresponsive:true}));
-      await Promise.race([page.screenshot({path:new URL('causal-exhibit-failure.png',artifactDir).pathname}),delay(3000)]);
+      await Promise.race([page.screenshot({path:fileURLToPath(new URL('causal-exhibit-failure.png',artifactDir))}),delay(3000)]);
       throw new Error(`causal exhibit ${expected} was not installed: ${JSON.stringify(diagnostic)}; pageErrors=${JSON.stringify(errors)}`,{cause:error});
     }
   }
@@ -74,9 +75,9 @@ try {
   assert(await page.locator('#guest-play').isVisible(),'the unsaved demo should be immediately available on a phone viewport');
   assert(await page.locator('#vault-passphrase').isVisible(),'the encrypted save path should remain available on a phone viewport');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390,'the first-run gate should not force horizontal scrolling on mobile');
-  await page.screenshot({path:new URL('entry-mobile.png',artifactDir).pathname});
+  await page.screenshot({path:fileURLToPath(new URL('entry-mobile.png',artifactDir))});
   await page.setViewportSize(desktopViewport);
-  await page.screenshot({path:new URL('gate.png',artifactDir).pathname});
+  await page.screenshot({path:fileURLToPath(new URL('gate.png',artifactDir))});
   await clickUser(page.locator('#guest-play'));
   await page.locator('#vault-gate').waitFor({state:'hidden'});
   await page.waitForFunction(()=>document.querySelector('#app')?.dataset.sceneReady==='true',{timeout:45000});
@@ -91,7 +92,7 @@ try {
   const firstSceneDraws=Number((await page.locator('.world-perf-display').innerText()).match(/(\d+) DRAWS/)?.[1]);
   assert(Number.isFinite(firstSceneDraws)&&firstSceneDraws<360,`initial 2087 scene should stay below 360 draw calls (saw ${firstSceneDraws})`);
   assert.equal(await page.evaluate(()=>localStorage.getItem('syrava.elsewhere.private-v1')),null,'guest progress must not be written to encrypted vault storage');
-  await page.screenshot({path:new URL('guest-2087.png',artifactDir).pathname});
+  await page.screenshot({path:fileURLToPath(new URL('guest-2087.png',artifactDir))});
   checkpoint('guest scene ready',`2087 · ${firstSceneDraws} draws`);
 
   await clickUser(page.locator('[data-cmd="first-crossing"]'));
@@ -105,7 +106,7 @@ try {
     return{formBeforeOptionalMemories:Boolean(form&&memories&&(form.compareDocumentPosition(memories)&Node.DOCUMENT_POSITION_FOLLOWING)),formVisibleInPanel:Boolean(f&&p&&f.top<p.bottom&&f.bottom>p.top)};
   });
   assert.deepEqual(conversationOrder,{formBeforeOptionalMemories:true,formVisibleInPanel:true},'the main conversation prompt should appear before optional memory controls');
-  await page.screenshot({path:new URL('future-self-conversation-first.png',artifactDir).pathname});
+  await page.screenshot({path:fileURLToPath(new URL('future-self-conversation-first.png',artifactDir))});
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.locator('.world-first-play').isVisible(),false,'the movement hint must stay out of the open mobile story panel');
   await page.waitForFunction(()=>getComputedStyle(document.querySelector('#toast-region')).opacity==='0');
@@ -113,7 +114,7 @@ try {
   assert.equal(mobileNotice.opacity,'0',`mobile transition notices must not cover story-panel headings: ${JSON.stringify(mobileNotice)}`);
   assert.equal(await page.locator('#toast-region').getAttribute('aria-live'),'polite','visually suppressed mobile notices must remain announced to assistive technology');
   assert.deepEqual(await page.evaluate(()=>{const form=document.querySelector('#chat-form'),memories=document.querySelector('.memory-cards'),panel=document.querySelector('.story-panel'),f=form?.getBoundingClientRect(),p=panel?.getBoundingClientRect();return{formBeforeOptionalMemories:Boolean(form&&memories&&(form.compareDocumentPosition(memories)&Node.DOCUMENT_POSITION_FOLLOWING)),formVisibleInPanel:Boolean(f&&p&&f.top<p.bottom&&f.bottom>p.top),documentWidth:document.documentElement.scrollWidth};}),{formBeforeOptionalMemories:true,formVisibleInPanel:true,documentWidth:390},'mobile conversation prompt should precede optional memory controls without horizontal overflow');
-  await page.screenshot({path:new URL('future-self-conversation-first-mobile.png',artifactDir).pathname});
+  await page.screenshot({path:fileURLToPath(new URL('future-self-conversation-first-mobile.png',artifactDir))});
   await page.setViewportSize(desktopViewport);
   await page.locator('#chat-question').fill('What does an ordinary day look like in this possible future?');
   await clickUser(page.locator('#chat-form button[type="submit"]'));
@@ -122,7 +123,7 @@ try {
   assert.match(await page.locator('.privacy-sigil').innerText(),/GUEST · NOT SAVED/,'guest offline dialogue must not claim an encrypted save');
   assert.match(await page.locator('.chat-note').innerText(),/authored dialogue, no network AI/i,'the offline fallback must be described honestly');
   checkpoint('first authored future-self reply displayed');
-  await page.screenshot({path:new URL('future-self-dialogue.png',artifactDir).pathname});
+  await page.screenshot({path:fileURLToPath(new URL('future-self-dialogue.png',artifactDir))});
   await clickUser(page.locator('.story-panel [data-cmd="story-toggle"]'),{scroll:false});
 
   await clickUser(page.locator('[data-cmd="first-crossing"]'));
@@ -150,7 +151,7 @@ try {
   try{await page.mouse.click(giftBefore.rect.x+giftBefore.rect.width/2,giftBefore.rect.y+giftBefore.rect.height/2);}
   catch(error){
     const giftAfter=await page.evaluate(()=>({activeElement:{tag:document.activeElement?.tagName,id:document.activeElement?.id},world:document.querySelector('#app-ui')?.dataset.world,storyOpen:!document.querySelector('.story-panel')?.hasAttribute('inert'),storyText:document.querySelector('.story-panel')?.innerText?.slice(-500),choice:document.querySelector('.choice-list [data-action="gift"]')?.outerHTML,clickDiagnostics:window.__giftActionDiagnostics&&{probeStartedAt:window.__giftActionDiagnostics.start,targetConnectedBefore:window.__giftActionDiagnostics.targetConnectedBefore,targetConnectedAfter:window.__giftActionDiagnostics.target?.isConnected,events:window.__giftActionDiagnostics.events,longTasks:window.__giftActionDiagnostics.longTasks},scrollTop:document.querySelector('.story-panel')?.scrollTop,scrollHeight:document.querySelector('.story-panel')?.scrollHeight,clientHeight:document.querySelector('.story-panel')?.clientHeight})).catch(()=>({pageUnresponsive:true}));
-    await Promise.race([page.screenshot({path:new URL('gift-click-failure-1440.png',artifactDir).pathname}),delay(3000)]);
+    await Promise.race([page.screenshot({path:fileURLToPath(new URL('gift-click-failure-1440.png',artifactDir))}),delay(3000)]);
     throw new Error(`gift pointer action failed at ${desktopViewport.width}x${desktopViewport.height} after ${Date.now()-giftClickStartedAt}ms; before=${JSON.stringify(giftBefore)}; after=${JSON.stringify(giftAfter)}; pageErrors=${JSON.stringify(errors)}`,{cause:error});
   }
   const giftAfter=await page.evaluate(()=>{const diagnostic=window.__giftActionDiagnostics,longTasks=diagnostic?.longTasks||[];return {targetConnected:diagnostic?.target?.isConnected,diagnostics:diagnostic&&{startedAt:diagnostic.start,events:diagnostic.events,longTaskCount:longTasks.length,maxLongTaskMs:Math.max(0,...longTasks.map(task=>task.duration)),longTasksOver1000ms:longTasks.filter(task=>task.duration>=1000)},storyText:document.querySelector('.story-panel')?.innerText?.slice(-500),choice:document.querySelector('.choice-list [data-action="gift"]')?.outerHTML};});
@@ -169,8 +170,10 @@ try {
   await page.locator('#chat-history .chat-line.elder').nth(1).waitFor({state:'visible',timeout:30000});
   assert.match((await page.locator('#chat-history').innerText()).toLowerCase(),/public workshops/,'future-self must refer to the recorded gift fate');
   await waitForExhibit('authored:people:gift');
-  await page.locator('#world-canvas canvas').screenshot({path:new URL('future-self-authored-exhibit-gift.png',artifactDir).pathname});
-  await page.screenshot({path:new URL('future-self-remembers-gift.png',artifactDir).pathname});
+  const canvasBounds=await page.locator('#world-canvas canvas').boundingBox();
+  assert(canvasBounds,'the authored exhibit canvas must be visible for capture');
+  await page.screenshot({path:fileURLToPath(new URL('future-self-authored-exhibit-gift.png',artifactDir)),clip:canvasBounds});
+  await page.screenshot({path:fileURLToPath(new URL('future-self-remembers-gift.png',artifactDir))});
   checkpoint('future self recalls public workshops after gift');
   await clickUser(page.locator('.story-panel [data-cmd="story-toggle"]'),{scroll:false});
 
@@ -181,7 +184,7 @@ try {
   const outcome=await page.locator('.story-panel').innerText();
   assert.match(outcome,/city of open workshops/i,'2087 story should reflect the gift fate');
   assert.match(outcome,/Aether Cell/i,'2087 story should retain the selected invention');
-  await page.screenshot({path:new URL('future-2087-gift.png',artifactDir).pathname});
+  await page.screenshot({path:fileURLToPath(new URL('future-2087-gift.png',artifactDir))});
 
   await page.keyboard.down('KeyW');await delay(350);await page.keyboard.up('KeyW');
   await page.setViewportSize({width:390,height:844});
@@ -195,13 +198,13 @@ try {
   assert.deepEqual(errors,[],'desktop keyboard and mobile pointer controls should not raise browser errors');
 
   const mobile=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth,overflowing:[...document.querySelectorAll('body *')].map(element=>({tag:element.tagName,id:element.id,classes:typeof element.className==='string'?element.className:'',right:Math.round(element.getBoundingClientRect().right)})).filter(element=>element.right>innerWidth+2).sort((a,b)=>b.right-a.right).slice(0,8)}));
-  await page.screenshot({path:new URL('future-2087-mobile.png',artifactDir).pathname,fullPage:true});
+  await page.screenshot({path:fileURLToPath(new URL('future-2087-mobile.png',artifactDir)),fullPage:true});
   assert(mobile.document<=mobile.viewport+1,`mobile horizontal overflow: ${JSON.stringify(mobile)}`);
   for(const viewport of [{width:1280,height:720},{width:360,height:800}]){
     await page.setViewportSize(viewport);
     const width=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
     assert(width.document<=width.viewport+1,`${viewport.width}×${viewport.height} overflowed horizontally: ${JSON.stringify(width)}`);
-    if(viewport.width===360)await page.screenshot({path:new URL('future-2087-360.png',artifactDir).pathname,fullPage:true});
+    if(viewport.width===360)await page.screenshot({path:fileURLToPath(new URL('future-2087-360.png',artifactDir)),fullPage:true});
   }
   await page.reload({waitUntil:'domcontentloaded'});
   assert(await page.locator('#vault-gate').isVisible(),'reloading a mutated guest story should return to the entry gate');
@@ -210,7 +213,7 @@ try {
   assert.deepEqual(badResponses,[],'browser received an HTTP error response');
   assert.deepEqual(external,[],'the scene should stay same-origin');
   assert.deepEqual(characterRequests,[],'authored local journey must make zero Meta character requests');
-  console.log(JSON.stringify({result:'PASS',browser:await browser.version(),viewport:`${desktopViewport.width}x${desktopViewport.height} desktop plus 390x844 mobile`,guestVaultUntouched:true,story:'guest → 2046 dialogue → 1889 Aether Cell gift → grounded future-self dialogue with authored 3D exhibit → 2087 public workshops',mobile,authoredExhibit:'people focus · gift fate · clearly labeled authored preview',characterRequests:characterRequests.length,consoleErrors:errors,badResponses,external,screenshots:artifactDir.pathname},null,2));
+  console.log(JSON.stringify({result:'PASS',browser:await browser.version(),viewport:`${desktopViewport.width}x${desktopViewport.height} desktop plus 390x844 mobile`,guestVaultUntouched:true,story:'guest → 2046 dialogue → 1889 Aether Cell gift → grounded future-self dialogue with authored 3D exhibit → 2087 public workshops',mobile,authoredExhibit:'people focus · gift fate · clearly labeled authored preview',characterRequests:characterRequests.length,consoleErrors:errors,badResponses,external,screenshots:fileURLToPath(artifactDir)},null,2));
 } finally {
   if(browser)await Promise.race([browser.close(),delay(4000)]);
   if(browserServer){const child=browserServer.process();if(child?.exitCode===null){child.kill('SIGKILL');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),delay(1000)]);}}
