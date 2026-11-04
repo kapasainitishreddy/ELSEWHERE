@@ -38,6 +38,18 @@ try{
  await page.waitForSelector('.first-crossing');
  assert.equal(await page.locator('.first-crossing-progress i').count(),6,'the guided-story progress indicators must render as six valid sibling elements');
  assert.equal(await page.locator('.first-crossing-progress').evaluate(node=>node.children.length),6,'progress markup must not absorb adjacent story content');
+ await page.locator('.first-crossing-actions button:first-child').focus();await page.keyboard.press('Enter');
+ await page.waitForFunction(()=>document.querySelector('#app-ui')?.dataset.world==='self'&&document.activeElement?.matches('.first-crossing-actions button:first-child'));
+ assert.match(await page.evaluate(()=>document.activeElement?.innerText.trim()),/^BEGIN A CONVERSATION/,'keyboard travel keeps focus on the next guided action');
+ await page.keyboard.press('Enter');await page.waitForFunction(()=>document.activeElement?.id==='chat-question');
+ const repliesBefore=await page.locator('.chat-line.elder').count();await page.locator('#chat-question').fill('What small choice mattered most?');await page.keyboard.press('Enter');await page.waitForFunction(count=>document.querySelectorAll('.chat-line.elder').length>count,repliesBefore);await page.waitForFunction(()=>document.querySelector('#chat-form')?.getAttribute('aria-busy')===null);await page.waitForFunction(()=>document.activeElement?.id==='chat-question');
+ await page.keyboard.press('Escape');await page.waitForFunction(()=>document.querySelector('#app-ui')?.dataset.storyOpen==='false'&&document.activeElement?.matches('.first-crossing-actions button:first-child'));
+ assert.match(await page.evaluate(()=>document.activeElement?.innerText.trim()),/^STEP INTO 1889/,'closing the story restores focus to the visible guided action');
+ await page.keyboard.press('Enter');await page.waitForFunction(()=>document.querySelector('#app-ui')?.dataset.world==='past'&&document.activeElement?.matches('.first-crossing-actions button:first-child'));
+ await page.keyboard.press('Enter');await page.waitForFunction(()=>document.activeElement?.matches('.choice[data-action^="invent-"]:not([disabled])'));
+ await page.keyboard.press('Enter');await page.waitForFunction(()=>document.querySelector('.story-panel .decision-section .choice:not([disabled])')&&document.activeElement?.matches('.story-panel .decision-section .choice:not([disabled])'));
+ assert.equal(await page.evaluate(()=>document.activeElement?.closest('.story-panel')!==null),true,'after a story choice rerenders, keyboard focus moves to the next available story choice');
+ await page.keyboard.press('Escape');await page.waitForFunction(()=>document.activeElement?.matches('.first-crossing-actions button:first-child'));
  const beforeJournal=await page.evaluate(()=>({world:document.querySelector('#app-ui')?.dataset.world,branch:document.querySelector('.branch-tag')?.textContent.trim(),hours:document.querySelector('.artifact-tracker')?.innerText.trim(),vault:localStorage.getItem('syrava.elsewhere.private-v1')}));
  await tabTo('timeline-open');await page.keyboard.press('Enter');
  await page.locator('[role="dialog"][aria-labelledby="journal-title"]').waitFor();

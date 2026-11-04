@@ -35,7 +35,7 @@ function mysteryJournalMarkup(model){
 export function createInterface(root, handlers){
   let state=null, journal=false, instructions=false, busy=false, pendingQuestion=null, apiStatus='OFFLINE READY', isSpeaking=false, journalTab='echoes', selectedChapter='prologue', choiceFilter='world', sound=false, focus=false, stillwater=null;
   let storyOpen=false, atlasOpen=false, displayedWorld=null, displayedCombat=false, journeyVisible=true, comfortOpen=false, comfortMode=DEFAULT_COMFORT;
-  let dialogReturnFocusKey=null,pendingDialogFocusKey=null;
+  let dialogReturnFocusKey=null,pendingDialogFocusKey=null,pendingJourneyFocus=null;
   const describeFocus=node=>node?.dataset?.focusKey?`focus:${node.dataset.focusKey}`:node?.id?`id:${node.id}`:node?.dataset?.tab?`tab:${node.dataset.tab}`:node?.dataset?.cmd?`cmd:${node.dataset.cmd}`:null;
   const findFocus=(key,scope=root)=>{
     if(!key||!scope?.querySelectorAll)return null;
@@ -180,14 +180,26 @@ export function createInterface(root, handlers){
     const sheet=root.querySelector('.story-panel');if(storyOpen&&sheet&&previousScroll>0)sheet.scrollTop=previousScroll;
     const history=root.querySelector('#chat-history');if(history)history.scrollTop=history.scrollHeight;
     syncDialogFocus(oldFocusKey,focusWasInside);
+    if(pendingJourneyFocus){
+      const target=pendingJourneyFocus==='choice'
+        ? root.querySelector('.story-panel .decision-section .choice:not([disabled])')||root.querySelector('.story-panel .sheet-inline-close')
+        : pendingJourneyFocus==='restore'
+          ? root.querySelector('.journey-restore')
+          : root.querySelector('.first-crossing-actions button:first-child')||root.querySelector('.hero-enter')||root.querySelector('.scene-postcard .postcard-enter');
+      pendingJourneyFocus=null;
+      if(target){
+        if(target.matches?.('.choice')){const panel=root.querySelector('.story-panel'),panelRect=panel?.getBoundingClientRect(),headerRect=panel?.querySelector('.sheet-topbar')?.getBoundingClientRect(),rect=target.getBoundingClientRect();if(panelRect){const top=Math.max(panelRect.top+14,(headerRect?.bottom||panelRect.top)+14);panel.scrollTop+=rect.top-top;}}
+        focusAfterActivation(target);
+      }
+    }
   }
   root.addEventListener('click',e=>{
     const world=e.target.closest('button[data-world]');if(world){handlers.travel(world.dataset.world);return;}
-    const action=e.target.closest('[data-action]');if(action){handlers.action(action.dataset.action);return;}
+    const action=e.target.closest('[data-action]');if(action){if(storyOpen)pendingJourneyFocus='choice';handlers.action(action.dataset.action);pendingJourneyFocus=null;return;}
     const cmd=e.target.closest('[data-cmd]');if(!cmd)return;
     if(cmd.dataset.cmd==='first-crossing'){
       const next=crossingAction(firstCrossing(state),state.world);
-      if(next.world){handlers.travel(next.world);return;}
+      if(next.world){pendingJourneyFocus='journey';handlers.travel(next.world);pendingJourneyFocus=null;return;}
       if(next.command==='talk-to-future'){
         storyOpen=true;atlasOpen=false;focus=false;root.parentElement?.classList.toggle('cinematic',false);render(state);
         const panel=root.querySelector('.story-panel'),chat=root.querySelector('.chat-section');
@@ -214,8 +226,8 @@ export function createInterface(root, handlers){
       }
       atlasOpen=true;render(state);return;
     }
-    if(cmd.dataset.cmd==='journey-skip'){journeyVisible=false;render(state);return;}
-    if(cmd.dataset.cmd==='journey-resume'){journeyVisible=true;render(state);return;}
+    if(cmd.dataset.cmd==='journey-skip'){journeyVisible=false;pendingJourneyFocus='restore';render(state);return;}
+    if(cmd.dataset.cmd==='journey-resume'){journeyVisible=true;pendingJourneyFocus='journey';render(state);return;}
     if(cmd.dataset.cmd==='receipt-open'){rememberDialogOpener(cmd);journal=true;journalTab='echoes';pendingDialogFocusKey='focus:timeline-close';render(state);return;}
     if(cmd.dataset.cmd==='comfort-open'){rememberDialogOpener(cmd);comfortOpen=true;pendingDialogFocusKey='focus:comfort-close';render(state);return;}
     if(cmd.dataset.cmd==='comfort-close'){if(cmd.classList.contains('modal-shade')&&e.target!==cmd)return;closeDialog();render(state);return;}
@@ -273,7 +285,7 @@ export function createInterface(root, handlers){
     }
     if(e.key==='Escape'&&dialog){e.preventDefault();closeDialog();render(state);return;}
     if(e.key==='Escape'&&(storyOpen||atlasOpen)){
-      storyOpen=false;atlasOpen=false;render(state);root.querySelector('.hero-enter')?.focus?.();
+      storyOpen=false;atlasOpen=false;pendingJourneyFocus='journey';render(state);
     }
   });
   root.addEventListener('change',e=>{if(e.target.id==='import-timeline-input')handlers.importTimeline(e.target.files?.[0]);});
