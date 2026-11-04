@@ -6,18 +6,18 @@ ELSEWHERE is a privacy-first, browser-based 3D speculative game prototype. Playe
 
 ## Current tested checkpoint — 2026-11-04
 
-**Local development status: verified. External submission status: NO-GO.** On the current source, `npm test` passes 287/287 tests, `npm run build` passes, and `npm run review:agents` reports 11 PASS, 0 FAIL, 0 WARNING, 6 UNVERIFIED. The build still warns about large app and Rapier chunks. The last clean `npm ci` was run at an earlier checkpoint; recent changes add no dependencies.
+**Current status: submitted and updated; local live Meta integration verified.** The tested code checkpoint is `7d7030b`, with live-evidence documentation added at `48dd2cf`, on `codex/elsewhere-completion-20261027`. The branch is not merged into main. The latest full checks passed 291 tests, the production build and local submission checks. The automated reviewer still reports 11 PASS / 6 UNVERIFIED because external/manual evidence is not automatically ingested. Eligibility and prize outcomes remain for the organizers to decide. Large app and Rapier chunk-size warnings remain.
 
 Fresh 2026-11-04 verification: the default 1440×900 guest → 2046 → 1889 gift → 2087 journey and the 390×844 touch/vault journey both passed in Chromium 154 / SwiftShader. The first-screen privacy notice distinguishes encrypted private saves from temporary guest progress. The mobile header keeps help and timeline controls visible after the guided card is dismissed. Automated axe scans found zero violations in six entry, story, journal, and mobile states. These are emulated browser results; they do not establish phone/Quest performance, screen-reader support, live AI behavior, or submission readiness. See [the dated evidence](docs/QA_EVIDENCE_CURRENT.md).
 
-The synthetic provider probe now supports the server-selected Meta, Baseten, Fireworks, and Modal adapters, including configuration-bound consent and sanitized one-call receipts. Its offline contract tests pass; no live inference is established. See [provider setup and verification](docs/MODEL_PROVIDER_ADAPTERS.md).
+The synthetic provider probe now supports the server-selected Meta, Baseten, Fireworks, and Modal adapters, including configuration-bound consent and sanitized one-call receipts. Its offline contract tests pass. On November 4, the actual serverless handler and a real browser conversation through the local model bridge each made one successful Muse Spark 1.3 request using fictional data after authorization. See [verified local evidence](docs/META_LIVE_LOCAL_EVIDENCE_20261104.md). The public static game keeps remote inference unavailable. See [provider setup and verification](docs/MODEL_PROVIDER_ADAPTERS.md).
 
 Verified local behavior includes:
 
 - Guest entry without saving, portal travel, the future → 1889 invention → distinct gift/patent/auction futures → grounded recall journey.
 - Warden and mech battles that can be lost, exited, re-entered and recovered; repeat rewards remain disabled.
 - Actual Rapier physics props that settle and stay within the tested collider cage through a ten-minute fixed-step simulation.
-- Locally authored causal exhibits derived from saved fictional outcomes; Meta direction is opt-in and the browser/API contract has mock coverage only.
+- Locally authored causal exhibits derived from saved fictional outcomes; Meta direction is opt-in; the browser/API contract has mock coverage and a successful local live browser test. The public static demo remains offline.
 - Dialogue and privacy labels distinguish unsaved guest, encrypted-vault, on-device-model, and Meta transport states; local mock lifecycle coverage checks these modes.
 - Keyboard dialogue submission disables duplicate sends while pending, exposes the busy and polite status in Chromium’s accessibility tree, and restores focus to the question field after the response.
 - AES-GCM local saves, lock/reload/unlock, encrypted backup download, canceled replacement, malformed-file rejection and file-picker restore.
@@ -45,13 +45,17 @@ In this managed container, the default npm cache path was absent. The clean inst
 
 **Dialogue privacy labels now disclose both dimensions:** guest play is unsaved even when an on-device or Meta mock is selected; a saved vault is encrypted, while Meta-enabled questions leave the device. Browser fixtures cover these label combinations but do not establish a live service call.
 
-**Local recording rehearsal:** `npm run demo:record:authored` captures an actual authored-offline Chromium story journey and validates its MP4. The latest cloud-rendered clip is H.264, 1280×720, 79.64 seconds and 115 frames (~1.44 fps); it decodes but remains visibly choppy and is not usable submission footage. It uses Chromium 154/SwiftShader and made zero Meta/off-origin requests. See the [Windows local recording runbook](docs/DEMO_RUNBOOK_WINDOWS.md), [capture limitations](docs/DEMO_RUNBOOK_LOCAL.md), and [three-minute shot list](docs/DEMO_3MIN.md). A smooth three-minute recording still needs to be captured and reviewed on the user's Windows PC.
+**Published gameplay demo:** [Watch the 176.6-second video](https://elsewhere-demo-video.vercel.app/). It includes actual offline gameplay, Possible Futures and a distinctly labeled real Meta response in the locally hosted game. Synthetic narration explains the privacy and deployment boundaries. Full H.264/AAC decoding passed. Some earlier gameplay segments retain uneven frame rates; no hardware-performance claim is made. The older cloud recording harness remains a rehearsal tool.
 
-**External gates remain open:** no live Meta inference (the local mocks are not Meta proof), public HTTPS preview/API, polished real demo video, current official eligibility confirmation, Quest/phone hardware run, screen-reader audit, human research, or submission. SwiftShader output is not hardware performance evidence. Do not describe this prototype as submission-ready.
+**Public access and remaining limits:** [Play the public static demo](https://elsewhere-hackathon-preview.vercel.app/). Guest entry and the milestone workflow were observed in a fresh browser; the submitted entry was updated and reloaded to verify persistence. Local live Meta integration is recorded in the linked evidence; public hosted inference is still disabled. Participant/contributor eligibility, event-period provenance, physical phone/Quest performance, screen-reader auditing and independent human research remain unverified. No clinical-benefit claim is made.
 
 **Combat flow rechecked 2026-10-30:** Full Warden and Mech browser recovery journeys passed on Chromium 154 with SwiftShader after the responsive combat HUD change. The Mech path covered defeat, reboot, victory, exit/re-entry and the single-use mission reward. See [latest QA evidence](docs/QA_EVIDENCE_CURRENT.md). Official judging weights were verified from rules dated October 25 on October 30: Impact 30%, Meta AI tooling 25%, Technical execution 20%, Demo 25%. Startup representative eligibility and exact portal fields remain unverified; see [hackathon readiness](docs/HACKATHON_READINESS_CURRENT.md).
 
 For setup and first-run instructions, see [Run it](#run-it). The current playable worlds and controls are documented later in this README. The complete feature status is in the [feature ledger](docs/FEATURE_LEDGER.csv).
+
+## Possible Futures
+
+Create up to five private plans per story reality and choose up to eight milestone days between 1 and 365. One check-in per local calendar day advances the current run. Reached milestones unlock separate scripted future-self conversations. A missed day or an intentional fresh start resets the current run while preserving total check-ins. The starting-self conversation remains available; plans can be deleted. Guest plans are temporary, while private saves use the encrypted local vault. These conversations are authored offline and are not Meta responses.
 
 ## Historical release notes
 
