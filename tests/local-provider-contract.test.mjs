@@ -10,9 +10,9 @@ class Req extends EventEmitter{constructor(body){super();this.method='POST';this
 class Res extends EventEmitter{constructor(){super();this.headers={};this.writableEnded=false;this.destroyed=false;}writeHead(status,headers){this.status=status;this.headers=headers;}end(body){this.writableEnded=true;this.body=JSON.parse(body);}}
 
 for(const [providerEnv,endpoint,model,authorization,label] of [
- [{MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-key'},'https://inference.baseten.co/v1/chat/completions','meta-models/muse-spark-open-1026','Bearer synthetic-key','Baseten'],
- [{MODEL_PROVIDER:'fireworks',FIREWORKS_API_KEY:'synthetic-key',FIREWORKS_MODEL:'verified/model-id'},'https://api.fireworks.ai/inference/v1/chat/completions','verified/model-id','Bearer synthetic-key','Fireworks'],
- [{MODEL_PROVIDER:'modal',MODAL_PROXY_TOKEN:'synthetic-id.synthetic-secret',MODAL_MODEL:'configured-modal-model',MODAL_CHAT_COMPLETIONS_URL:'https://app--serve.modal.run/v1/chat/completions'},'https://app--serve.modal.run/v1/chat/completions','configured-modal-model','Bearer synthetic-id.synthetic-secret','Modal']
+ [{REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-key'},'https://inference.baseten.co/v1/chat/completions','meta-models/muse-spark-open-1026','Bearer synthetic-key','Baseten'],
+ [{REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'fireworks',FIREWORKS_API_KEY:'synthetic-key',FIREWORKS_MODEL:'verified/model-id'},'https://api.fireworks.ai/inference/v1/chat/completions','verified/model-id','Bearer synthetic-key','Fireworks'],
+ [{REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'modal',MODAL_PROXY_TOKEN:'synthetic-id.synthetic-secret',MODAL_MODEL:'configured-modal-model',MODAL_CHAT_COMPLETIONS_URL:'https://app--serve.modal.run/v1/chat/completions'},'https://app--serve.modal.run/v1/chat/completions','configured-modal-model','Bearer synthetic-id.synthetic-secret','Modal']
 ])test(`local bridge uses the same ${label} endpoint, model, auth, and response contract`,async()=>{
  let sent;const config=getProviderConfig(providerEnv);
  const handler=createModelProxyHandler({provider:config,limiter:()=>false,fetchImpl:async(url,options)=>{sent={url,options};return{ok:true,json:async()=>modelBody};}});
@@ -24,22 +24,22 @@ for(const [providerEnv,endpoint,model,authorization,label] of [
 });
 
 test('local bridge rejects consent for an old provider configuration without inference',async()=>{
- const previous=getProviderConfig({MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-key'});
- const current=getProviderConfig({MODEL_PROVIDER:'fireworks',FIREWORKS_API_KEY:'synthetic-key',FIREWORKS_MODEL:'explicit-model'});let calls=0;
+ const previous=getProviderConfig({REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-key'});
+ const current=getProviderConfig({REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'fireworks',FIREWORKS_API_KEY:'synthetic-key',FIREWORKS_MODEL:'explicit-model'});let calls=0;
  const handler=createModelProxyHandler({provider:current,limiter:()=>false,fetchImpl:async()=>{calls++;throw Error('must not call');}});
  const res=new Res();await handler(new Req({...payload,providerConfigVersion:previous.configurationVersion}),res);
  assert.equal(res.status,409);assert.equal(calls,0);
 });
 
 test('local bridge deadline covers the upstream body and returns a bounded timeout response',async()=>{
- const config={...getProviderConfig({MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-key'}),timeoutMs:15};
+ const config={...getProviderConfig({REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-key'}),timeoutMs:15};
  const handler=createModelProxyHandler({provider:config,limiter:()=>false,fetchImpl:(_url,{signal})=>new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}))});
  const res=new Res();await handler(new Req({...payload,providerConfigVersion:config.configurationVersion}),res);
  assert.equal(res.status,504);assert.match(res.body.error,/timed out/i);
 });
 
 test('local bridge cancels an in-flight upstream body after the browser disconnects',async()=>{
- let observed;const config=getProviderConfig({MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-key'});
+ let observed;const config=getProviderConfig({REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-key'});
  const handler=createModelProxyHandler({provider:config,limiter:()=>false,fetchImpl:(_url,{signal})=>{observed=signal;return new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}));}});
  const req=new Req({...payload,providerConfigVersion:config.configurationVersion}),res=new Res();const pending=handler(req,res);
  await new Promise(resolve=>setTimeout(resolve,0));res.emit('close');await pending;

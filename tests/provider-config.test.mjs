@@ -4,20 +4,30 @@ import {getProviderConfig,providerConfigurationVersion} from '../api/provider-co
 
 test('provider defaults remain Meta and do not require network access',()=>{
  const config=getProviderConfig({});
- assert.deepEqual(config,{id:'meta',label:'Meta Model API',endpoint:'https://api.meta.ai/v1/chat/completions',model:'muse-spark-1.3',apiKey:'',configured:false,timeoutMs:12000,configurationVersion:providerConfigurationVersion({id:'meta',endpoint:'https://api.meta.ai/v1/chat/completions',model:'muse-spark-1.3'})});
+ assert.deepEqual(config,{id:'meta',label:'Meta Model API',endpoint:'https://api.meta.ai/v1/chat/completions',model:'muse-spark-1.3',apiKey:'',remoteEnabled:false,configured:false,timeoutMs:12000,configurationVersion:providerConfigurationVersion({id:'meta',endpoint:'https://api.meta.ai/v1/chat/completions',model:'muse-spark-1.3'})});
+});
+
+test('credentials cannot enable remote inference without exact operator opt-in',()=>{
+ for(const value of [undefined,'','true ','TRUE','1','yes']){
+  const config=getProviderConfig({MODEL_API_KEY:'synthetic-key',...(value===undefined?{}:{REMOTE_MODEL_ENABLED:value})});
+  assert.equal(config.remoteEnabled,false,`unexpected opt-in for ${String(value)}`);
+  assert.equal(config.configured,false,`credentials must remain inert for ${String(value)}`);
+ }
+ const enabled=getProviderConfig({REMOTE_MODEL_ENABLED:'true',MODEL_API_KEY:'synthetic-key'});
+ assert.equal(enabled.remoteEnabled,true);assert.equal(enabled.configured,true);
 });
 
 test('Baseten uses its documented chat endpoint and the supplied Muse Spark Open model id',()=>{
- const config=getProviderConfig({MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-baseten-key'});
- assert.deepEqual(config,{id:'baseten',label:'Baseten',endpoint:'https://inference.baseten.co/v1/chat/completions',model:'meta-models/muse-spark-open-1026',apiKey:'synthetic-baseten-key',configured:true,timeoutMs:30000,configurationVersion:providerConfigurationVersion({id:'baseten',endpoint:'https://inference.baseten.co/v1/chat/completions',model:'meta-models/muse-spark-open-1026'})});
+ const config=getProviderConfig({REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-baseten-key'});
+ assert.deepEqual(config,{id:'baseten',label:'Baseten',endpoint:'https://inference.baseten.co/v1/chat/completions',model:'meta-models/muse-spark-open-1026',apiKey:'synthetic-baseten-key',remoteEnabled:true,configured:true,timeoutMs:30000,configurationVersion:providerConfigurationVersion({id:'baseten',endpoint:'https://inference.baseten.co/v1/chat/completions',model:'meta-models/muse-spark-open-1026'})});
 });
 
 test('Fireworks requires an explicitly configured model id',()=>{
  const missingModel=getProviderConfig({MODEL_PROVIDER:'fireworks',FIREWORKS_API_KEY:'synthetic-fireworks-key'});
  assert.equal(missingModel.configured,false);
  assert.equal(missingModel.model,'');
- const config=getProviderConfig({MODEL_PROVIDER:'fireworks',FIREWORKS_API_KEY:'synthetic-fireworks-key',FIREWORKS_MODEL:'accounts/example/models/explicit-model'});
- assert.deepEqual(config,{id:'fireworks',label:'Fireworks',endpoint:'https://api.fireworks.ai/inference/v1/chat/completions',model:'accounts/example/models/explicit-model',apiKey:'synthetic-fireworks-key',configured:true,timeoutMs:30000,configurationVersion:providerConfigurationVersion({id:'fireworks',endpoint:'https://api.fireworks.ai/inference/v1/chat/completions',model:'accounts/example/models/explicit-model'})});
+ const config=getProviderConfig({REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'fireworks',FIREWORKS_API_KEY:'synthetic-fireworks-key',FIREWORKS_MODEL:'accounts/example/models/explicit-model'});
+ assert.deepEqual(config,{id:'fireworks',label:'Fireworks',endpoint:'https://api.fireworks.ai/inference/v1/chat/completions',model:'accounts/example/models/explicit-model',apiKey:'synthetic-fireworks-key',remoteEnabled:true,configured:true,timeoutMs:30000,configurationVersion:providerConfigurationVersion({id:'fireworks',endpoint:'https://api.fireworks.ai/inference/v1/chat/completions',model:'accounts/example/models/explicit-model'})});
 });
 
 test('provider selection is an allowlist and endpoint overrides are rejected',()=>{
@@ -39,8 +49,8 @@ test('Modal requires an explicit HTTPS endpoint, model, and proxy token on a Mod
  assert.equal(getProviderConfig({MODEL_PROVIDER:'modal',MODAL_CHAT_COMPLETIONS_URL:'https://app.evilmodal.run/v1/chat/completions',MODAL_MODEL:'model',MODAL_PROXY_TOKEN:'id.secret'}).configured,false);
  assert.equal(getProviderConfig({MODEL_PROVIDER:'modal',MODAL_CHAT_COMPLETIONS_URL:'https://modal.run/v1/chat/completions',MODAL_MODEL:'model',MODAL_PROXY_TOKEN:'id.secret'}).configured,false);
  assert.equal(getProviderConfig({MODEL_PROVIDER:'modal',MODAL_CHAT_COMPLETIONS_URL:'https://app.modal.run:8443/v1/chat/completions',MODAL_MODEL:'model',MODAL_PROXY_TOKEN:'id.secret'}).configured,false);
- const config=getProviderConfig({MODEL_PROVIDER:'modal',MODAL_CHAT_COMPLETIONS_URL:'https://app--serve.modal.run/v1/chat/completions',MODAL_MODEL:'explicit-modal-model',MODAL_PROXY_TOKEN:'synthetic-id.synthetic-secret'});
- assert.deepEqual(config,{id:'modal',label:'Modal',endpoint:'https://app--serve.modal.run/v1/chat/completions',model:'explicit-modal-model',apiKey:'synthetic-id.synthetic-secret',configured:true,timeoutMs:30000,configurationVersion:providerConfigurationVersion({id:'modal',endpoint:'https://app--serve.modal.run/v1/chat/completions',model:'explicit-modal-model'})});
- const changedModel=getProviderConfig({MODEL_PROVIDER:'modal',MODAL_CHAT_COMPLETIONS_URL:'https://app--serve.modal.run/v1/chat/completions',MODAL_MODEL:'a-different-model',MODAL_PROXY_TOKEN:'synthetic-id.synthetic-secret'});
+ const config=getProviderConfig({REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'modal',MODAL_CHAT_COMPLETIONS_URL:'https://app--serve.modal.run/v1/chat/completions',MODAL_MODEL:'explicit-modal-model',MODAL_PROXY_TOKEN:'synthetic-id.synthetic-secret'});
+ assert.deepEqual(config,{id:'modal',label:'Modal',endpoint:'https://app--serve.modal.run/v1/chat/completions',model:'explicit-modal-model',apiKey:'synthetic-id.synthetic-secret',remoteEnabled:true,configured:true,timeoutMs:30000,configurationVersion:providerConfigurationVersion({id:'modal',endpoint:'https://app--serve.modal.run/v1/chat/completions',model:'explicit-modal-model'})});
+ const changedModel=getProviderConfig({REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'modal',MODAL_CHAT_COMPLETIONS_URL:'https://app--serve.modal.run/v1/chat/completions',MODAL_MODEL:'a-different-model',MODAL_PROXY_TOKEN:'synthetic-id.synthetic-secret'});
  assert.notEqual(config.configurationVersion,changedModel.configurationVersion,'a changed Modal model invalidates previous explicit consent');
 });

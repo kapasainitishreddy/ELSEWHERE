@@ -19,6 +19,9 @@ function modalEndpoint(value){
 }
 
 export function getProviderConfig(env=process.env){
+ // Remote inference stays disabled unless the deployment operator opts in.
+ // Credentials alone must never activate a public or serverless endpoint.
+ const remoteEnabled=env.REMOTE_MODEL_ENABLED==='true';
  const id=String(env.MODEL_PROVIDER||'meta').trim().toLowerCase();
  const spec=PROVIDERS[id];
  if(!spec)throw new Error(`Unsupported model provider: ${id||'(empty)'}`);
@@ -29,7 +32,7 @@ export function getProviderConfig(env=process.env){
  const safeModel=model.length>0&&model.length<=250&&!/[\r\n]/.test(model);
  const modalTokenValid=id!=='modal'||/^[^.]+\..+$/.test(apiKey);
  const configurationVersion=providerConfigurationVersion({id,endpoint,model});
- return {id,label:spec.label,endpoint,model,apiKey,configured:Boolean(safeKey&&safeModel&&endpoint&&modalTokenValid),timeoutMs:spec.timeoutMs,configurationVersion};
+ return {id,label:spec.label,endpoint,model,apiKey,remoteEnabled,configured:Boolean(remoteEnabled&&safeKey&&safeModel&&endpoint&&modalTokenValid),timeoutMs:spec.timeoutMs,configurationVersion};
 }
 
 /** Public opaque version binds a consented request to its provider, endpoint and model. */

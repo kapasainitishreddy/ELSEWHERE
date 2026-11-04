@@ -44,7 +44,7 @@ export function createCharacterHandler({provider=()=>getProviderConfig(),key,mod
   if(key)selected.apiKey=key();
   if(model)selected.model=model();
   selected.apiKey=String(selected.apiKey||'');selected.model=String(selected.model||'').trim();
-  selected.configured=Boolean(selected.endpoint&&selected.apiKey&&!/[\r\n]/.test(selected.apiKey)&&selected.model.length>0&&selected.model.length<=250&&!/[\r\n]/.test(selected.model)&&(selected.id!=='modal'||/^[^.]+\..+$/.test(selected.apiKey)));
+  selected.configured=Boolean(selected.remoteEnabled===true&&selected.endpoint&&selected.apiKey&&!/[\r\n]/.test(selected.apiKey)&&selected.model.length>0&&selected.model.length<=250&&!/[\r\n]/.test(selected.model)&&(selected.id!=='modal'||/^[^.]+\..+$/.test(selected.apiKey)));
   selected.configurationVersion=providerConfigurationVersion(selected);
   if(!selected.configured)return reply(res,503,{error:'The selected model provider is not configured. Local authored dialogue remains available.'});
   if(data.providerConfigVersion!==selected.configurationVersion)return reply(res,409,{error:'The configured remote recipient changed. Review and enable remote consent again; no question was sent.'});

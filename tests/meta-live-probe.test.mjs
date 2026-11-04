@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {runSyntheticProbe} from '../tools/review/meta-live-probe.mjs';
 const content=JSON.stringify({reply:'We shared the invention, and public workshops grew around it.',cue:'warmth',focus:'people'});
 const fixtures=[
- {MODEL_API_KEY:'synthetic-private-key'},
- {MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-private-key'},
- {MODEL_PROVIDER:'fireworks',FIREWORKS_API_KEY:'synthetic-private-key',FIREWORKS_MODEL:'explicit-meta-model'},
- {MODEL_PROVIDER:'modal',MODAL_PROXY_TOKEN:'id.synthetic-private-key',MODAL_MODEL:'explicit-meta-model',MODAL_CHAT_COMPLETIONS_URL:'https://app--serve.modal.run/v1/chat/completions'}
+ {REMOTE_MODEL_ENABLED:'true',MODEL_API_KEY:'synthetic-private-key'},
+ {REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'baseten',BASETEN_API_KEY:'synthetic-private-key'},
+ {REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'fireworks',FIREWORKS_API_KEY:'synthetic-private-key',FIREWORKS_MODEL:'explicit-meta-model'},
+ {REMOTE_MODEL_ENABLED:'true',MODEL_PROVIDER:'modal',MODAL_PROXY_TOKEN:'id.synthetic-private-key',MODAL_MODEL:'explicit-meta-model',MODAL_CHAT_COMPLETIONS_URL:'https://app--serve.modal.run/v1/chat/completions'}
 ];
 test('probe cannot call a provider or write a receipt without explicit live invocation',async()=>{
  let calls=0;const result=await runSyntheticProbe({env:fixtures[1],call:async()=>{calls++;throw Error('unexpected');}});
