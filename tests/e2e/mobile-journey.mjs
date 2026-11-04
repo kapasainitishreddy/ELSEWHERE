@@ -110,6 +110,9 @@ try{
   const authoredReply=await guestPage.locator('#chat-history .chat-line.elder').last().innerText();
   assert(authoredReply.length>20,'authored local future-self fallback should answer on mobile');
   assert.equal(characterRequests.length,0,'offline authored dialogue must issue no Meta API request');
+  await guestPage.waitForFunction(()=>getComputedStyle(document.querySelector('#toast-region')).opacity==='0');
+  assert.equal(await guestPage.locator('#toast-region').evaluate(node=>getComputedStyle(node).opacity),'0','a recent mobile transition toast must not cover the open conversation title');
+  assert.equal(await guestPage.locator('#toast-region').getAttribute('aria-live'),'polite','the visually suppressed transition toast must remain in the live region');
   await guestPage.screenshot({path:new URL('mobile-future-self-authored.png',artifacts).pathname,fullPage:true});
   checkpoint('future-self authored dialogue replied without network');
 

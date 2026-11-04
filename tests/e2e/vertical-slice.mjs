@@ -108,6 +108,10 @@ try {
   await page.screenshot({path:new URL('future-self-conversation-first.png',artifactDir).pathname});
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.locator('.world-first-play').isVisible(),false,'the movement hint must stay out of the open mobile story panel');
+  await page.waitForFunction(()=>getComputedStyle(document.querySelector('#toast-region')).opacity==='0');
+  const mobileNotice=await page.locator('#toast-region').evaluate(node=>({opacity:getComputedStyle(node).opacity,width:innerWidth,media:matchMedia('(max-width:760px)').matches,storyClass:document.querySelector('#app')?.className,storyData:document.querySelector('#app-ui')?.dataset.storyOpen,live:node.getAttribute('aria-live')}));
+  assert.equal(mobileNotice.opacity,'0',`mobile transition notices must not cover story-panel headings: ${JSON.stringify(mobileNotice)}`);
+  assert.equal(await page.locator('#toast-region').getAttribute('aria-live'),'polite','visually suppressed mobile notices must remain announced to assistive technology');
   assert.deepEqual(await page.evaluate(()=>{const form=document.querySelector('#chat-form'),memories=document.querySelector('.memory-cards'),panel=document.querySelector('.story-panel'),f=form?.getBoundingClientRect(),p=panel?.getBoundingClientRect();return{formBeforeOptionalMemories:Boolean(form&&memories&&(form.compareDocumentPosition(memories)&Node.DOCUMENT_POSITION_FOLLOWING)),formVisibleInPanel:Boolean(f&&p&&f.top<p.bottom&&f.bottom>p.top),documentWidth:document.documentElement.scrollWidth};}),{formBeforeOptionalMemories:true,formVisibleInPanel:true,documentWidth:390},'mobile conversation prompt should precede optional memory controls without horizontal overflow');
   await page.screenshot({path:new URL('future-self-conversation-first-mobile.png',artifactDir).pathname});
   await page.setViewportSize(desktopViewport);
