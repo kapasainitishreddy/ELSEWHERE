@@ -200,7 +200,7 @@
  #app{min-height:0;}
  .topbar{top:10px;left:10px;right:10px;height:59px;padding:0 8px;border-radius:14px}
  .brand{min-width:0;padding:4px;gap:8px}.brand-glyph{width:32px;height:32px;border-radius:9px}.brand-type{font-size:13px;letter-spacing:.14em}.brand-caption{font-size:6px;letter-spacing:.09em;margin-top:5px}
- .header-actions{gap:5px}.header-actions .stillwater-launch,.header-actions .sound-toggle,.header-actions .focus-toggle,.header-actions .icon-btn[title='Controls & accessibility']{display:none}
+ .header-actions{gap:5px}.header-actions .stillwater-launch,.header-actions .sound-toggle,.header-actions .focus-toggle{display:none}
  .journal-button {width:39px;height:36px;padding:0;justify-content:center}.journal-button>span{display:none}.journal-button .ui-glyph{display:block}
  .topbar .icon-btn{width:34px;height:34px}
  .world-vista img{object-position:70% center;}
@@ -312,4 +312,10 @@
  .topbar .icon-btn,.topbar .journal-button{width:39px;height:39px}
  .hero-enter,.hero-secondary{min-height:44px}
  .portal-card{min-height:59px}
+}
+@media(max-width:420px){
+ .header-actions{gap:4px}
+ .header-actions [data-cmd='comfort-open']{display:none}
+ .topbar .icon-btn,.topbar .journal-button{width:32px;height:34px;flex:0 0 32px;padding:0}
+ .journal-button{justify-content:center}
 }

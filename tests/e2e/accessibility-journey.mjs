@@ -86,8 +86,13 @@ try{
  assert.equal(await page.evaluate(()=>document.activeElement?.dataset.focusKey),'help-close');
  assert.match(await page.locator('.help-modal').innerText(),/Guest progress exists only in this session and is not saved/);
  await page.keyboard.press('Escape');await page.waitForFunction(()=>document.activeElement?.id==='controls-open');assert.equal(await page.evaluate(()=>document.activeElement?.id),'controls-open','Escape restores focus to the help opener');
- await page.setViewportSize({width:390,height:844});await page.locator('#timeline-open').focus();await page.keyboard.press('Enter');await page.waitForFunction(()=>document.activeElement?.dataset?.focusKey==='timeline-close');
- await page.keyboard.press('Tab');await page.keyboard.press('End');
+ await page.setViewportSize({width:390,height:844});
+ const mobileHelp=page.locator('#controls-open');assert.equal(await mobileHelp.isVisible(),true,'phone players can reopen controls after dismissing the guided opening');assert.equal(await mobileHelp.getAttribute('aria-label'),'Open controls');
+ const mobileHeader=await page.evaluate(()=>{const rect=id=>{const r=document.querySelector(id)?.getBoundingClientRect();return r&&{left:r.left,right:r.right,top:r.top,bottom:r.bottom};};return{viewport:innerWidth,brand:rect('.brand'),help:rect('#controls-open'),timeline:rect('#timeline-open')};});
+ for(const name of ['help','timeline']){const rect=mobileHeader[name];assert(rect&&rect.left>=0&&rect.right<=390,`${name} control should remain within the phone viewport: ${JSON.stringify(mobileHeader)}`);}
+ assert(mobileHeader.help.left>=mobileHeader.brand.right,`the phone help control should not overlap the brand: ${JSON.stringify(mobileHeader)}`);
+ await page.locator('#timeline-open').focus();await page.keyboard.press('Enter');await page.waitForFunction(()=>document.activeElement?.dataset?.focusKey==='timeline-close');
+ await page.locator('#timeline-tab-privacy').focus();await page.keyboard.press('End');await page.waitForFunction(()=>document.activeElement?.id==='timeline-tab-mystery');
  const mobileModal=await page.evaluate(()=>{const modal=document.querySelector('.timeline-dialog'),tabs=document.querySelector('.atlas-tabs'),rect=modal.getBoundingClientRect();return{viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,modal:{left:rect.left,right:rect.right,width:rect.width},tabs:{client:tabs.clientWidth,scroll:tabs.scrollWidth},active:document.activeElement?.id};});
  assert(mobileModal.documentWidth<=390&&mobileModal.modal.left>=0&&mobileModal.modal.right<=390,`timeline modal should fit a phone viewport: ${JSON.stringify(mobileModal)}`);
  assert.equal(mobileModal.active,'timeline-tab-mystery');
