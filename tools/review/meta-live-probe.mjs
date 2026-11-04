@@ -18,15 +18,22 @@ export async function runSyntheticProbe({live=false,env={},call=fetch}={}){
  }};
  const result={statusCode:0,body:null};
  const response={status(n){result.statusCode=n;return this;},setHeader(){return this;},json(data){result.body=data;return data;}};
- let upstreamRequests=0,upstreamStatus=null;
+ let upstreamRequests=0,upstreamStatus=null,usage=null,finishReason=null;
  const handler=createCharacterHandler({provider:()=>config,limiter:{begin:()=>()=>{}},call:async(...args)=>{
-  upstreamRequests++;const upstream=await call(...args);upstreamStatus=Number.isInteger(upstream.status)?upstream.status:null;return upstream;
+  upstreamRequests++;const upstream=await call(...args);upstreamStatus=Number.isInteger(upstream.status)?upstream.status:null;
+  return {ok:upstream.ok,status:upstream.status,json:async()=>{
+   const raw=await upstream.json();
+   const tokens=value=>Number.isInteger(value)&&value>=0&&value<=10_000_000?value:null;
+   if(raw?.usage)usage={inputTokens:tokens(raw.usage.prompt_tokens),outputTokens:tokens(raw.usage.completion_tokens),reasoningTokens:tokens(raw.usage.completion_tokens_details?.reasoning_tokens)};
+   const reason=raw?.choices?.[0]?.finish_reason;finishReason=['stop','length','tool_calls','content_filter'].includes(reason)?reason:null;
+   return raw;
+  }};
  }});
  await handler(request,response);
  const dialogueValid=result.statusCode===200&&result.body?.provider===config.label&&typeof result.body.reply==='string'&&result.body.reply.length>0;
  const schemaValid=dialogueValid&&['rain','warmth','wonder','quiet','resolve'].includes(result.body.cue)&&['people','infrastructure','memory'].includes(result.body.focus);
  const receipt={checkedAt:new Date().toISOString(),mode:'single synthetic local serverless-handler request',provider:config.label,configuredModel:config.model,
-  handlerStatus:result.statusCode,upstreamStatus,upstreamRequests,dialogueValid,schemaValid,success:schemaValid,
+  handlerStatus:result.statusCode,upstreamStatus,upstreamRequests,usage,finishReason,dialogueValid,schemaValid,success:schemaValid,
   responseCharacterCount:dialogueValid?result.body.reply.length:0,
   note:'Local handler evidence only. Does not establish model eligibility, a deployed user experience, demo video, or device quality.'};
  return {exitCode:schemaValid?0:1,message:schemaValid?'PROVIDER HANDLER PASS':'PROVIDER HANDLER NO-GO',receipt};

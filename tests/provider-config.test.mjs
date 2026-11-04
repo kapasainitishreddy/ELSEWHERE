@@ -4,7 +4,7 @@ import {getProviderConfig,providerConfigurationVersion} from '../api/provider-co
 
 test('provider defaults remain Meta and do not require network access',()=>{
  const config=getProviderConfig({});
- assert.deepEqual(config,{id:'meta',label:'Meta Model API',endpoint:'https://api.meta.ai/v1/chat/completions',model:'muse-spark-1.3',apiKey:'',remoteEnabled:false,configured:false,timeoutMs:12000,configurationVersion:providerConfigurationVersion({id:'meta',endpoint:'https://api.meta.ai/v1/chat/completions',model:'muse-spark-1.3'})});
+ assert.deepEqual(config,{id:'meta',label:'Meta Model API',endpoint:'https://api.meta.ai/v1/chat/completions',model:'muse-spark-1.3',apiKey:'',remoteEnabled:false,configured:false,timeoutMs:45000,configurationVersion:providerConfigurationVersion({id:'meta',endpoint:'https://api.meta.ai/v1/chat/completions',model:'muse-spark-1.3'})});
 });
 
 test('credentials cannot enable remote inference without exact operator opt-in',()=>{

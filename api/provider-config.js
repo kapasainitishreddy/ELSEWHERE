@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 /** Server-only allowlist for chat-completions providers. Never accept URLs or
  * provider selection from a browser request; provider choice is operator config. */
 const PROVIDERS=Object.freeze({
- meta:Object.freeze({label:'Meta Model API',endpoint:'https://api.meta.ai/v1/chat/completions',keyEnv:'MODEL_API_KEY',modelEnv:'META_MODEL',defaultModel:'muse-spark-1.3',timeoutMs:12_000}),
+ meta:Object.freeze({label:'Meta Model API',endpoint:'https://api.meta.ai/v1/chat/completions',keyEnv:'MODEL_API_KEY',modelEnv:'META_MODEL',defaultModel:'muse-spark-1.3',timeoutMs:45_000}),
  baseten:Object.freeze({label:'Baseten',endpoint:'https://inference.baseten.co/v1/chat/completions',keyEnv:'BASETEN_API_KEY',modelEnv:'BASETEN_MODEL',defaultModel:'meta-models/muse-spark-open-1026',timeoutMs:30_000}),
  fireworks:Object.freeze({label:'Fireworks',endpoint:'https://api.fireworks.ai/inference/v1/chat/completions',keyEnv:'FIREWORKS_API_KEY',modelEnv:'FIREWORKS_MODEL',defaultModel:'',timeoutMs:30_000}),
  modal:Object.freeze({label:'Modal',endpoint:'',keyEnv:'MODAL_PROXY_TOKEN',modelEnv:'MODAL_MODEL',defaultModel:'',timeoutMs:30_000})
@@ -41,8 +41,11 @@ export function providerConfigurationVersion({id,endpoint,model}){
 }
 
 /** Build the shared bounded request. Partner endpoints require explicit non-streaming chat completions. */
-export function buildChatRequest(config,messages,maxTokens=260){
+export function buildChatRequest(config,messages,maxTokens=config.id==='meta'?1024:260){
  const body={model:config.model,messages,max_tokens:maxTokens};
+ // Meta counts reasoning and visible output within the same cap. The old 260
+ // token limit could end before an answer; minimal effort keeps this demo bounded.
+ if(config.id==='meta')body.reasoning_effort='minimal';
  if(config.id!=='meta')body.stream=false;
  return body;
 }

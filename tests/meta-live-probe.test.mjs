@@ -21,11 +21,13 @@ test('missing or invalid provider configuration makes no request and exposes no 
 for(const env of fixtures)test(`synthetic ${env.MODEL_PROVIDER||'meta'} probe passes actual handler consent and makes exactly one bounded request`,async()=>{
  let calls=0;const result=await runSyntheticProbe({live:true,env,call:async(_url,init)=>{
   calls++;assert.equal(init.redirect,'error');assert(init.signal instanceof AbortSignal);
-  const body=JSON.parse(init.body);assert.equal(body.messages.length,2);assert.equal(body.max_tokens,260);
-  return {ok:true,status:200,json:async()=>({choices:[{message:{content}}]})};
+  const body=JSON.parse(init.body);assert.equal(body.messages.length,2);assert.equal(body.max_tokens,env.MODEL_PROVIDER?260:1024);
+  if(!env.MODEL_PROVIDER)assert.equal(body.reasoning_effort,'minimal');
+  return {ok:true,status:200,json:async()=>({choices:[{finish_reason:'stop',message:{content}}],usage:{prompt_tokens:9,completion_tokens:60,completion_tokens_details:{reasoning_tokens:20}}})};
  }});
  assert.equal(calls,1);assert.equal(result.exitCode,0);assert.equal(result.receipt.upstreamRequests,1);assert.equal(result.receipt.upstreamStatus,200);assert.equal(result.receipt.handlerStatus,200);assert.equal(result.receipt.schemaValid,true);assert.equal(typeof result.receipt.configuredModel,'string');assert.equal(result.receipt.model,undefined,'requested model is not reported as verified identity');
  assert.doesNotMatch(JSON.stringify(result.receipt),/synthetic-private-key|public workshops grew|how did gifting|Authorization/);
+ assert.deepEqual(result.receipt.usage,{inputTokens:9,outputTokens:60,reasoningTokens:20});assert.equal(result.receipt.finishReason,'stop');
 });
 test('safe text fallback is dialogue evidence but cannot pass the directed-focus schema gate',async()=>{
  const result=await runSyntheticProbe({live:true,env:fixtures[1],call:async()=>({ok:true,status:200,json:async()=>({choices:[{message:{content:'We shared the invention with the city.'}}]})})});
