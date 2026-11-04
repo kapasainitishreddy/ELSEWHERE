@@ -23,6 +23,7 @@ try{
  const errors=[],worldModuleRequests=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(request.url().includes('/src/worlds.js'))worldModuleRequests.push(request.url());});
  const tabTo=async id=>{for(let step=0;step<90;step++){if(await page.evaluate(()=>document.activeElement?.id)===id)return;await page.keyboard.press('Tab');}throw new Error(`keyboard tab order did not reach #${id}`);};
  await page.goto(origin,{waitUntil:'networkidle'});assert.equal(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches),true);
+ const gateNotice=await page.locator('#vault-notice').innerText();assert.match(gateNotice,/Private-world progress is encrypted in this browser/i);assert.match(gateNotice,/Guest demo progress is temporary and is not saved/i);assert.doesNotMatch(gateNotice,/Everything you do stays in this encrypted browser vault/i);
  assert.equal(worldModuleRequests.length,0,'the 3D scene module stays unloaded on the encrypted-vault gate');
  const tabPath=[];
  for(let step=0;step<20;step++){

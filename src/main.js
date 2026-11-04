@@ -94,7 +94,7 @@ function showGate(message=''){
  gate.hidden=false;gateTitle.textContent=vault.present()?'UNLOCK YOUR PRIVATE WORLD':'ENTER YOUR POSSIBLE WORLDS';
  gateIntro.textContent=vault.present()?'Unlock your encrypted private save in this browser. Your passphrase never leaves this device.':'Play the unsaved demo instantly, or create an encrypted private save. Meet an imagined future self, invent in 1889, then see your choice reshape 2087.';
  gateButton.textContent=vault.present()?'UNLOCK ELSEWHERE':'CREATE ENCRYPTED WORLD';
- gateStatus.textContent=message || (vault.present()?'Only your passphrase decrypts this save. It never leaves your device.':vault.recoverableLegacy()?'An existing unencrypted timeline will be migrated into an encrypted vault.':'Everything you do stays in this encrypted browser vault.');
+ gateStatus.textContent=message || (vault.present()?'Only your passphrase decrypts this save. It never leaves your device.':vault.recoverableLegacy()?'An existing unencrypted timeline will be migrated into an encrypted vault.':'Private-world progress is encrypted in this browser. Guest demo progress is temporary and is not saved.');
  gateInput.value='';gateInput.focus();
 }
 function setGateBusy(busy){
