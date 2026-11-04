@@ -98,6 +98,17 @@ try {
   await waitForWorld('self','Meet possible future self');
   await clickUser(page.locator('[data-cmd="first-crossing"]'));
   assert((await page.locator('body').innerText()).includes('CONTINUE THE CONVERSATION'));
+  const conversationOrder=await page.evaluate(()=>{
+    const form=document.querySelector('#chat-form'),memories=document.querySelector('.memory-cards'),panel=document.querySelector('.story-panel');
+    const f=form?.getBoundingClientRect(),p=panel?.getBoundingClientRect();
+    return{formBeforeOptionalMemories:Boolean(form&&memories&&(form.compareDocumentPosition(memories)&Node.DOCUMENT_POSITION_FOLLOWING)),formVisibleInPanel:Boolean(f&&p&&f.top<p.bottom&&f.bottom>p.top)};
+  });
+  assert.deepEqual(conversationOrder,{formBeforeOptionalMemories:true,formVisibleInPanel:true},'the main conversation prompt should appear before optional memory controls');
+  await page.screenshot({path:new URL('future-self-conversation-first.png',artifactDir).pathname});
+  await page.setViewportSize({width:390,height:844});
+  assert.deepEqual(await page.evaluate(()=>{const form=document.querySelector('#chat-form'),memories=document.querySelector('.memory-cards'),panel=document.querySelector('.story-panel'),f=form?.getBoundingClientRect(),p=panel?.getBoundingClientRect();return{formBeforeOptionalMemories:Boolean(form&&memories&&(form.compareDocumentPosition(memories)&Node.DOCUMENT_POSITION_FOLLOWING)),formVisibleInPanel:Boolean(f&&p&&f.top<p.bottom&&f.bottom>p.top),documentWidth:document.documentElement.scrollWidth};}),{formBeforeOptionalMemories:true,formVisibleInPanel:true,documentWidth:390},'mobile conversation prompt should precede optional memory controls without horizontal overflow');
+  await page.screenshot({path:new URL('future-self-conversation-first-mobile.png',artifactDir).pathname});
+  await page.setViewportSize(desktopViewport);
   await page.locator('#chat-question').fill('What does an ordinary day look like in this possible future?');
   await clickUser(page.locator('#chat-form button[type="submit"]'));
   await page.locator('#chat-history .chat-line.elder').waitFor({state:'visible',timeout:30000});
