@@ -7,6 +7,8 @@ import './cinematic-shell.css';
 import './director-cut.css';
 import './submission-polish.css';
 import './causal-proof.css';
+import './possible-futures.css';
+import {updateFutures} from './possible-futures.js';
 import {initialState, travel, applyAction, addConversation, dialogueFallback, writeLetter, askCharacter, updateCompass} from './game.js';
 import {createInterface} from './ui.js';
 import {createSoundscape} from './audio.js';
@@ -254,6 +256,14 @@ function compassAction(type,data={}){
  if(!result.ok){toast(result.error,false);return;}
  publish(result.state,result.event);
 }
+function futurePlanAction(type,data={}){
+ if(type==='delete'&&!window.confirm('Delete this plan and its private conversations from this reality? Exported backups are not changed.'))return;
+ const result=updateFutures(state,type,data);
+ if(!result.ok){toast(result.error,false);return;}
+ state=result.state;void persist();ui.render(state);
+ if(type==='checkin')toast('A small step recorded. You can go at your own pace.');
+ if(type==='reset')toast('A fresh start. What you learned still matters.');
+}
 function memoryAction(action,value){
  const outcome=updateMemoryCards(state,action,value);
  if(!outcome.ok){toast(outcome.error,false);return;}
@@ -352,7 +362,7 @@ function eraseVault(){
 }
 const ui=createInterface(document.querySelector('#app-ui'),{
  travel:chooseWorld,action:chooseAction,reset,ask,listen,letter:writeFutureLetter,eraseVault,
- sound:toggleSound,forgetConversation,pinMemory:text=>memoryAction('pin',text),forgetMemory:index=>memoryAction('forget',index),compassSave,compassTried,compassClear,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
+ sound:toggleSound,forgetConversation,pinMemory:text=>memoryAction('pin',text),forgetMemory:index=>memoryAction('forget',index),compassSave,compassTried,compassClear,futurePlanAction,move:mobileMove,interact,exportTimeline,importTimeline,lock,rekey,
  privacyStatus:()=>true,guestMode:()=>guestMode,cloudEnabled:()=>cloudEnabled,remoteProvider:()=>remoteProvider.label,toggleCloud,localAiEnabled:()=>localAiEnabled,toggleLocalAi,npcAsk,
  voiceEnabled:()=>privateSpeech.enabled(),togglePrivateVoice,dictationStatus:()=>dictationStatus,comfort:id=>experience?.setComfort?.(id)
 });

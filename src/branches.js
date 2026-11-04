@@ -5,7 +5,7 @@ export const BRANCH_FIELDS=Object.freeze([
  'world','credits','fame','trust','influence','invention','fate','power','dungeonOutcome',
  'pilotTrained','mechDeployed','owned','flags','history','conversation','memoryCards','revision',
  'echoShards','runeProgress','runeMistakes','mechBattle','encounters','lastEncounter',
- 'letter','compass','ending','worldVisits','chronal','cast','wardenBattle','stars','society'
+ 'letter','compass','possibleFutures','ending','worldVisits','chronal','cast','wardenBattle','stars','society'
 ]);
 export const initialParallel=()=>({active:'prime',forked:false,snapshots:{}});
 export function branchSnapshot(state){return Object.fromEntries(BRANCH_FIELDS.map(k=>[k,structuredClone(state[k])]));}
